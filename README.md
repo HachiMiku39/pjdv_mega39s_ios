@@ -1,19 +1,21 @@
-# PJDV M39 · Switch → iOS 移植研究
+# PJDV M39 · Switch → iPadOS / macOS 移植研究
 
-`pjdv_mega39s_ios` 记录《初音未来 Project DIVA MEGA39’s》Switch 版运行于 iPhone / iPad 的兼容层研究。App 名称为 **PJDV M39**。
+`pjdv_mega39s_ios` 记录《初音未来 Project DIVA MEGA39’s》Switch 版运行于 iPadOS / macOS 的兼容层研究。当前暂不支持 iPhone。App 名称为 **PJDV M39**。
 
-目前已经能在 iPad 模拟器中进入原游戏标题、菜单和实时 3D 节奏游戏场景。**已修复纯蓝眼睛，以及《ACUTE》中角色 / 舞台倒置的问题；AudioRenderer 已接入真实 CoreAudio 输出。角色材质与光照仍在继续验证，完整音频听感与同步、触控体验和稳定真实 60 FPS 尚未验收。**
+目前已经能在 iPad 模拟器中进入原游戏标题、菜单和实时 3D 节奏游戏场景；M4 iPad 真机已安装运行，M3 Max Mac Catalyst 版也已进入原游戏。MetalFX Spatial 已接入，真机菜单实测约 60 FPS，尚不代表全部歌曲通过。**已修复纯蓝眼睛，以及《ACUTE》中角色 / 舞台倒置的问题；AudioRenderer 已接入真实 CoreAudio 输出。角色材质与光照仍在继续验证，完整音频听感与同步、触控体验和稳定真实 60 FPS 尚未验收。**
 
 本仓库当前仅发布研究介绍和进展 README；游戏文件、密钥、提取资源、商业游戏可执行文件、着色器缓存与安装包均不包含在仓库中。
 
 ## 目标
 
-- 支持 iPhone 和 iPad，横屏显示，按原始 16:9 比例适配。
+- 当前支持范围为 iPadOS / macOS（Mac Catalyst），暂不支持 iPhone；横屏显示，按原始 16:9 比例适配。
+- 启动时要求 Apple GPU family 9 或更新，最低按 M3 / A17 级别；采用实际 GPU 能力检测。
 - 还原 Switch 版实际的角色材质、舞台光照、反射和后处理。
 - 保留原作谱面、歌曲时间轴、判定、HOLD、SLIDE 与计分行为。
 - 支持原作触屏输入、可开关的虚拟手柄，以及 DualSense / Xbox 实体手柄；连接实体手柄后隐藏虚拟手柄。
-- 以真实 60 FPS 和 1920×1080 输出为性能目标；正确渲染之后再评估 MetalFX。
-- 先完成模拟器功能验证，再测试真机。
+- 以真实 60 FPS 和 1920×1080 输出为性能目标；已加入 MetalFX Spatial 与普通放大对照，持续验证画质和帧时间。
+- 光追为后续实验方向，当前没有接入游戏阴影 / 反射光追，默认渲染沿用原版材质与光照。
+- 并行保留模拟器功能回归与 M4 iPad 真机验证，分别记录测试结果。
 
 ## 技术路线
 
@@ -30,7 +32,7 @@ Switch 游戏程序与资源
   └─ 输入 / 音频 / 文件系统 → iOS 宿主接口
 ```
 
-研究基线为 JP 版 v1.0.9（更新版本 589824），基础 Title ID `0100F3100DA46000`，包含 27 个 DLC。当前模拟器使用 Metal 3 路径；工程另有 Metal 4 真机路径，尚待真机验证。
+研究基线为 JP 版 v1.0.9（更新版本 589824），基础 Title ID `0100F3100DA46000`，包含 27 个 DLC。当前模拟器使用 Metal 3 路径；Metal 4 真机路径已在 M4 iPad 启动运行；仍需完整歌曲、材质和输入回归。
 
 ## 当前验证状态
 
@@ -44,12 +46,36 @@ Switch 游戏程序与资源
 | 视频 | 修复 YUV / NV12 布局边界；片头视频颜色已经用户确认 | 更多视频与切换场景回归 |
 | 输入 | 虚拟按键、键盘、GameController 和多点触控桥已接入；部分输入契约测试通过 | 直接触控的坐标、事件和原游戏操作流程；真实 PS5 / Xbox 手柄 |
 | 音频 | 原版 AudioRenderer 配置 / 序列化、宿主音轨混音和 CoreAudio 48 kHz 立体声已接通；歌曲音乐缓冲持续消耗，暂停后可续播 | 扬声器听感、音画 / 判定同步、更多歌曲与音效、ADPCM 上下文 / 循环和真机验证 |
-| 输出分辨率 | 游戏输出目标 1280×720，3D 视口可能动态缩小；最终 1920×1080 双线性放大 | 原生 1080p 与 MetalFX 超分 |
+| 输出分辨率 | 游戏输出目标 1280×720；提供 720p、普通 1080p 放大与 MetalFX Spatial 1080p 超分；M4 iPad / M3 Max Mac 已运行超分 | 原生 1080p、低分辨率 3D 与高分辨率谱面分离，以及全曲画质验证 |
 | 帧率监测 | FPS、进程 CPU、RAM 浮窗与帧时间日志 | GPU 完成回调计数不等同于稳定真实 60 FPS；实际呈现、重复帧和持续运行需单独测量 |
 | 解锁 | 包内 DLC 已识别和提取 | DLC 运行加载、歌曲 / 服装 / 道具初始全可用及存档验证 |
-| 真机 | 工程有未签名设备目标构建记录 | 实机安装、输入、音频、画质、性能和发热 |
+| 真机 / Mac | M4 iPad（iPadOS 27.2）已签名安装并运行原游戏、声音服务与 MetalFX；M3 Max Mac Catalyst 已启动原游戏及超分 | 完整歌曲稳定性、触控 / 手柄、音画同步、持续性能和发热；Mac FPS 浮窗读数问题 |
 
-主要功能测试环境是 **iPad Pro 13-inch (M5) / iPadOS 27.2 模拟器**；模拟器设备名称不构成 M5 真机性能证据。独立 GPU 检查运行于 Mac 的 Apple M3 Max，也单独标记为 macOS 测试。
+模拟器功能测试环境是 **iPad Pro 13-inch (M5) / iPadOS 27.2 模拟器**；模拟器设备名称不构成 M5 真机性能证据。独立 GPU 检查运行于 Mac 的 Apple M3 Max，也单独标记为 macOS 测试。
+
+## MetalFX 与真机启动验证
+
+MetalFX Spatial 已接到原游戏最终色调映射后的画面，采用 perceptual 模式，将 1280×720 输出重建到 1920×1080。没有插帧，也没有改变谱面、歌曲时间轴或输入更新频率。Scaler 和输入 / 输出纹理由三个在途槽复用，按实际输出尺寸更新；不支持时明确回退到普通放大。
+
+当前 iOS 模拟器 SDK 不提供 MetalFX，界面会禁用超分选项。M4 iPad 真机与 M3 Max Mac 上已观察到实际 MetalFX 编码和输出。原游戏已在源画面内合成谱面，因此这一版会处理整个游戏帧，尚未实现音符 / UI 在超分后单独以 1080p 绘制。
+
+M4 iPad 已修复启动时地址空间预留失败：本作主模块有约 3 GB 的静态 BSS 映射，沿用参考工程额外预留 5 GB 的方案会在该设备启动阶段失败。按本作实际映像占用与原有应用内存池计算，动态堆预算约 205 MiB；将兼容层预留缩到 1.5 GiB，保留 512 MiB 的动态堆容量、原别名 / 栈分区及原应用内存预算。没有新增扩展虚拟寻址 entitlement。
+
+真机菜单的一个连续采样窗口中，300 帧实际上屏无掉帧，p99 间隔 16.67 ms，游戏绘制 GPU 中位约 5.3 ms。**这只证明所测菜单场景，不能推定所有实时 3D 歌曲稳定 60 FPS。** 超分增加了画面重建步骤；当前未降低原 3D 内部渲染分辨率，因此不能把它宣称为已经提升游戏速度。
+
+虚拟手柄已补齐并采用 Switch 布局：双摇杆、L3 / R3、方向键、X / Y / A / B、L / R、ZL / ZR、＋ / －。实体手柄连接自动隐藏和触屏穿透继续保留。图标改为用户提供图片的严格 1:1 裁切，没有使用生成的重绘版本。
+
+## 片头 MV 与原版渲染研究
+
+原资源中的 `MEGA39sOP.mp4` 为约 93.14 秒、1280×720、60 FPS 的 H.264 High 视频，包含 5584 帧，使用 BT.709 限幅 YUV420。`SEGAlogo_Attack_White_Ver.4.mp4` 也属于预录视频。它们画面中的 3D 外观不能作为运行时实际绘制人物网格的证据。
+
+已对 MV 全部 5584 帧进行亮度 / 色度变化统计和解码帧哈希检查，并人工查看全片取样图及第 1440–1471 帧的连续角色近景。该段能观察到随姿态变化的发丝高光、虹膜 / 角膜层次、皮肤柔和阴影、衣料亮暗分区和背景合成。只有 3 对相邻解码图像完全相同；这不是移植版本运行帧率的测试。
+
+当前视频链路是 H.264 → VideoToolbox → 原版 OMX 缓冲与 PTS 排序 → 原版客户端 NV12 布局 → `sprite_pct_movie` → 游戏输出 → Metal / 可选 MetalFX。原版 movie fragment shader 只采样亮度与色度两个 2D 纹理，以原常量缓冲中的系数执行 YUV→RGB，并乘顶点颜色。逐帧对照将分别核对布局、色域 / 范围、时间戳、纹理上传和最终合成。
+
+实时 3D 使用另一组原版材质：已检查 `hair_npr1`、`skin_npr1`、`glass_eye`、`cloth_aniso` 和 `tonemap_npr1` 的翻译源码，存在多张 2D 纹理、环境 cubemap 和多个材质 / 灯光常量缓冲。**画面细节不足不能直接归因于模型面数，必须核对法线 / 切线、原版高光、环境采样、阴影与色调映射。** 文件存在也不证明某个变体在某一帧被实际使用；下一步以实时 3D 捕获的实际绑定及中间目标验证。
+
+预录 MV 作为视觉参考，不能反推出精确灯光参数或证明光追效果。新增光追效果暂停，先继续原版渲染链的核对。
 
 ## 已确认的渲染缺口：过滤拷贝未生成 mip
 
@@ -148,6 +174,8 @@ CPU 纹理转储和延后 GPU 池回读仍为零，不能作为原始资源上�
 ## 参考资料与致谢
 
 - [jhaizhou-ops/d2r-mobile](https://github.com/jhaizhou-ops/d2r-mobile)：原生兼容层与 NVN → Metal 的主要工程参考。D2R 专用地址、钩子与 shader 参数不能直接用于 MEGA39’s。
+- [Apple GPU family 9](https://developer.apple.com/documentation/metal/mtlgpufamily/apple9)：最低 GPU 能力要求参考。
+- [Apple MetalFX Spatial](https://developer.apple.com/documentation/metalfx/mtlfxspatialscalerdescriptor)：超分 API 与设备支持检测参考。
 - [jiayx/d2r-mobile-build](https://github.com/jiayx/d2r-mobile-build)：构建流程参考。
 - [korenkonder/AFTMods · DivaGL](https://github.com/korenkonder/AFTMods)：DIVA 图形迁移研究。[v0.11.0.0](https://github.com/korenkonder/AFTMods/releases/tag/DivaGL-v0.11.0.0) 记录了 BLINN 高光修复，[v0.10.0.1](https://github.com/korenkonder/AFTMods/releases/tag/DivaGL-v0.10.0.1) 记录了 Tone Map / NPR 修复。这些是排查线索，尚未证明与本项目是同一根因。
 - [korenkonder/ReDIVA](https://github.com/korenkonder/ReDIVA)：系列数据结构和渲染实现研究参考，具体与 Switch 版的对应关系待核对。
@@ -159,7 +187,7 @@ CPU 纹理转储和延后 GPU 池回读仍为零，不能作为原始资源上�
 
 ## 近期顺序
 
-**触控链路与正确渲染 → 模拟器完整歌曲回归 → 实际帧时间与真实 60 FPS → 1080p / MetalFX → 真机测试。**
+**片头 MV 逐帧参考与实时材质核对 → 原版渲染一致性 → 完整歌曲 / 触控回归 → 真机帧时间、延迟与 MetalFX 对照。**
 
 直接点击画面的实际日志已记录 Start / 保持 / End，并验证基本 16:9 坐标换算。原版主菜单不响应直接点击，渲染测试暂由用户授权使用虚拟手柄导航；Touch Play 开启、多指和节奏操作仍需单独验收。
 
