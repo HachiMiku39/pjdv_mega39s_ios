@@ -6,6 +6,8 @@
 
 [下载测试版](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5) · [安装与测试指南](#安装包怎么选)
 
+bilibili: (https://www.bilibili.com/video/BV1KGni6YEZd/)
+
 ## 0.1.5 更新与验证范围
 
 - **降低安装门槛**：iOS／iPadOS 最低 17.0，最低 GPU 为 Apple family 7（A14／M1 同代），iPhone 同样开放。iOS 使用已有 Metal 3 兼容提交路径，macOS 仍要求 26+。
