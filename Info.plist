@@ -66,5 +66,43 @@
 		<string>ja</string>
 		<string>ko</string>
 	</array>
+	<key>UTImportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.hachimiku39.pjdv.xci</string>
+			<key>UTTypeDescription</key>
+			<string>Nintendo Switch XCI archive</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+				<string>public.content</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>xci</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.hachimiku39.pjdv.keys</string>
+			<key>UTTypeDescription</key>
+			<string>Switch import key file</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.plain-text</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>keys</string>
+				</array>
+			</dict>
+		</dict>
+	</array>
 </dict>
 </plist>

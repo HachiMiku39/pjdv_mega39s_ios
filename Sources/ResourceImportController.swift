@@ -61,9 +61,16 @@ final class ResourceImportController:UIViewController,UIDocumentPickerDelegate {
             self?.finishSelection(url,purpose:purpose)
         }
         #else
-        let types:[UTType]=(purpose == .folder || purpose == .destination) ? [.folder]:[.item]
+        let types:[UTType]
+        switch purpose {
+        case .folder,.destination:types=[.folder]
+        case .xci:types=[UTType(importedAs:"com.hachimiku39.pjdv.xci",conformingTo:.data),.item]
+        case .keys:types=[UTType(importedAs:"com.hachimiku39.pjdv.keys",conformingTo:.plainText),.item]
+        }
+        // Some Files providers return a dynamic/unknown type. Keep .item as a
+        // fallback and validate the extension and contents after selection.
         let picker=UIDocumentPickerViewController(forOpeningContentTypes:types,asCopy:false)
-        picker.delegate=self;picker.allowsMultipleSelection=false
+        picker.delegate=self;picker.allowsMultipleSelection=false;picker.shouldShowFileExtensions=true
         picker.title=title
         present(picker,animated:true)
         #endif
@@ -74,9 +81,22 @@ final class ResourceImportController:UIViewController,UIDocumentPickerDelegate {
     @objc private func closePanel(){guard operation==nil && !selecting else{return};dismiss(animated:true,completion:onClose)}
     @objc private func cancelWork(){operation?.cancel();cancel.isEnabled=false;detail.text=L("正在安全停止，源 XCI 与现有存档保留…")}
     @objc private func useLocal(){do{try ResourceLibrary.useLocal();detail.text=L("已使用本机 GameResources。");onClose?()}catch{show(error)}}
-    func documentPickerWasCancelled(_ controller:UIDocumentPickerViewController) {finishSelection(nil,purpose:purpose)}
+    func documentPickerWasCancelled(_ controller:UIDocumentPickerViewController) {
+        completeDocumentSelection(controller,url:nil)
+    }
     func documentPicker(_ controller:UIDocumentPickerViewController,didPickDocumentsAt urls:[URL]) {
-        finishSelection(urls.first,purpose:purpose)
+        completeDocumentSelection(controller,url:urls.first)
+    }
+    private func completeDocumentSelection(_ controller:UIDocumentPickerViewController,url:URL?) {
+        guard selecting else{return}
+        let selectedPurpose=purpose
+        // Acquire the provider's security scope before dismissing Files; keep it
+        // alive until finishSelection has handed it to the background importer.
+        let access=url.map{ResourceAccess($0)}
+        controller.dismiss(animated:true) {[weak self,access] in
+            self?.finishSelection(access?.root,purpose:selectedPurpose)
+            withExtendedLifetime(access){}
+        }
     }
     private func finishSelection(_ url:URL?,purpose:Purpose) {
         selecting=false;isModalInPresentation=false

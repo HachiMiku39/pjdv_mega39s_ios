@@ -1,8 +1,8 @@
 {
   "format": "pjdv-public-source-v1",
   "date": "2026-10-23",
-  "source_build": "0.1.5 build11 candidate",
-  "public_release": "v0.1.5b10 unchanged",
+  "source_build": "0.1.5 build11 iPad import fix candidate",
+  "public_release": "v0.1.5b10 unchanged; local build11 unsigned IPA candidate",
   "scope": "host/runtime/tools/tests; generated game inputs excluded",
   "excluded_production_keys_game_payloads_saves_profiles": true,
   "files": [
@@ -99,23 +99,23 @@
     },
     {
       "path": "BUILDING.md",
-      "bytes": 5664,
-      "sha256": "90bc45da6e7d2f0a5146d80e0db6c384298a169a255bfacbcfdf8f0caf0b5477",
-      "git_blob_sha": "b3196833bbf6b0b971b128e9d1c498247e95d109",
+      "bytes": 6670,
+      "sha256": "df3fa4406cceb150e3819e9d369924d9e70358fd3986691e4670259a26c1519c",
+      "git_blob_sha": "3a03b54bc257e28170e96526d2e4dfe0debd3eee",
       "mode": "100644"
     },
     {
       "path": "Info.plist",
-      "bytes": 1961,
-      "sha256": "8a58716333d38e57df05e83d1167571eb08ca57fe946ec4fa74c4d6fb6344699",
-      "git_blob_sha": "d36b002a07be7a3ed4a0db24225b895eb48a6593",
+      "bytes": 2882,
+      "sha256": "72b724e523a9b84683d62d548c308076076fc6b5dd4dbefae22af67078c5a07e",
+      "git_blob_sha": "40b75cbb6f45d9da1d532df43f2419a42c1b311f",
       "mode": "100644"
     },
     {
       "path": "README.md",
-      "bytes": 25912,
-      "sha256": "b406159d5c267f783c659792a7f2c0521c5a7520c0705c2ec34e27efbbcd23cd",
-      "git_blob_sha": "dbdfe2be3ab8ca259d1c84404d89bac9a7546820",
+      "bytes": 26293,
+      "sha256": "da5562127c2a68568e5fabee30a8998cbbe3949aa2e54b99e39c2e2371fa94fc",
+      "git_blob_sha": "7d31268c82c6d479cd7f1d3f0a2ca17f946b4b2a",
       "mode": "100644"
     },
     {
@@ -4768,9 +4768,9 @@
     },
     {
       "path": "Sources/ResourceImportController.swift",
-      "bytes": 11590,
-      "sha256": "5afca8ad1042176e567f453a6194917f6d6d56ff5c9df21ea42ec5d52f3cea4a",
-      "git_blob_sha": "d515a48a933960007d672db919e360606315a138",
+      "bytes": 12611,
+      "sha256": "214c358ab796f765ad3116183fd5d6e0319134f1dc571a31eb83a142e49bc419",
+      "git_blob_sha": "9330857f765bbfbb917154caab32f5c3ab988bd6",
       "mode": "100644"
     },
     {
@@ -4869,6 +4869,13 @@
       "bytes": 6937,
       "sha256": "52f5d0c61b4d24f5323cdbb2300b730d2dea7381d2e9ba36ffe65b8a1138e2d1",
       "git_blob_sha": "adaf6a7c83b1dc5ce32a27dc4904e75166b78c1f",
+      "mode": "100644"
+    },
+    {
+      "path": "Tests/ImportPicker/README.md",
+      "bytes": 1473,
+      "sha256": "7658d83216b48c4d0a138e3d8f88d0d6b4361dab98bc5665b3f2c684e221aef8",
+      "git_blob_sha": "93a2385f9b7a0b7d6fd7f6aef3ee4056b63eb0bf",
       "mode": "100644"
     },
     {

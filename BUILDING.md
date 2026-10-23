@@ -66,10 +66,15 @@ bash Scripts/build.sh mac
 
 ## build11 文件导入修复候选
 
-针对 M1 用户反馈的“选择本地文件没有反应”，Mac 改用现有 AppKit 辅助 bundle 中的 `NSOpenPanel`，不再通过 iPad 文档选择器选择 XCI／密钥。不依据未知扩展名的 UTType 灰掉文件；选择后仍由原有解析器检查文件格式和密钥。XCI → 保存位置的连续面板在前一面板关闭后串行打开。
+反馈设备已确认是 **iPad Pro 2021／M1、iPadOS 18**，现象为点击 XCI 后选择窗口不关闭。之前按照 Mac 反馈准备的修复不能据此视作解决。
 
-预检新增阶段状态和活动指示；真正开始资源复制后再显示字节进度。选择密钥或取消文件窗口不会假装开始导入，失败会显示明确错误。
+- iPad／iPhone：在 Info.plist 声明外来 XCI／keys 文件类型和扩展名；选择器显式支持对应格式，并保留 `public.item` 以接受 Files 提供方的动态／未知类型。格式仍由导入器校验。显示受支持扩展名，方便识别 ZIP／7z 尚未解压的情况。
+- 收到文件 URL 时先取得安全作用域访问，在文件窗口关闭后才处理选择或开始导入；整个后台读取期间保留源文件访问。不使用 `asCopy: true`，不移动或预先复制整份 XCI。
+- Mac：使用现有 AppKit 辅助 bundle 中的 `NSOpenPanel`。不依据未知扩展名灰掉文件；XCI → 目标位置两个面板串行打开。
+- 预检阶段显示活动指示和阶段文本，开始提取后显示字节进度。取消不会启动导入，失败显示具体错误。
 
-当前 Mac／iOS Release 编译、合成容器回归，以及当前 Mac 的原生选择面板／错误回调／XCI 到目标面板／取消行为已验证。反馈者尚未提供 macOS 版本，不能据此宣称该 M1 环境已修复。安装包 build10 不包含本项修改。
+验证：iOS／模拟器／Mac Release 编译通过。iPadOS 27.2 模拟器的独立测试容器中，验证了 XCI 与 keys 可选、错误显示、取消恢复，以及合成密钥＋小型合成 XCI 从系统选择窗口到资源清单／完成标记的完整导入，合成源文件哈希保持不变。测试没有拷入真实游戏或密钥。回归步骤见 [Tests/ImportPicker/README.md](Tests/ImportPicker/README.md)。
 
-Apple API 参考：[NSOpenPanel](https://developer.apple.com/documentation/appkit/nsopenpanel)、[UIDocumentPickerViewController](https://developer.apple.com/documentation/uikit/uidocumentpickerviewcontroller)。
+**验证边界：** 本机没有 iPadOS 18 模拟器运行时，尚未在反馈者 M1／iPadOS 18 设备回测；不能宣称该问题已在原设备修复。GitHub 历史 build10 安装包不含这些修改。build11 的本地精简 IPA 是待回测候选，需要有效签名。
+
+Apple API 参考：[文件类型声明](https://developer.apple.com/documentation/UniformTypeIdentifiers/defining-file-and-data-types-for-your-app)、[UIDocumentPickerViewController](https://developer.apple.com/documentation/uikit/uidocumentpickerviewcontroller)、[NSOpenPanel](https://developer.apple.com/documentation/appkit/nsopenpanel)。
