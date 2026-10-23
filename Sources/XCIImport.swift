@@ -31,9 +31,9 @@ final class XCIImportPlan {
     struct Volume { let relative:String;let rom:XCIRomFS;let fingerprint:String;let dlc:ImportCatalog.DLC? }
     let file:XCIFile,volumes:[Volume],totalBytes:Int
     let content:GameContentInfo
-    init(xci:URL,keys:URL,catalog:URL?=nil,checkCancelled:()->Bool={false},contentNames:Set<String>?=nil,report:(String)->Void={_ in}) throws {
+    init(xci:URL,keys:URL,catalog:URL?=nil,checkCancelled:()->Bool={false},contentNames:Set<String>?=nil,io:ImportIOMeter?=nil,report:(String)->Void={_ in}) throws {
         report("正在读取 XCI 目录…")
-        let file=try XCIFile(url:xci),keys=try XCIKeys(url:keys),allEntries=try xciSecureEntries(file)
+        let file=try XCIFile(url:xci,io:io),keys=try XCIKeys(url:keys),allEntries=try xciSecureEntries(file)
         // Internal content-subset selection supports bounded package tests and
         // base-only regression without ever rewriting a user's source XCI.
         if let contentNames {try importCheck(contentNames.isSubset(of:Set(allEntries.map(\.name))),"所选内容不在原始 XCI 中")}
@@ -193,7 +193,7 @@ final class XCIResourceImporter {
     }
     private func sha(_ url:URL) throws -> String {
         let f=try FileHandle(forReadingFrom:url);defer{try?f.close()};var hash=SHA256()
-        while let b=try f.read(upToCount:1024*1024),!b.isEmpty {hash.update(data:b);try update("校验已有资源："+url.lastPathComponent)}
+        while let b=try f.read(upToCount:1024*1024),!b.isEmpty {plan.file.io?.didRead(b.count);hash.update(data:b);try update("校验已有资源："+url.lastPathComponent)}
         return hash.finalize().map{String(format:"%02x",$0)}.joined()
     }
     private func target(_ volume:XCIImportPlan.Volume) -> URL {
@@ -283,7 +283,7 @@ final class XCIResourceImporter {
                     do {
                         while at<f.bytes {
                             let n=min(1024*1024,f.bytes-at),b=try v.rom.reader.read(f.offset+at,n)
-                            try out.write(contentsOf:b);hash.update(data:b);at+=n;completed+=n;try update("导入："+f.path)
+                            try out.write(contentsOf:b);plan.file.io?.didWrite(b.count);hash.update(data:b);at+=n;completed+=n;try update("导入："+f.path)
                         }
                         try out.synchronize();try out.close()
                     } catch {try?out.close();throw error}

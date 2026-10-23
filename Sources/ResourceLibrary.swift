@@ -1,4 +1,5 @@
 import Foundation
+import CryptoKit
 
 @_silgen_name("pjdv_shader_cache_chain") private func shaderCacheChain() -> UnsafePointer<CChar>
 enum GameRenderingAssets {
@@ -20,7 +21,8 @@ enum GameRenderingAssets {
 final class ResourceAccess {
     let root:URL
     private let scoped:Bool
-    init(_ root:URL) {self.root=root;scoped=root.startAccessingSecurityScopedResource()}
+    private let parent:ResourceAccess?
+    init(_ root:URL,retaining parent:ResourceAccess?=nil) {self.root=root;self.parent=parent;scoped=root.startAccessingSecurityScopedResource()}
     deinit {if scoped {root.stopAccessingSecurityScopedResource()}}
 }
 private func resourceMetadata(_ url:URL) throws -> Data {
@@ -153,4 +155,38 @@ enum ResourceLibrary {
         try Data(contentsOf:source).write(to:target,options:.atomic)
         try FileManager.default.setAttributes([.posixPermissions:0o600],ofItemAtPath:target.path)
     }
+}
+
+// The Files-visible PJDVM39 root is Documents on iOS/iPadOS. Only top-level
+// regular files are considered; extracted resources and subfolders are skipped.
+final class AppImportInbox {
+    struct Snapshot {
+        let signature:String,xcis:[URL],keys:[URL]
+        var isEmpty:Bool {xcis.isEmpty && keys.isEmpty}
+        static func read(_ root:URL) throws -> Snapshot {
+            let entries=try FileManager.default.contentsOfDirectory(at:root,includingPropertiesForKeys:[.isRegularFileKey,.isSymbolicLinkKey,.fileSizeKey,.contentModificationDateKey],options:.skipsHiddenFiles)
+            guard entries.count<=10000 else {throw ImportFailure.invalid("App 文件夹条目过多，请整理后重试")}
+            var xcis=[URL](),keys=[URL](),identities=[String]()
+            for url in entries.sorted(by:{$0.lastPathComponent<$1.lastPathComponent}) where ["xci","keys"].contains(url.pathExtension.lowercased()) {
+                let value=try url.resourceValues(forKeys:[.isRegularFileKey,.isSymbolicLinkKey,.fileSizeKey,.contentModificationDateKey])
+                guard value.isRegularFile==true,value.isSymbolicLink != true,(value.fileSize ?? 0)>0 else {continue}
+                identities.append(url.lastPathComponent+":"+String(value.fileSize ?? 0)+":"+String(value.contentModificationDate?.timeIntervalSince1970 ?? 0))
+                if url.pathExtension.lowercased()=="xci" {xcis.append(url)}else{keys.append(url)}
+            }
+            let signature=SHA256.hash(data:Data((root.standardizedFileURL.path+"\n"+identities.joined(separator:"\n")).utf8)).map{String(format:"%02x",$0)}.joined()
+            return Snapshot(signature:signature,xcis:xcis,keys:keys)
+        }
+    }
+    private var observed="",changedAt:TimeInterval=0
+    private static var attempted=Set<String>()
+    func ready(_ snapshot:Snapshot,now:TimeInterval=ProcessInfo.processInfo.systemUptime)->Bool {
+        guard !snapshot.isEmpty else{observed="";return false}
+        if observed != snapshot.signature {observed=snapshot.signature;changedAt=now;return false}
+        guard now-changedAt>=4,!Self.attempted.contains(snapshot.signature),
+              UserDefaults.standard.string(forKey:"completedLocalImportSignature") != snapshot.signature else{return false}
+        return true
+    }
+    func isHandled(_ signature:String)->Bool {Self.attempted.contains(signature) || UserDefaults.standard.string(forKey:"completedLocalImportSignature")==signature}
+    func markAttempted(_ signature:String){Self.attempted.insert(signature)}
+    static func markCompleted(_ signature:String){UserDefaults.standard.set(signature,forKey:"completedLocalImportSignature")}
 }

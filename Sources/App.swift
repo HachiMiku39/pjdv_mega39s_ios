@@ -646,6 +646,9 @@ final class HostLaunchController: UIViewController {
     private let language = UIButton(type: .system)
     private var startedExperiment = false
     private var launchDuoProfile = "phone"
+    private let inbox=AppImportInbox()
+    private var inboxTimer:Timer?
+    private let inboxStatus=UILabel()
     init(message: String = "") { self.message = message; super.init(nibName: nil, bundle: nil) }
     required init?(coder: NSCoder) { fatalError("Use programmatic initialization") }
     override var supportedInterfaceOrientations: UIInterfaceOrientationMask { .landscape }
@@ -704,16 +707,38 @@ final class HostLaunchController: UIViewController {
         #endif
         let phone = UIDevice.current.userInterfaceIdiom == .phone
         title.font = .boldSystemFont(ofSize: phone ? 32 : 44)
-        let stack = UIStackView(arrangedSubviews: [title, detail, resourceStatus, resources, quality, start, settings, experiments]);stack.axis = .vertical;stack.spacing = phone ? 8 : 18;stack.alignment = .center
+        inboxStatus.font = .systemFont(ofSize:13);inboxStatus.textColor = .lightGray;inboxStatus.numberOfLines=0;inboxStatus.textAlignment = .center;inboxStatus.accessibilityIdentifier="launcher.inboxStatus"
+        let stack = UIStackView(arrangedSubviews: [title, detail, resourceStatus, resources,inboxStatus, quality, start, settings, experiments]);stack.axis = .vertical;stack.spacing = phone ? 8 : 18;stack.alignment = .center
         stack.translatesAutoresizingMaskIntoConstraints = false;view.addSubview(stack)
         NSLayoutConstraint.activate([stack.centerXAnchor.constraint(equalTo: view.centerXAnchor),stack.centerYAnchor.constraint(equalTo: view.centerYAnchor),
             stack.widthAnchor.constraint(lessThanOrEqualTo: view.widthAnchor, multiplier: 0.8),start.heightAnchor.constraint(greaterThanOrEqualToConstant: 60)])
     }
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated);refreshResources()
+        inboxTimer?.invalidate()
+        let timer=Timer(timeInterval:2,repeats:true){[weak self] _ in self?.checkImportInbox()}
+        inboxTimer=timer;RunLoop.main.add(timer,forMode:.common);checkImportInbox()
         if !startedExperiment, let key = ProcessInfo.processInfo.environment["PJDV_GRAPHICS_EXPERIMENT"],
            let mode = GraphicsExperimentMode(rawValue: key) { startedExperiment = true;showExperiment(mode) }
     }
+
+    override func viewWillDisappear(_ animated:Bool) {
+        super.viewWillDisappear(animated);inboxTimer?.invalidate();inboxTimer=nil
+    }
+    private func checkImportInbox() {
+        guard viewIfLoaded?.window != nil,presentedViewController==nil,UIApplication.shared.applicationState == .active else{return}
+        do {
+            let root=ResourceLibrary.appDataRoot
+            try FileManager.default.createDirectory(at:root,withIntermediateDirectories:true)
+            let snapshot=try AppImportInbox.Snapshot.read(root)
+            inboxStatus.text=snapshot.isEmpty ? L("将 XCI 和密钥拷入 PJDVM39 根目录，可自动识别导入。") : inbox.isHandled(snapshot.signature) ? L("根目录文件已检测；可在资源管理查看或重试。") : L("已检测到根目录文件，等待复制稳定后自动导入。")
+            guard inbox.ready(snapshot) else{return}
+            inbox.markAttempted(snapshot.signature)
+            let panel=ResourceImportController();panel.automaticInbox=snapshot;panel.modalPresentationStyle = .formSheet
+            panel.onClose={[weak self] in self?.refreshResources()};present(panel,animated:true)
+        } catch {inboxStatus.text=L("自动检测：")+error.localizedDescription}
+    }
+    deinit {inboxTimer?.invalidate()}
     @objc private func editSticks() {
         let editor = StickLayoutController(profile: UIDevice.current.userInterfaceIdiom == .phone ? launchDuoProfile : "tablet")
         editor.modalPresentationStyle = .fullScreen; present(editor, animated: true)

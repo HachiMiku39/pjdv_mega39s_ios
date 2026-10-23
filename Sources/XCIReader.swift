@@ -91,10 +91,35 @@ struct XCIKeys {
     }
 }
 protocol XCIReadable: AnyObject { var size: Int { get }; func read(_ offset: Int, _ length: Int) throws -> Data }
+// Application-level transfer counters, not physical SSD throughput. Cached
+// reads count; successful resource writes do not imply data reached the disk.
+final class ImportIOMeter {
+    struct Sample {
+        let readBytes:Int64,writtenBytes:Int64
+        let readBytesPerSecond:Double,writtenBytesPerSecond:Double,elapsed:TimeInterval
+    }
+    private let lock=NSLock()
+    private let started:TimeInterval
+    private var lastTime:TimeInterval
+    private var readBytes:Int64=0,writtenBytes:Int64=0,lastRead:Int64=0,lastWritten:Int64=0
+    init(now:TimeInterval=ProcessInfo.processInfo.systemUptime){started=now;lastTime=now}
+    func didRead(_ count:Int){guard count>0 else{return};lock.lock();defer{lock.unlock()};readBytes+=Int64(count)}
+    func didWrite(_ count:Int){guard count>0 else{return};lock.lock();defer{lock.unlock()};writtenBytes+=Int64(count)}
+    func sample(now:TimeInterval=ProcessInfo.processInfo.systemUptime)->Sample {
+        lock.lock();defer{lock.unlock()}
+        let dt=now-lastTime
+        let readRate=dt>0 ? Double(readBytes-lastRead)/dt:0
+        let writeRate=dt>0 ? Double(writtenBytes-lastWritten)/dt:0
+        if dt>0 {lastTime=now;lastRead=readBytes;lastWritten=writtenBytes}
+        return Sample(readBytes:readBytes,writtenBytes:writtenBytes,readBytesPerSecond:readRate,writtenBytesPerSecond:writeRate,elapsed:max(0,now-started))
+    }
+}
 final class XCIFile: XCIReadable {
     let size: Int
     private let handle: FileHandle
-    init(url: URL) throws {
+    let io:ImportIOMeter?
+    init(url: URL,io:ImportIOMeter?=nil) throws {
+        self.io=io
         handle = try FileHandle(forReadingFrom: url)
         let attr = try FileManager.default.attributesOfItem(atPath: url.path)
         try require(attr[.type] as? FileAttributeType == .typeRegular, "请选择已下载到本机或外置盘的 XCI 文件")
@@ -104,6 +129,7 @@ final class XCIFile: XCIReadable {
     func read(_ offset: Int, _ length: Int) throws -> Data {
         try bounded(offset, length, size); try require(length <= tableLimit, "单次 XCI 读取超出限制")
         try handle.seek(toOffset: UInt64(offset)); let data = try handle.read(upToCount: length) ?? Data()
+        io?.didRead(data.count)
         try require(data.count == length, "XCI 已截断、移动或无法读取"); return data
     }
 }

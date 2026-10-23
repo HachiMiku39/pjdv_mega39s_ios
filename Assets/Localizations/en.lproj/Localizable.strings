@@ -126,3 +126,29 @@
 "正在读取 DLC 资源文件表…" = "Reading DLC resource file tables…";
 "资源预检完成，正在检查保存位置…" = "Resource preflight complete. Checking the destination…";
 "正在检查保存位置与已有资源…" = "Checking the destination and existing resources…";
+
+"备用：从文件夹选择 XCI" = "Fallback: choose XCI from folder";
+"备用：从文件夹选择密钥" = "Fallback: choose keys from folder";
+"选择文件所在的文件夹并点“打开”，再在 App 内点选文件。" = "Choose the containing folder and tap Open, then choose a file inside the app.";
+"选择 XCI" = "Choose XCI";
+"选择密钥" = "Choose keys";
+"正在读取文件夹…" = "Reading folder…";
+"文件过多，请选择更小的文件夹。" = "Too many files. Choose a smaller folder.";
+"无法读取文件夹" = "Unable to read folder";
+"这个文件夹没有对应文件，请返回重选所在文件夹。" = "No matching files in this folder. Go back and choose their containing folder.";
+"读取" = "Read";
+"写入" = "Write";
+"累计读取" = "Total read";
+"累计写入" = "Total written";
+"已耗时" = "Elapsed";
+"应用层读写量，含缓存；不是物理硬盘测速。" = "App I/O includes caches; not a physical disk benchmark.";
+"导入：" = "Extracting: ";
+"校验已有资源：" = "Checking existing file: ";
+"校验未完成记录：" = "Checking unfinished record: ";
+
+"检测 App 根目录中的 XCI／密钥" = "Scan app root for XCI / keys";
+"请将 .xci 和 .keys 拷入“文件”App 中的 PJDVM39 根目录。" = "Copy .xci and .keys into the PJDVM39 root shown in Files.";
+"将 XCI 和密钥拷入 PJDVM39 根目录，可自动识别导入。" = "Copy XCI and keys into the PJDVM39 root for automatic import.";
+"已检测到根目录文件，等待复制稳定后自动导入。" = "Files detected in the root. Waiting for copying to settle before import.";
+"根目录文件已检测；可在资源管理查看或重试。" = "Root files already checked. Review or retry in Resources.";
+"自动检测：" = "Automatic scan: ";

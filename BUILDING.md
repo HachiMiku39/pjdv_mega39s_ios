@@ -1,6 +1,6 @@
 # 源码与构建（2026-10-23）
 
-本仓库现在包含实际使用的 Swift/UIKit 宿主、Mac AppKit 辅助组件、NVN → Metal／Horizon 兼容层、逆向处理工具和测试。当前源码版本为 **0.1.5 build11 修复候选**；GitHub 已发布的安装包仍是 **build10**，没有用新源码覆盖历史附件。
+本仓库现在包含实际使用的 Swift/UIKit 宿主、Mac AppKit 辅助组件、NVN → Metal／Horizon 兼容层、逆向处理工具和测试。当前源码版本为 **0.1.5 build13 导入改进候选**；GitHub 已发布的安装包仍是 **build10**，没有用新源码覆盖历史附件。
 
 ## 源码目录
 
@@ -64,17 +64,16 @@ bash Scripts/build.sh mac
 
 目标为 iOS／iPadOS 17 和 Mac Catalyst 14／macOS 11；Mac 最低 M1。当前 Xcode 27 SDK 对 Big Sur 目标会给出最低部署版本警告，工程保留兼容构建设置；**实际 Big Sur／M1 设备运行仍待验证**。GPU 功能档位与 API 可用性分别检查。
 
-## build11 文件导入修复候选
+## build13 导入改进候选
 
-反馈设备已确认是 **iPad Pro 2021／M1、iPadOS 18**，现象为点击 XCI 后选择窗口不关闭。之前按照 Mac 反馈准备的修复不能据此视作解决。
+M1 iPad Pro 2021／iPadOS 18 的录屏显示 build11 仍不能从系统文件列表选中 XCI／密钥。原生文件选择的根因尚未在该设备定位，不把模拟器或 M4 通过视作该问题已解决。
 
-- iPad／iPhone：在 Info.plist 声明外来 XCI／keys 文件类型和扩展名；选择器显式支持对应格式，并保留 `public.item` 以接受 Files 提供方的动态／未知类型。格式仍由导入器校验。显示受支持扩展名，方便识别 ZIP／7z 尚未解压的情况。
-- 收到文件 URL 时先取得安全作用域访问，在文件窗口关闭后才处理选择或开始导入；整个后台读取期间保留源文件访问。不使用 `asCopy: true`，不移动或预先复制整份 XCI。
-- Mac：使用现有 AppKit 辅助 bundle 中的 `NSOpenPanel`。不依据未知扩展名灰掉文件；XCI → 目标位置两个面板串行打开。
-- 预检阶段显示活动指示和阶段文本，开始提取后显示字节进度。取消不会启动导入，失败显示具体错误。
+- 保留已声明的 XCI／keys UTType、未知类型回退、源文件就地读取及安全作用域；系统窗口完成后再处理选择。
+- 新增目录授权入口：系统选择所在文件夹，App 自己列出对应扩展名的普通文件。目录访问随所选文件保留到导入结束。参见苹果的 [Providing access to directories](https://developer.apple.com/documentation/uikit/providing-access-to-directories)。
+- `AppImportInbox` 仅扫描 App 暴露的数据根目录。启动首页每两秒检查，元数据稳定至少四秒后开始校验；大小／时间变化会重新等待。多个候选由用户选择，成功签名记录防止重启重复导入。目录／符号链接／零字节条目不作为输入。
+- 进度显示阶段、资源完成量／总量、百分比、应用层读写速度、累计量和耗时。`ImportIOMeter` 使用单调时钟和加锁计数，读取计入 XCI 及已有资源校验；写入只计成功输出的资源数据。每 0.5 秒采样，空闲和结束时显示零速率，续导不虚增写入。含缓存影响，不能当作物理 SSD 性能。
+- Mac 保留 `NSOpenPanel` 及串行选择源／目标，App 根目录自动导入使用其本机数据目录。
 
-验证：iOS／模拟器／Mac Release 编译通过。iPadOS 27.2 模拟器的独立测试容器中，验证了 XCI 与 keys 可选、错误显示、取消恢复，以及合成密钥＋小型合成 XCI 从系统选择窗口到资源清单／完成标记的完整导入，合成源文件哈希保持不变。测试没有拷入真实游戏或密钥。回归步骤见 [Tests/ImportPicker/README.md](Tests/ImportPicker/README.md)。
+验证记录：iOS／模拟器／Mac Release 编译通过；合成容器测试覆盖计数、空闲速率、并发计数、已有资源续导、根目录扫描与复制变化等待。iPadOS 27.2 模拟器在独立空白容器中，直接从根目录自动导入 64 MiB 合成 XCI，完整标记和有效载荷通过，源文件哈希不变；重启未重复导入。M4 iPadOS 27.2 已安装 build13，真实密钥经用户明确授权，仅传到该设备本地；根目录自动识别与保存通过。系统选择器的 XCI／keys 关闭和错误路径也在 M4 验证。合成密钥未覆盖真机密钥。
 
-**验证边界：** 本机没有 iPadOS 18 模拟器运行时，尚未在反馈者 M1／iPadOS 18 设备回测；不能宣称该问题已在原设备修复。GitHub 历史 build10 安装包不含这些修改。build11 的本地精简 IPA 是待回测候选，需要有效签名。
-
-Apple API 参考：[文件类型声明](https://developer.apple.com/documentation/UniformTypeIdentifiers/defining-file-and-data-types-for-your-app)、[UIDocumentPickerViewController](https://developer.apple.com/documentation/uikit/uidocumentpickerviewcontroller)、[NSOpenPanel](https://developer.apple.com/documentation/appkit/nsopenpanel)。
+尚未验证：反馈者 M1／iPadOS 18、第三方 Files 提供方以及这次改动后的 40+ GB 真实 XCI 全量导入。历史 build10 Release 附件未替换；本地 build13 精简 IPA 是待回测候选，不含真实密钥、资源或开发签名。
