@@ -1,8 +1,8 @@
 {
   "format": "pjdv-public-source-v1",
-  "date": "2026-10-23",
-  "source_build": "0.1.5 build13 import compatibility candidate",
-  "public_release": "v0.1.5b10 unchanged; local build13 unsigned IPA candidate",
+  "date": "2026-10-24",
+  "source_build": "0.1.5 build14 import memory fix preview",
+  "public_release": "v0.1.5b14 lightweight IPA/DMG; M4 full fresh import passed; M1/iPadOS18 pending",
   "scope": "host/runtime/tools/tests; generated game inputs excluded",
   "excluded_production_keys_game_payloads_saves_profiles": true,
   "files": [
@@ -57,37 +57,37 @@
     },
     {
       "path": "Assets/Localizations/en.lproj/Localizable.strings",
-      "bytes": 10981,
-      "sha256": "22727c11f983952307c83b1f588e346c3c1e1b459bedc1af3662b584e3a9e025",
-      "git_blob_sha": "0fb6ed98d72c5792797b43664acfddd5e1976c32",
+      "bytes": 11023,
+      "sha256": "4f58c22e9174f177ea05f5b47b3245cb07a37dae20231244829bd1d990d19983",
+      "git_blob_sha": "19f17f157c50b8fd52d2ac30184e33536ad935c2",
       "mode": "100644"
     },
     {
       "path": "Assets/Localizations/ja.lproj/Localizable.strings",
-      "bytes": 12900,
-      "sha256": "e9cfc247db1d755d37bb204e75fa59a11a6c8811cac76912df4924820f10326e",
-      "git_blob_sha": "c5b82a7f6dedeeeb371f4aee90fe0051e8faa37d",
+      "bytes": 12950,
+      "sha256": "a6c993719490a84ff84cae9554ce6412b766cbc8c57d6f8dbce5c5c722802f89",
+      "git_blob_sha": "b6477c895d72af65d8088db46d98b18f905f9d67",
       "mode": "100644"
     },
     {
       "path": "Assets/Localizations/ko.lproj/Localizable.strings",
-      "bytes": 11740,
-      "sha256": "e64b6a2dbeb992f0d512448bebad90c794059687dd8e50e0b4619dd3c3387514",
-      "git_blob_sha": "6324b9135f89f550e476e4796d9e16b8933d7c89",
+      "bytes": 11787,
+      "sha256": "3cfa463bb814c08966d067ad5b1871820716eb84b55643409188f0fbcb6254d9",
+      "git_blob_sha": "ced4b310d65f0b237f343e545fb311cef5d0d245",
       "mode": "100644"
     },
     {
       "path": "Assets/Localizations/zh-Hans.lproj/Localizable.strings",
-      "bytes": 10788,
-      "sha256": "49d23788abb1ba263396046c676ed52c96b6e013dcdead991dba1648fe471bd6",
-      "git_blob_sha": "a8c58a250e29922479fad2bae91c99ab7db275d0",
+      "bytes": 10832,
+      "sha256": "0093e79b5498afa8bbbc45df4c3e7727c21a8d59ea0290ac8a75f9d82fbb7d71",
+      "git_blob_sha": "49b84e9df33c554cb19db5ad5c2c0a0f906c1a9b",
       "mode": "100644"
     },
     {
       "path": "Assets/Localizations/zh-Hant.lproj/Localizable.strings",
-      "bytes": 10808,
-      "sha256": "5fb7b2184bed623a106628dbf0fada86e4b3fbbe736de17e8bc9bc38adf29f08",
-      "git_blob_sha": "5e50ff3357f8dded60322821ec324d1eff718697",
+      "bytes": 10855,
+      "sha256": "c90c51abb718c7d458c70c6866e7b72d17dc27362b53d74c5a176d766994b3b0",
+      "git_blob_sha": "9ed45b053e1fd52370eeabf28d4b8344d50df442",
       "mode": "100644"
     },
     {
@@ -99,23 +99,23 @@
     },
     {
       "path": "BUILDING.md",
-      "bytes": 6936,
-      "sha256": "0464257c1eecc056bab2625ce8b95cda593c6672cf5b69f24ce69fa058b8c881",
-      "git_blob_sha": "0f57f7b2a03c7cfde2d100e625e057afea964ea9",
+      "bytes": 10140,
+      "sha256": "e353ac58b004891cb68927d7ce700d83fd80a19f093ebddada3ba04fdbf8ea4d",
+      "git_blob_sha": "b639c15b332c990f79912dc8939e9b1ef1f1eacb",
       "mode": "100644"
     },
     {
       "path": "Info.plist",
       "bytes": 2882,
-      "sha256": "d989ba59027758424bf3d8d73e1107d610bb1467b8d5314a8c38d1108f65f7bb",
-      "git_blob_sha": "b4f890d339a8be1611a921d297c7107e33c0e862",
+      "sha256": "e53da180497fadec6593064f6ce8bebfa5451fe25333cd8ffc8634e2771cea25",
+      "git_blob_sha": "327e0e4d446a01e46e8003bac4a2b16ce278a3d8",
       "mode": "100644"
     },
     {
       "path": "README.md",
-      "bytes": 29725,
-      "sha256": "bc83f6a6c21499ed8a3090612093dff3110af2e3a79258439fd0af7237856f2d",
-      "git_blob_sha": "9d839322b88acb26e101a72bc0f7c23a2571dbe1",
+      "bytes": 30483,
+      "sha256": "928bf6f947f616da529f79e9e85921e6d100806c9627d267d3edd900f320eb32",
+      "git_blob_sha": "a362c3a966784b09cceb2771190e6da604d83315",
       "mode": "100644"
     },
     {
@@ -4663,9 +4663,9 @@
     },
     {
       "path": "Scripts/test-core.sh",
-      "bytes": 870,
-      "sha256": "3d061954417d991d3781d73e7a9fe339ff0a821ed1057003b68f6e7105252d3c",
-      "git_blob_sha": "b342b3ef78b0da1cc4c46354b22d02548b4d389a",
+      "bytes": 1152,
+      "sha256": "a219ac96ca2cd9515fb87eab843e4d9ca897aa8da91a8311d88f8204fbcad760",
+      "git_blob_sha": "1761c81063a9868c63066df6598208d0d9200d43",
       "mode": "100755"
     },
     {
@@ -4768,9 +4768,9 @@
     },
     {
       "path": "Sources/ResourceImportController.swift",
-      "bytes": 23351,
-      "sha256": "754a95b97a95cedcf750b69c02d8fabc8033913b4936042a96bf39f37369d6fa",
-      "git_blob_sha": "77acade1ad38c4166df02640bdc31f76b937c3ad",
+      "bytes": 26390,
+      "sha256": "631c85fceb8127c78d6bc0d92311279b1d3d0aea354874187c9ad1ed4d05e926",
+      "git_blob_sha": "fb782cb8121dea021265e9a53793fd403c17e570",
       "mode": "100644"
     },
     {
@@ -4817,16 +4817,16 @@
     },
     {
       "path": "Sources/XCIImport.swift",
-      "bytes": 22314,
-      "sha256": "1a2be373a57d8416c796e041589f7112f8b3cfa87403ac1832421fcf541bc887",
-      "git_blob_sha": "3539aa6d577e7f125359de689061e991ba87494b",
+      "bytes": 23218,
+      "sha256": "368e6c50df222e3824e5137a8c25b496d1af728597967540fa3da099bc766b18",
+      "git_blob_sha": "be578e3f808631ef77a708f33b10955e7799f6a0",
       "mode": "100644"
     },
     {
       "path": "Sources/XCIReader.swift",
-      "bytes": 28733,
-      "sha256": "ee4b93c8d97398a78cbba7075ab612569584e2b592f9ccc37d4224527a5e897a",
-      "git_blob_sha": "7f6c98da0b828fb47b0ddc12c59a482dea27ef38",
+      "bytes": 29055,
+      "sha256": "4b4bf240815aae2c484b1649465b98069b662d0d8043d7938c3d5c0b03c4accc",
+      "git_blob_sha": "565f3bc6521ae70bd5302daf118e2154de465526",
       "mode": "100644"
     },
     {
@@ -4883,6 +4883,13 @@
       "bytes": 9337,
       "sha256": "80bdae36239854d4c88aa3ed1ae4680225d4371b6a1876727b8db8f33a8b15a7",
       "git_blob_sha": "ac31859d3cfa9ef307acf553d4b19b9aa18f0d12",
+      "mode": "100644"
+    },
+    {
+      "path": "Tests/ImportVariants/StreamingMemoryTests.swift",
+      "bytes": 3004,
+      "sha256": "fb54e1f9c0f0f01555bf96b00ed0868ac72770a3341a31ea3e259ecdd9b45218",
+      "git_blob_sha": "0ed54e19cceefd581dfe5b8727238d0494738880",
       "mode": "100644"
     },
     {

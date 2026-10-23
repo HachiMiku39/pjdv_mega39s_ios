@@ -23,6 +23,9 @@ final class ResourceImportController:UIViewController,UIDocumentPickerDelegate {
     private let transfer=UILabel()
     private var io:ImportIOMeter?
     private var transferTimer:Timer?
+    private var memoryLog:FileHandle?
+    private var memoryPeak:UInt64=0
+    private var memoryLogTime:TimeInterval=0
     private var actions=[UIButton]()
     var automaticInbox:AppImportInbox.Snapshot?
     private var startedInbox=false
@@ -206,22 +209,60 @@ final class ResourceImportController:UIViewController,UIDocumentPickerDelegate {
             return L(line)
         }.joined(separator:"\n")
     }
+    override func didReceiveMemoryWarning() {
+        super.didReceiveMemoryWarning()
+        recordImportMemory(event:"memory_warning",force:true)
+    }
+    // Small, local-only log: no source paths, filenames, keys or save data.
+    // A killed process cannot write a final record, so persist every five seconds.
+    private func startMemoryLog() {
+        let url=ResourceLibrary.appDataRoot.appendingPathComponent("PJDV-import-diagnostics.jsonl")
+        memoryPeak=0;memoryLogTime=0
+        // Preserve the preceding session before an automatic retry can truncate
+        // it, including the last samples left by a jetsam-terminated process.
+        if let size=try?FileManager.default.attributesOfItem(atPath:url.path)[.size] as? NSNumber,
+           size.intValue<=8*1024*1024,let previous=try?Data(contentsOf:url) {
+            try?previous.write(to:ResourceLibrary.appDataRoot.appendingPathComponent("PJDV-import-diagnostics.previous.jsonl"),options:.atomic)
+        }
+        do {
+            try Data().write(to:url,options:.atomic)
+            memoryLog=try FileHandle(forWritingTo:url)
+            let header:[String:Any]=["event":"start","build":Bundle.main.object(forInfoDictionaryKey:"CFBundleVersion") as? String ?? "", "physical_memory_bytes":ProcessInfo.processInfo.physicalMemory,"system":UIDevice.current.systemVersion]
+            try memoryLog?.write(contentsOf:JSONSerialization.data(withJSONObject:header,options:[.sortedKeys])+Data([10]))
+        } catch {try?memoryLog?.close();memoryLog=nil}
+    }
+    private func recordImportMemory(event:String,force:Bool=false,sample:ImportIOMeter.Sample?=nil) {
+        let now=ProcessInfo.processInfo.systemUptime
+        let memory=PerformanceMonitor.memoryBytes()
+        if let memory {memoryPeak=max(memoryPeak,memory)}
+        guard memoryLog != nil,(force || now-memoryLogTime>=5) else{return}
+        memoryLogTime=now
+        var row:[String:Any]=["event":event,"uptime":now,"peak_memory_bytes":memoryPeak]
+        if let memory {row["memory_bytes"]=memory}
+        if let sample {row["elapsed_seconds"]=sample.elapsed;row["read_bytes"]=sample.readBytes;row["written_bytes"]=sample.writtenBytes}
+        do {
+            try memoryLog?.write(contentsOf:JSONSerialization.data(withJSONObject:row,options:[.sortedKeys])+Data([10]))
+            try memoryLog?.synchronize()
+        } catch {try?memoryLog?.close();memoryLog=nil}
+    }
     private func refreshTransfer(final:Bool=false) {
         guard let sample=io?.sample() else{return}
         func bytes(_ n:Int64)->String {ByteCountFormatter.string(fromByteCount:n,countStyle:.file)}
         func rate(_ n:Double)->String {bytes(Int64(max(0,min(n,Double(Int64.max/2)))))+"/s"}
         let readRate=final ? 0:sample.readBytesPerSecond,writeRate=final ? 0:sample.writtenBytesPerSecond
         let elapsed=Int(sample.elapsed)
-        transfer.text=L("读取")+" "+rate(readRate)+"  ·  "+L("写入")+" "+rate(writeRate)+"\n"+L("累计读取")+" "+bytes(sample.readBytes)+"  ·  "+L("累计写入")+" "+bytes(sample.writtenBytes)+"  ·  "+L("已耗时")+String(format:" %02d:%02d",elapsed/60,elapsed%60)+"\n"+L("应用层读写量，含缓存；不是物理硬盘测速。")
+        recordImportMemory(event:final ? "finished":"sample",force:final,sample:sample)
+        let memory=PerformanceMonitor.memoryBytes().map{L("内存")+" "+bytes(Int64($0))+"  ·  "+L("峰值")+" "+bytes(Int64(memoryPeak))} ?? ""
+        transfer.text=L("读取")+" "+rate(readRate)+"  ·  "+L("写入")+" "+rate(writeRate)+"\n"+L("累计读取")+" "+bytes(sample.readBytes)+"  ·  "+L("累计写入")+" "+bytes(sample.writtenBytes)+"  ·  "+L("已耗时")+String(format:" %02d:%02d",elapsed/60,elapsed%60)+"\n"+memory+"\n"+L("应用层读写量，含缓存；不是物理硬盘测速。")
     }
     private func show(_ error:Error){detail.text=L("操作未完成：")+error.localizedDescription}
-    deinit {transferTimer?.invalidate()}
+    deinit {transferTimer?.invalidate();try?memoryLog?.close()}
     private func beginImport(root:URL) {
         guard let source else{return}
         let keys:URL
         do{keys=try ResourceLibrary.keysURL()}catch{show(error);self.source=nil;destination=nil;return}
         let progress=Progress(totalUnitCount:100);operation=progress
-        let io=ImportIOMeter();self.io=io;transfer.isHidden=false;refreshTransfer()
+        let io=ImportIOMeter();self.io=io;startMemoryLog();transfer.isHidden=false;refreshTransfer()
         let timer=Timer(timeInterval:0.5,repeats:true){[weak self] _ in self?.refreshTransfer()}
         transferTimer=timer;RunLoop.main.add(timer,forMode:.common)
         let destination=self.destination
@@ -252,6 +293,8 @@ final class ResourceImportController:UIViewController,UIDocumentPickerDelegate {
             DispatchQueue.main.async {[weak self] in
                 guard let self else{return}
                 self.transferTimer?.invalidate();self.transferTimer=nil;self.refreshTransfer(final:true)
+                switch final {case .success:self.recordImportMemory(event:"success",force:true);case .failure:self.recordImportMemory(event:"failure",force:true)}
+                try?self.memoryLog?.close();self.memoryLog=nil
                 self.operation=nil;self.source=nil;self.destination=nil;self.actions.forEach{$0.isEnabled=true};self.cancel.isHidden=true;self.isModalInPresentation=false;self.activity.stopAnimating()
                 UIApplication.shared.isIdleTimerDisabled=false
                 if self.backgroundTask != .invalid {UIApplication.shared.endBackgroundTask(self.backgroundTask);self.backgroundTask = .invalid}

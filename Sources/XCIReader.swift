@@ -128,9 +128,16 @@ final class XCIFile: XCIReadable {
     deinit { try? handle.close() }
     func read(_ offset: Int, _ length: Int) throws -> Data {
         try bounded(offset, length, size); try require(length <= tableLimit, "单次 XCI 读取超出限制")
-        try handle.seek(toOffset: UInt64(offset)); let data = try handle.read(upToCount: length) ?? Data()
-        io?.didRead(data.count)
-        try require(data.count == length, "XCI 已截断、移动或无法读取"); return data
+        // FileHandle bridges autoreleased NSData on Darwin. A whole import is
+        // one GCD work item, so its outer pool may otherwise retain every read.
+        // Swift Data returned from this local pool keeps its own storage alive.
+        return try autoreleasepool {
+            try handle.seek(toOffset: UInt64(offset))
+            let data = try handle.read(upToCount: length) ?? Data()
+            io?.didRead(data.count)
+            try require(data.count == length, "XCI 已截断、移动或无法读取")
+            return data
+        }
     }
 }
 struct XCIEntry { let name: String; let offset: Int; let size: Int }

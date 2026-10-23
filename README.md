@@ -1,17 +1,17 @@
 # PJDV M39 · iPadOS / iOS / macOS 测试版
 
-**源码公开（2026-10-23）：** 当前源码为 **build13 导入改进候选**，构建说明见 [BUILDING.md](BUILDING.md)。M1 iPad Pro／iPadOS 18 用户录屏确认 build11 的系统文件列表仍无法正常选取，因此新增 **PJDVM39 根目录自动导入** 和 **从所在文件夹选择文件** 两条路径。导入界面新增阶段、百分比、完成量、读写速度、累计量和耗时。M4 真机的系统文件选择与根目录密钥检测已通过；独立模拟器的 64 MiB 合成 XCI 自动导入及重启不重复导入已通过。**M1／iPadOS 18 的新版回测、真实 40+ GB 全量导入本轮仍未验收。** GitHub 历史安装包仍是下方 build10；本地 build13 IPA 为待回测精简候选，不覆盖历史附件。原游戏程序段、派生渲染缓存和资源需在本地准备，不随源码提供。
+**build14 导入修复（2026-10-24）：** 保留根目录自动导入、备用文件夹选择和阶段／进度／读写速度显示；修复长时间导入时临时对象累积，并增加内存及本地诊断日志。**M4 iPad／iPadOS 27.2 已完成卸载重装、完整 42.72 GB XCI 重新导入：41,943,373,493 字节资源、27 DLC，约 96 秒，导入进程采样峰值约 125 MB，无内存警告或退出。** 开发机整份资源只读验证及 8 GiB 内存回归也通过。**M1／8 GB／iPadOS 18 仍需反馈设备回测，不能视为已确认修复该机型。** 源码与构建说明见 [BUILDING.md](BUILDING.md)；原游戏程序段、派生渲染缓存和资源需在本地准备，不随源码提供。
 
 《初音未来 Project DIVA MEGA39’s》Switch JP v1.0.9 的 Apple Silicon 兼容移植研究。原游戏 ARM64 程序经 Horizon 服务兼容层运行，图形通过 **NVN → Metal** 输出。
 
-**0.1.5（build 10）｜2026-10-22｜兼容性预览版（Pre-release）。** 只发布不含游戏资源、密钥及个人存档的精简安装包，不再自动制作全量包。
+**0.1.5（build 14）｜2026-10-24｜导入修复兼容性预览版（Pre-release）。** 只发布不含游戏资源、密钥及个人存档的精简安装包，不再自动制作全量包。
 
 **build10 更新（2026-10-22）**：导入端改为识别同一 MEGA39’s Title ID（0100F3100DA46000）的包内内容，不再要求固定 NCA 文件名、v1.0.9 资源指纹或恰好 27 DLC。按 CNMT 选择更新、实际 DLC 数量和完整语言资源；包内已有内容默认开放现存难度与服装。不支持的语言回落日语。
 
 运行端仍使用已适配的 JP v1.0.9 程序，不执行新 XCI 中的任意 NSO；因此解除导入版本限制不等于所有资源版本、其他地区代码均已兼容。未知资源版本在启动页明确提示待验证。新导入记录写入 `game-content.json`，已有 v1.0.9 文件夹继续兼容。独立票据／TitleKey 加密仍需后续支持；缺少所需密钥、冲突更新和不完整包会停止导入，不修改原 XCI。
 
 
-[下载 build10 预览版](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b10) · [原 build7](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5) · [安装与测试指南](#安装包怎么选)
+[下载 build14 预览版](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b14) · [build10](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b10) · [原 build7](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5) · [安装与测试指南](#安装包怎么选)
 
 [演示视频（bilibili）](https://www.bilibili.com/video/BV1KGni6YEZd/)
 
@@ -77,7 +77,7 @@ GitHub 轻量包没有 XCI、提取后的大型游戏资源、prod.keys 或本�
 
 本地 development IPA 的签名只覆盖当前登记设备，并有有效期；换 iPad 需要重签。更新测试版尽量覆盖安装，先备份存档再做卸载操作。
 
-**版本提示：** 根目录自动导入和备用文件夹入口需要 build13 或更新候选；GitHub 当前公开的 build10 安装包请使用下方手动选择或已提取资源方式。
+**版本提示：** build14 已包含根目录自动导入、备用文件夹入口和导入内存修复；历史 build10 不含这些新入口。
 
 ### 方式一：根目录自动导入（build13 起，推荐）
 
@@ -155,6 +155,12 @@ PJDV M39 的 Documents/
 ```
 
 也可以直接连接外置盘上已提取的目录；运行期间需一直连接。若希望使用本机存储的读取性能，先完整拷入本机。
+
+### 导入时闪退或停住（build14 起）
+
+导入界面会显示当前进程内存和采样峰值；“累计写入 7 GB”是已处理的资源量，并不等于占用 7 GB 内存。导入过程中每五秒保存进度／读写量／内存到 PJDVM39 根目录 `PJDV-import-diagnostics.jsonl`。下一次重试会将上一轮日志保留为 `PJDV-import-diagnostics.previous.jsonl`，方便对照闪退点。两份日志仅保存在本机，不含密钥内容、游戏文件路径或个人存档。
+
+若设备仍退出，请同时保留这两份小日志，以及“设置 → 隐私与安全性 → 分析与改进 → 分析数据”中对应时间的 `JetsamEvent` 或 PJDV 崩溃记录。仅凭设备总内存不能断定终止原因；M1／iPadOS 18 需要对应真机回测。不要为重试删除原 XCI 或个人存档。
 
 ## Mac 安装与导入
 

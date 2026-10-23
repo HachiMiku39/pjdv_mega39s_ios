@@ -14,4 +14,8 @@ xcrun --sdk macosx swiftc -O -module-cache-path "$TEST_ROOT/ModuleCache" \
   Sources/ShaderAssets.swift Sources/ResourceLibrary.swift Sources/AppLanguage.swift \
   Tests/ImportVariants/ContentTests.swift -o "$TEST_ROOT/content-tests"
 "$TEST_ROOT/content-tests" "$TEST_ROOT/Fixtures" "$TEST_ROOT/Output"
-echo 'Only bounded synthetic XCI / dummy keys were generated. No game content was read.'
+xcrun --sdk macosx swiftc -O -module-cache-path "$TEST_ROOT/ModuleCache" \
+  Sources/XCIReader.swift Tests/ImportVariants/StreamingMemoryTests.swift \
+  -o "$TEST_ROOT/stream-memory-tests"
+"$TEST_ROOT/stream-memory-tests" "$TEST_ROOT/StreamMemory"
+echo 'Only bounded synthetic XCI / dummy keys and a temporary 1 MiB stream file were generated. No game content was read.'

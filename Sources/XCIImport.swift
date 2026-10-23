@@ -193,7 +193,12 @@ final class XCIResourceImporter {
     }
     private func sha(_ url:URL) throws -> String {
         let f=try FileHandle(forReadingFrom:url);defer{try?f.close()};var hash=SHA256()
-        while let b=try f.read(upToCount:1024*1024),!b.isEmpty {plan.file.io?.didRead(b.count);hash.update(data:b);try update("校验已有资源："+url.lastPathComponent)}
+        while try autoreleasepool(invoking:{
+            guard let b=try f.read(upToCount:1024*1024),!b.isEmpty else{return false}
+            plan.file.io?.didRead(b.count);hash.update(data:b)
+            try update("校验已有资源："+url.lastPathComponent)
+            return true
+        }) {}
         return hash.finalize().map{String(format:"%02x",$0)}.joined()
     }
     private func target(_ volume:XCIImportPlan.Volume) -> URL {
@@ -210,7 +215,7 @@ final class XCIResourceImporter {
         try importCheck((try regular(p) ?? 0)<64*1024*1024,"旧资源清单过大")
         let text=try String(contentsOf:p,encoding:.utf8);var rows=[String:PreparedFile]()
         for line in text.split(separator:"\n") {
-            let row=try JSONDecoder().decode(PreparedFile.self,from:Data(line.utf8));rows[row.path]=row
+            let row=try autoreleasepool {try JSONDecoder().decode(PreparedFile.self,from:Data(line.utf8))};rows[row.path]=row
         };return rows
     }
     func run() throws {
@@ -225,12 +230,15 @@ final class XCIResourceImporter {
                 let old=try JSONDecoder().decode(PreparedMarker.self,from:Data(contentsOf:p))
                 try importCheck(old==marker(v),"已有资源属于其他版本，不能覆盖")
             }
+            let canonicalRoot=dir.resolvingSymlinksInPath().path+"/"
             for f in v.rom.entries {
-                let url=dir.appendingPathComponent(f.path)
-                let canonical=url.resolvingSymlinksInPath().path
-                try importCheck(canonical.hasPrefix(dir.resolvingSymlinksInPath().path+"/"),"目标资源路径指向目录外部")
-                if let size=try regular(url) {try importCheck(size==f.bytes,"已有文件大小不同，保留原文件："+f.path)}else{
-                    let(n,overflow)=missing.addingReportingOverflow(f.bytes);try importCheck(!overflow,"资源大小溢出");missing=n
+                try autoreleasepool {
+                    let url=dir.appendingPathComponent(f.path)
+                    let canonical=url.resolvingSymlinksInPath().path
+                    try importCheck(canonical.hasPrefix(canonicalRoot),"目标资源路径指向目录外部")
+                    if let size=try regular(url) {try importCheck(size==f.bytes,"已有文件大小不同，保留原文件："+f.path)}else{
+                        let(n,overflow)=missing.addingReportingOverflow(f.bytes);try importCheck(!overflow,"资源大小溢出");missing=n
+                    }
                 }
             }
         }
@@ -260,39 +268,51 @@ final class XCIResourceImporter {
             if !fm.fileExists(atPath:journalURL.path) {try Data().write(to:journalURL,options:.withoutOverwriting)}
             let journal=try FileHandle(forWritingTo:journalURL);defer{try?journal.close()};try journal.seekToEnd()
             for f in v.rom.entries.sorted(by:{$0.offset<$1.offset}) {
-                try update("导入："+f.path)
-                let dest=dir.appendingPathComponent(f.path)
-                if fm.fileExists(atPath:dest.path) {
-                    let existing=try sha(dest)
-                    if let row=known[f.path] {
-                        try importCheck(row.bytes==f.bytes && row.sha256==existing,"已有资源 SHA-256 不同，保留原文件："+f.path)
-                    } else {
-                        var hash=SHA256(),at=0
-                        while at<f.bytes {let n=min(1024*1024,f.bytes-at);hash.update(data:try v.rom.reader.read(f.offset+at,n));at+=n;try update("校验未完成记录："+f.path)}
-                        try importCheck(existing==hash.finalize().map{String(format:"%02x",$0)}.joined(),"已有未记录文件与 XCI 不同，保留原文件："+f.path)
-                        let row=PreparedFile(path:f.path,bytes:f.bytes,sha256:existing);known[f.path]=row
-                        try journal.write(contentsOf:jsonData(row)+Data([10]));try journal.synchronize()
-                    }
-                    completed+=f.bytes;continue
-                }
-                try fm.createDirectory(at:dest.deletingLastPathComponent(),withIntermediateDirectories:true)
-                let temp=dest.deletingLastPathComponent().appendingPathComponent(".pjdv-import-"+UUID().uuidString)
-                try Data().write(to:temp,options:.withoutOverwriting)
-                do {
-                    let out=try FileHandle(forWritingTo:temp);var hash=SHA256(),at=0
-                    do {
-                        while at<f.bytes {
-                            let n=min(1024*1024,f.bytes-at),b=try v.rom.reader.read(f.offset+at,n)
-                            try out.write(contentsOf:b);plan.file.io?.didWrite(b.count);hash.update(data:b);at+=n;completed+=n;try update("导入："+f.path)
+                // Drain metadata and write-bridging temporaries after each file.
+                try autoreleasepool {
+                    try update("导入："+f.path)
+                    let dest=dir.appendingPathComponent(f.path)
+                    if fm.fileExists(atPath:dest.path) {
+                        let existing=try sha(dest)
+                        if let row=known[f.path] {
+                            try importCheck(row.bytes==f.bytes && row.sha256==existing,"已有资源 SHA-256 不同，保留原文件："+f.path)
+                        } else {
+                            var hash=SHA256(),at=0
+                            while at<f.bytes {
+                                try autoreleasepool {
+                                    let n=min(1024*1024,f.bytes-at)
+                                    hash.update(data:try v.rom.reader.read(f.offset+at,n));at+=n
+                                    try update("校验未完成记录："+f.path)
+                                }
+                            }
+                            try importCheck(existing==hash.finalize().map{String(format:"%02x",$0)}.joined(),"已有未记录文件与 XCI 不同，保留原文件："+f.path)
+                            let row=PreparedFile(path:f.path,bytes:f.bytes,sha256:existing);known[f.path]=row
+                            try journal.write(contentsOf:jsonData(row)+Data([10]));try journal.synchronize()
                         }
-                        try out.synchronize();try out.close()
-                    } catch {try?out.close();throw error}
-                    try fm.moveItem(at:temp,to:dest) // refuses to replace an existing destination
-                    let row=PreparedFile(path:f.path,bytes:f.bytes,sha256:hash.finalize().map{String(format:"%02x",$0)}.joined())
-                    known[f.path]=row;try journal.write(contentsOf:jsonData(row)+Data([10]));try journal.synchronize()
-                } catch {
-                    // Only this invocation's UUID temp may be removed; source / prior files are untouched.
-                    try?fm.removeItem(at:temp);throw error
+                        completed+=f.bytes;return
+                    }
+                    try fm.createDirectory(at:dest.deletingLastPathComponent(),withIntermediateDirectories:true)
+                    let temp=dest.deletingLastPathComponent().appendingPathComponent(".pjdv-import-"+UUID().uuidString)
+                    try Data().write(to:temp,options:.withoutOverwriting)
+                    do {
+                        let out=try FileHandle(forWritingTo:temp);var hash=SHA256(),at=0
+                        do {
+                            while at<f.bytes {
+                                try autoreleasepool {
+                                    let n=min(1024*1024,f.bytes-at),b=try v.rom.reader.read(f.offset+at,n)
+                                    try out.write(contentsOf:b);plan.file.io?.didWrite(b.count);hash.update(data:b)
+                                    at+=n;completed+=n;try update("导入："+f.path)
+                                }
+                            }
+                            try out.synchronize();try out.close()
+                        } catch {try?out.close();throw error}
+                        try fm.moveItem(at:temp,to:dest) // refuses to replace an existing destination
+                        let row=PreparedFile(path:f.path,bytes:f.bytes,sha256:hash.finalize().map{String(format:"%02x",$0)}.joined())
+                        known[f.path]=row;try journal.write(contentsOf:jsonData(row)+Data([10]));try journal.synchronize()
+                    } catch {
+                        // Only this invocation's UUID temp may be removed; source / prior files are untouched.
+                        try?fm.removeItem(at:temp);throw error
+                    }
                 }
             }
             let complete:[String:Any]=["format":"pjdv-prepared-romfs-v1","file_count":v.rom.entries.count,"file_bytes":v.rom.entries.reduce(0){$0+$1.bytes},"index_sha256":v.fingerprint,"file_payload_integrity":"all_file_bytes_checked_through_IVFC","whole_virtual_image":"metadata_and_file_payloads; unused padding not fully traversed"]
