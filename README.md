@@ -1,5 +1,7 @@
 # PJDV M39 · iPadOS / iOS / macOS 测试版
 
+**源码公开（2026-10-23）：** 当前宿主、NVN／Horizon 兼容层、工具与测试已纳入仓库，构建说明见 [BUILDING.md](BUILDING.md)。源码包含 **build11 的 Mac 文件导入修复候选**；已发布安装包仍是下方 build10，本次没有替换历史附件。M1 用户的旧系统环境尚待回测。原游戏程序段、派生渲染缓存和资源需在本地准备，不随源码提供。
+
 《初音未来 Project DIVA MEGA39’s》Switch JP v1.0.9 的 Apple Silicon 兼容移植研究。原游戏 ARM64 程序经 Horizon 服务兼容层运行，图形通过 **NVN → Metal** 输出。
 
 **0.1.5（build 10）｜2026-10-22｜兼容性预览版（Pre-release）。** 只发布不含游戏资源、密钥及个人存档的精简安装包，不再自动制作全量包。

@@ -1,0 +1,10 @@
+import Foundation
+precondition(ControllerGlyphFamily.nintendo.melodyPreview == ["X","Y","B","A"])
+precondition(ControllerGlyphFamily.xbox.melodyPreview == ["Y","X","A","B"])
+precondition(ControllerGlyphFamily.playStation.melodyPreview == ["△","□","×","○"])
+precondition(ControllerGlyphFamily.identify(category:"MFi",vendor:"Xbox shaped generic",xboxProfile:false,psProfile:false) == .nintendo)
+precondition(ControllerGlyphFamily.identify(category:"HID",vendor:nil,xboxProfile:true,psProfile:false) == .xbox)
+precondition(ControllerGlyphFamily.identify(category:"HID",vendor:nil,xboxProfile:false,psProfile:true) == .playStation)
+precondition(ControllerGlyphFamily.identify(category:"HID",vendor:"Nintendo Switch Pro Controller",xboxProfile:false,psProfile:false) == .nintendo)
+precondition(PadButtons.a.rawValue == 1 && PadButtons.b.rawValue == 2 && PadButtons.x.rawValue == 4 && PadButtons.y.rawValue == 8)
+print("PASS: physical glyph order, controller classification, unchanged guest face-button masks")

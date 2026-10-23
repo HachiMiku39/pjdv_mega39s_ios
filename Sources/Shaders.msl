@@ -1,0 +1,13 @@
+#include <metal_stdlib>
+using namespace metal;
+struct VertexOut { float4 position [[position]]; float3 color; };
+vertex VertexOut lab_vertex(uint id [[vertex_id]], constant float2 &uniforms [[buffer(0)]]) {
+    const float2 points[3] = {float2(0, 0.55), float2(-0.48, -0.3), float2(0.48, -0.3)};
+    const float3 colors[3] = {float3(0.1, 0.9, 0.75), float3(0.2, 0.4, 1), float3(1, 0.4, 0.2)};
+    float a = uniforms.x * 0.3;
+    float2 p = points[id];
+    p = float2(p.x * cos(a) - p.y * sin(a), p.x * sin(a) + p.y * cos(a));
+    p.x /= max(uniforms.y, 0.01f);
+    return {float4(p, 0, 1), colors[id]};
+}
+fragment float4 lab_fragment(VertexOut in [[stage_in]]) { return float4(in.color, 1); }
