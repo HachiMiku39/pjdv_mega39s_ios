@@ -2,21 +2,23 @@
 
 [简体中文](README.md) | **English**
 
-**Build 16 preview, October 24, 2026:** retains build 15's native Touch Play fixes for rapid repeated touches and out-of-order snapshots, plus layout editing for all 18 virtual controls. Adds an M4 device research path for ProMotion 60→120: the source game remains at 60 FPS, real and generated frames are counted separately, and actual drawable presentations are measured. Normal launches still default to native 60 FPS. Stage screens, hair outlines and rhythm-game timing under interpolation have not passed acceptance testing. Research mode no longer hides advanced resolutions or forces ordinary 1080p scaling; both real and generated frames can use MetalFX Spatial. **1440p and screen-matched output require an M3 or newer Mac/iPad with Apple GPU family 9+. iPhone and family 7/8 devices remain capped at 1080p in build 16.** The reported 40–50 FPS in “39みゅーじっく！” on M1 still needs testing on that device. Reduced power consumption through interpolation is not established.
+**Build 17 preview, October 24, 2026:** AutoPlay workload testing, hardware diagnostics and hot-switch recovery; see the final build17 section for measured scope. retains build 15's native Touch Play fixes for rapid repeated touches and out-of-order snapshots, plus layout editing for all 18 virtual controls. Adds an M4 device research path for ProMotion 60→120: the source game remains at 60 FPS, real and generated frames are counted separately, and actual drawable presentations are measured. Normal launches still default to native 60 FPS. Stage screens, hair outlines and rhythm-game timing under interpolation have not passed acceptance testing. Research mode no longer hides advanced resolutions or forces ordinary 1080p scaling; both real and generated frames can use MetalFX Spatial. **1440p and screen-matched output require an M3 or newer Mac/iPad with Apple GPU family 9+. iPhone and family 7/8 devices remain capped at 1080p in build 17.** The reported 40–50 FPS in “39みゅーじっく！” on M1 still needs testing on that device. Reduced power consumption through interpolation is not established.
 
 An Apple Silicon compatibility-port research project for the **Japanese Switch v1.0.9** release of *Hatsune Miku: Project DIVA MEGA39’s*. The original ARM64 program runs through a Horizon service compatibility layer, with **NVN → Metal** graphics output.
 
-**0.1.5, build 16 · validation preview · October 24, 2026.** Releases contain lightweight installers only, without game assets, keys or personal saves. Full packages are no longer produced automatically.
+**0.1.5, build 17 · validation preview · October 24, 2026.** Releases contain lightweight installers only, without game assets, keys or personal saves. Full packages are no longer produced automatically.
 
 **Build 10 import changes, October 22:** the importer recognizes content belonging to MEGA39’s Title ID `0100F3100DA46000`. It no longer requires fixed NCA filenames, v1.0.9 resource fingerprints or exactly 27 DLC entries. CNMT metadata determines the update, the actual DLC set and complete language resources. Existing difficulties and costumes included in the imported content are unlocked. Unsupported language choices fall back to Japanese.
 
 The runtime still uses the adapted JP v1.0.9 program; it does not execute arbitrary NSOs from a newly imported XCI. Removing import version restrictions does **not** establish runtime compatibility with every resource version or other regional executables. The launcher flags unknown resource versions as unverified. New imports record their contents in `game-content.json`; existing v1.0.9 folders remain supported. Separate ticket/TitleKey encryption needs further work. Missing required keys, conflicting updates and incomplete packages stop the import without modifying the source XCI.
 
-[Latest build 16 preview](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b16) · [Build 14](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b14) · [Build 10](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b10) · [Original build 7](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5) · [Installation guide](#choosing-an-installer)
+[Latest build 17 preview](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b17) · [Build 14](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b14) · [Build 10](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b10) · [Original build 7](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5) · [Installation guide](#choosing-an-installer)
 
 [Demo video on bilibili](https://www.bilibili.com/video/BV1KGni6YEZd/)
 
 **Known compatibility gaps:** base v1.0.0 resources can be imported and reach rhythm gameplay, but their 3D PVs remain black and some help images are missing. JP v1.0.9 is the recommended resource baseline. macOS 11 is a deployment target, not a completed Big Sur/M1 hardware qualification. Presentation-rate accounting on the classic drawable fallback still needs verification.
+
+**build17 source distribution:** the complete audited host/runtime/tools snapshot is [PJDVM39-0.1.5b17-source.zip](PJDVM39-0.1.5b17-source.zip), also attached to the release. Extract it before following BUILDING.md. The flat web source directories currently retain build16 and cannot build17; the pending build17 Git commit is preserved locally. The archive excludes original game binary inputs and assets.
 
 ## 0.1.5 changes and validation scope
 
@@ -44,11 +46,11 @@ The runtime still uses the adapted JP v1.0.9 program; it does not execute arbitr
 | --- | --- |
 | OS | iOS/iPadOS 17+; build 10 targets M1/macOS Big Sur 11+ through Mac Catalyst 14. Actual iOS 17/Big Sur startup still needs corresponding hardware testing. |
 | GPU | Apple GPU family 7+ (A14/M1 generation). Families 7/8 use the lower tier; actual performance is unqualified. |
-| iPhone | Experimental; build 16 maximum 1080p/60 FPS. A complete physical-phone regression is pending. |
+| iPhone | Experimental; maximum1080p, default native60. build17 allows60→120 research on family9+ devices with an actual120Hz display; phone rhythm regression is pending. |
 | iPad/Mac | Lower tier: up to 1080p. M3 or newer Mac/iPad with family 9+: 1440p or screen-matched output. The game retains a 16:9 aspect ratio. |
 | MetalFX Spatial | Integrated into game output scaling, including its UI. This is neither native high-resolution 3D rendering nor temporal reconstruction. |
 | Game HDR mapping | Disabled on the lower tier. Experimental and off by default on family 9+. Expands highlights from the original floating-point scene while retaining the SDR tonal baseline; assets are not native HDR. Independent EDR output and a character-scene sample passed on M4 in 0.1.4. The revised iOS Metal 3 path, UI protection and more songs still need device/frame comparisons. |
-| 30→60 / 60→120 | Real-game research uses an image optical-flow algorithm, **not MetalFX frame interpolation**, and is disabled in normal launches. M4 ProMotion has shown source60 + generated60 and about 120 actual presentations/s. Visual quality and rhythm timing remain unqualified. Standalone MetalFX frame interpolation requires iOS/Mac Catalyst 26. Build 16 offers no 120 FPS on the lower tier or iPhone. |
+| 30→60 / 60→120 | Real-game research uses an image optical-flow algorithm, **not MetalFX frame interpolation**, and defaults to off, with explicit menu opt-in. M4 ProMotion has shown source60 + generated60 and about 120 actual presentations/s. Visual quality and rhythm timing remain unqualified. Standalone MetalFX frame interpolation requires iOS/Mac Catalyst 26. The lower tier has no120FPS; build17 permits60→120 on eligible120Hz family9+ iPhones. |
 | Ray tracing | Disabled on the lower tier. Experimental single-light, opaque-stage shadows require family 9+ and the actual ray-tracing APIs. Off by default; this is not global illumination or full character ray tracing. |
 | Audio | AudioRenderer → CoreAudio, 48 kHz stereo. Introduction, menu and song audio have been tested. |
 | Input | Switch-layout virtual controller, keyboard, DualSense and Xbox. Connecting a physical controller automatically hides the virtual pad; it can also be toggled manually. |
@@ -312,9 +314,9 @@ The published build **does not yet import MOD packages or run MikuMikuSwitchPlug
 - Switch `subsdk9` and PC DLL plugins cannot be loaded as drop-in iOS/Mac plugins. Their ABI, injection framework and program offsets differ. This project requires independently adapted, fingerprinted, offline-rewritten and signed code.
 - The upstream [LICENSE](https://github.com/lsmsmx/MikuMikuSwitchPlugin/blob/b8025c7a540e60cd85659103983c92ba2795bc1f/LICENSE) contains GPLv2 text. Specific files/dependencies and redistribution requirements must be checked before implementation reuse. This round researched source; it did not merge upstream plugin code.
 
-## Local build17 candidate: AutoPlay, diagnostics and hot switching, October 24
+## build17: AutoPlay, diagnostics and hot switching, October 24
 
-These results describe an **unreleased local build17 candidate**. GitHub lightweight installers and the public source snapshot remain build16; candidate checks are not released features.
+The following describes the build17 lightweight preview and its actual validation scope. Interpolated image quality, rhythm timing and lower-end performance remain unqualified.
 
 - AutoPlay is enabled on the launcher only and defaults to off. A visible test/no-records indicator stays in game. Every session uses a fresh disposable save copy and never merges automatic scores into the normal profile. The optional hook requires the verified Japanese 1.0.9 executable fingerprint; offsets are not applied to arbitrary imported versions.
 - Real-Mac tests completed Ai Kotoba EXTREME with402 COOL and Ghost Rule EXTREME with715 COOL, all other judgments0. Normal save SHA-256 hashes were unchanged after complete runs. AutoPlay verifies workload behavior; it does not qualify manual input, audio synchronization or judgment timing.

@@ -1,8 +1,14 @@
 # 源码与构建（2026-10-24）
 
-本仓库包含 Swift/UIKit 宿主、Mac AppKit 辅助组件、NVN → Metal／Horizon 兼容层、逆向处理工具和测试。公开源码快照与已发布精简包为 **0.1.5 build16**。build17 的 AutoPlay、调试信息及热切换改动仍为本地候选，验证记录见中英文 README；本次文档更新不代表 build17 已发布。仅制作不含游戏资源的精简包。
+本仓库包含 Swift/UIKit 宿主、Mac AppKit 辅助组件、NVN → Metal／Horizon 兼容层、逆向工具和测试。公开源码与精简预览包为 **0.1.5 build17**。AutoPlay、调试信息和热切换的实际验证范围及限制见中英文 README。游戏资源、密钥、存档和本机签名数据不发布。
 
-The published source snapshot and lightweight installers are **0.1.5 build16**. Build17 AutoPlay, diagnostics and hot-switch changes are local candidates; see both READMEs for measured results and outstanding checks. Updating documentation does not publish candidate code or binaries. Game payloads, keys, saves and local signing data are excluded.
+The public source and lightweight preview installers are **0.1.5 build17**. Both READMEs describe measured AutoPlay, diagnostics and hot-switch checks and outstanding limitations. Game payloads, keys, saves and local signing data are excluded.
+
+## 本版源码位置 / Source location
+
+网页平铺目录当前仍为 build16。build17 的完整源码以同目录 `PJDVM39-0.1.5b17-source.zip` 提供，也可从 Release 下载；先解压到新的外置 SSD 目录，再使用归档内的构建说明和 Xcode 工程。归档内 `SOURCE_MANIFEST.json` 对应 build17；网页根目录清单保留原快照身份。Git 推送认证暂不可用，本机待同步提交为 `00b1ba4`，没有把源码上传失败写成推送成功。
+
+The flat web directories remain build16. For build17, extract `PJDVM39-0.1.5b17-source.zip` to a fresh external-SSD folder and use its build instructions/project. Its SOURCE_MANIFEST describes build17; the web root manifest belongs to the earlier flat snapshot. Git push authentication was unavailable, so the pending local commit00b1ba4 is not claimed as pushed.
 
 ## 源码目录
 

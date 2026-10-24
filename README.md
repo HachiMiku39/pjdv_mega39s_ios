@@ -2,22 +2,24 @@
 
 **简体中文** | [English](README.en.md)
 
-**build16 验证预览（2026-10-24）：** 保留 build15 的原生 Touch Play 快速重按／乱序快照修复与全部 18 个控件布局编辑。加入 M4 真机 ProMotion 60→120 研究显示链：源游戏保持 60 FPS，真实帧与生成帧分别计数，并统计实际 drawable 呈现率。普通启动仍默认原生 60 FPS；图像插帧的舞台大屏、头发轮廓及打歌时序尚未验收。修复研究模式隐藏高级分辨率、强制普通 1080p 放大的问题，真实帧和生成帧都可使用 MetalFX Spatial。**1440p／匹配屏幕仅 M3 及更新 Mac／iPad（family 9+）开放，iPhone、family 7／8 最高 1080p。** M1《39みゅーじっく！》40–50 FPS 的反馈仍待该设备回测，不承诺插帧降低功耗。
+**build17 验证预览（2026-10-24）：** AutoPlay 压力测试、硬件诊断与游戏内热切换改进，具体结果见文末。 保留 build15 的原生 Touch Play 快速重按／乱序快照修复与全部 18 个控件布局编辑。加入 M4 真机 ProMotion 60→120 研究显示链：源游戏保持 60 FPS，真实帧与生成帧分别计数，并统计实际 drawable 呈现率。普通启动仍默认原生 60 FPS；图像插帧的舞台大屏、头发轮廓及打歌时序尚未验收。修复研究模式隐藏高级分辨率、强制普通 1080p 放大的问题，真实帧和生成帧都可使用 MetalFX Spatial。**1440p／匹配屏幕仅 M3 及更新 Mac／iPad（family 9+）开放，iPhone、family 7／8 最高 1080p。** M1《39みゅーじっく！》40–50 FPS 的反馈仍待该设备回测，不承诺插帧降低功耗。
 
 《初音未来 Project DIVA MEGA39’s》Switch JP v1.0.9 的 Apple Silicon 兼容移植研究。原游戏 ARM64 程序经 Horizon 服务兼容层运行，图形通过 **NVN → Metal** 输出。
 
-**0.1.5（build 16）验证预览｜2026-10-24。** 只发布不含游戏资源、密钥及个人存档的精简安装包，不再自动制作全量包。
+**0.1.5（build 17）验证预览｜2026-10-24。** 只发布不含游戏资源、密钥及个人存档的精简安装包，不再自动制作全量包。
 
 **build10 更新（2026-10-22）**：导入端改为识别同一 MEGA39’s Title ID（0100F3100DA46000）的包内内容，不再要求固定 NCA 文件名、v1.0.9 资源指纹或恰好 27 DLC。按 CNMT 选择更新、实际 DLC 数量和完整语言资源；包内已有内容默认开放现存难度与服装。不支持的语言回落日语。
 
 运行端仍使用已适配的 JP v1.0.9 程序，不执行新 XCI 中的任意 NSO；因此解除导入版本限制不等于所有资源版本、其他地区代码均已兼容。未知资源版本在启动页明确提示待验证。新导入记录写入 `game-content.json`，已有 v1.0.9 文件夹继续兼容。独立票据／TitleKey 加密仍需后续支持；缺少所需密钥、冲突更新和不完整包会停止导入，不修改原 XCI。
 
 
-[最新 build16 预览版](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b16) · [build14](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b14) · [build10](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b10) · [原 build7](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5) · [安装与测试指南](#安装包怎么选)
+[最新 build17 预览版](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b17) · [build14](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b14) · [build10](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b10) · [原 build7](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5) · [安装与测试指南](#安装包怎么选)
 
 [演示视频（bilibili）](https://www.bilibili.com/video/BV1KGni6YEZd/)
 
 **已知兼容缺口：** v1.0.0 基础资源可以导入、进入打歌，但三维 PV 仍黑屏，部分帮助图片缺失。建议使用 JP v1.0.9 资源基线；macOS 11 是最低构建目标，尚未在 Big Sur／M1 实机验收。经典 drawable 回退路径的 FPS 呈现统计仍待核验。
+
+**build17 源码分发说明：** 本版完整、经过排除检查的宿主／运行层／工具源码提供为仓库内的 [PJDVM39-0.1.5b17-source.zip](PJDVM39-0.1.5b17-source.zip)，Release 也提供同名文件。请先解压该归档再按 BUILDING.md 构建。网页平铺源码目录暂保留 build16 快照，不能据此构建 build17；本机已保存待同步的 build17 提交。归档不含原游戏二进制输入或资源。
 
 ## 0.1.5 更新与验证范围
 
@@ -49,7 +51,7 @@
 | iPad / Mac | 低配档最高 1080p；M3 及更新 Mac／iPad（family 9+）可选 1440p／屏幕匹配；16:9 等比例显示 |
 | MetalFX Spatial | 已用于游戏超分输出，包含 UI；不等同于原生高分辨率 3D，也不是 Temporal 重建 |
 | 游戏 HDR 映射 | 低配档禁用；family 9+ 实验性、默认关闭；扩展原始浮点场景的高光，保留原版 SDR 色调基线。不是原生 HDR 素材；0.1.4 的 M4 iPad 独立 EDR 输出和角色场景采样通过，本版 iOS Metal 3 路径仍待真机回归，UI 保护与更多歌曲仍需逐帧对照 |
-| 30→60 / 60→120 | 真实游戏采用图像光流研究算法（不是 MetalFX 插帧），普通启动禁用；M4 ProMotion 已观察到源60＋生成60／呈现约120，画质与打歌时序待验收。MetalFX 独立场景仍要求 iOS／Mac Catalyst 26。低配档及所有 iPhone 不提供120 FPS |
+| 30→60 / 60→120 | 真实游戏采用图像光流研究算法（不是 MetalFX 插帧），默认关闭、可从菜单选择；M4 ProMotion 已观察到源60＋生成60／呈现约120，画质与打歌时序待验收。MetalFX 独立场景仍要求 iOS／Mac Catalyst 26。低配档不提供120 FPS；build17 起 family 9+ 的 120Hz iPhone 可选择60→120实验 |
 | 光线追踪 | 低配档禁用；支持的 family 9+ 与实际光追 API 能力为单灯、不透明舞台阴影实验，默认关闭；不是全局光照或完整角色光追 |
 | 音频 | AudioRenderer → CoreAudio，48 kHz 立体声；片头、菜单及歌曲已实测输出 |
 | 输入 | Switch 虚拟手柄、键盘、DualSense / Xbox；实体手柄接入自动隐藏虚拟手柄，可手动开关 |
@@ -319,9 +321,9 @@ v1.0.0 已能进入打歌与结算，但《愛言葉》三维 PV 仍黑屏，部
 - Switch 的 `subsdk9` 插件与 PC 的 DLL 不能直接当作 iOS／Mac 插件加载；它们依赖各自 ABI、注入框架和程序偏移。本项目使用离线重写与签名代码，需要独立适配和版本指纹校验。
 - 上游 [LICENSE](https://github.com/lsmsmx/MikuMikuSwitchPlugin/blob/b8025c7a540e60cd85659103983c92ba2795bc1f/LICENSE) 为 GPL v2 文本；复用具体实现前需核对相应文件及依赖的许可和发布要求。本轮只做源码研究，没有把上游插件代码合入。
 
-## build17 本地候选：AutoPlay、信息显示与热切换（2026-10-24）
+## build17：AutoPlay、信息显示与热切换（2026-10-24）
 
-以下记录属于**未发布的本地 build17 候选**；GitHub 的精简安装包和公开源码仍为 build16，不能把候选验证结果当成已发布功能。
+以下为 build17 精简预览版的实际验证范围。插帧画质、判定时序及低配设备性能仍未完成验收。
 
 - AutoPlay 只在启动首页开启，默认关闭；游戏中保留“测试、不记录成绩”标识。每次会话使用新的临时存档副本，结束后不合入正常档。补丁仅对通过指纹校验的日版 1.0.9 程序开放，其他导入版本不自动套用偏移。
 - Mac 真机完成《愛言葉》EXTREME（402 COOL）和《ゴーストルール》EXTREME（715 COOL）；其余判定均为 0。完整测试后的正常存档 SHA-256 未变化。自动演奏用于负载测试，不代表手动输入、音频同步和判定窗口已完成回归。
