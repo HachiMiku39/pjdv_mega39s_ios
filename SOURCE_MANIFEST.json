@@ -99,9 +99,9 @@
     },
     {
       "path": "BUILDING.md",
-      "bytes": 13364,
-      "sha256": "5e043eee13b4b0acedc6226430505dfde9b82724a76e78732049d552a6cc0faa",
-      "git_blob_sha": "018fd076ae067df1f51a50718046a2e0b1126e9d",
+      "bytes": 13783,
+      "sha256": "adbc46495938e8e19fd75cdcdc0b537b13b8f4ab11ffc5b2b3671c4daa3885bc",
+      "git_blob_sha": "2b3a84e8c24a43393c29a58f28962a8daede09da",
       "mode": "100644"
     },
     {
@@ -112,10 +112,17 @@
       "mode": "100644"
     },
     {
+      "path": "README.en.md",
+      "bytes": 45784,
+      "sha256": "1bea55370ad4eab5b19e16c1d518e63480a0aa4f8ad4bb9f4f39a7de21067769",
+      "git_blob_sha": "fb7091401a001d3f2d2edea95aa9d51d1f22b7c7",
+      "mode": "100644"
+    },
+    {
       "path": "README.md",
-      "bytes": 34778,
-      "sha256": "0ad06e1946b60ac55ef5433ede07eddd863e2128c5184c1809261b042601af2e",
-      "git_blob_sha": "13cb04070259d1e712d96fc938afc11e479e2d57",
+      "bytes": 39552,
+      "sha256": "90a5c565cc4b77d39d154ba38400729ad1f79cccd39fdea9284fd55b95760fa1",
+      "git_blob_sha": "baca74a7199a1973a5e529c2b053766cf61463fd",
       "mode": "100644"
     },
     {
@@ -5158,5 +5165,6 @@
       "git_blob_sha": "807ee614ede30e65695e361790472a410abdd11e",
       "mode": "100644"
     }
-  ]
+  ],
+  "documentation": "Full Chinese/English README; unreleased build17 results are explicitly separated from published build16 code."
 }

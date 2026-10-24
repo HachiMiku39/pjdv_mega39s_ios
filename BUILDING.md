@@ -1,6 +1,8 @@
 # 源码与构建（2026-10-24）
 
-本仓库现在包含实际使用的 Swift/UIKit 宿主、Mac AppKit 辅助组件、NVN → Metal／Horizon 兼容层、逆向处理工具和测试。当前源码版本为 **0.1.5 build15 输入修复本地候选**；本轮只生成精简 IPA／DMG，真机回归待解锁，尚未发布 GitHub，不覆盖历史附件。
+本仓库包含 Swift/UIKit 宿主、Mac AppKit 辅助组件、NVN → Metal／Horizon 兼容层、逆向处理工具和测试。公开源码快照与已发布精简包为 **0.1.5 build16**。build17 的 AutoPlay、调试信息及热切换改动仍为本地候选，验证记录见中英文 README；本次文档更新不代表 build17 已发布。仅制作不含游戏资源的精简包。
+
+The published source snapshot and lightweight installers are **0.1.5 build16**. Build17 AutoPlay, diagnostics and hot-switch changes are local candidates; see both READMEs for measured results and outstanding checks. Updating documentation does not publish candidate code or binaries. Game payloads, keys, saves and local signing data are excluded.
 
 ## 源码目录
 
