@@ -156,3 +156,19 @@
 "内存" = "Memory";
 
 "峰值" = "Peak";
+
+"虚拟手柄布局" = "Virtual controller layout";
+
+"虚拟按键大小与位置" = "Control size and position";
+
+"点选或拖动任意摇杆／按键，使用滑块调整大小。" = "Select a control, then drag or tap an empty area to move it. Use the slider to resize.";
+
+"控件：" = "Control: ";
+
+"缩小所选按键" = "Shrink selected control";
+
+"放大所选按键" = "Enlarge selected control";
+
+"60→120（ProMotion 图像插帧实验）" = "60→120 (ProMotion image interpolation experiment)";
+
+" · 60→120 ProMotion（实验）" = " · 60→120 ProMotion (experimental)";

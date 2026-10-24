@@ -25,18 +25,23 @@ struct TouchContact {
 }
 
 struct InputFrame {
+    let revision: UInt64
+    let touchResetGeneration: UInt64
     let timestampNanoseconds: UInt64
     let pad: PadState
     let touches: [TouchContact]
 }
 
 /// Sources merge independently, so releasing a virtual button never releases
-/// the same button still held on a physical controller. Sample once per frame.
+/// the same button still held on a physical controller. Changes publish
+/// immediately so a short touch need not span a host display frame.
 final class InputStore {
     var onChange: (() -> Void)?
     private let lock = NSLock()
     private var sources: [String: PadState] = [:]
     private var contacts: [Int: TouchContact] = [:]
+    private var revision: UInt64 = 0
+    private var touchResetGeneration: UInt64 = 0
 
     func update(source: String, state: PadState) {
         lock.lock(); defer { lock.unlock(); onChange?() }
@@ -47,28 +52,28 @@ final class InputStore {
         }
         value.leftStick = bounded(value.leftStick)
         value.rightStick = bounded(value.rightStick)
-        sources[source] = value
+        sources[source] = value; revision &+= 1
     }
 
     func remove(source: String) {
         lock.lock(); defer { lock.unlock(); onChange?() }
-        sources.removeValue(forKey: source)
+        sources.removeValue(forKey: source); revision &+= 1
     }
 
     func touch(id: Int, x: Float, y: Float) {
         lock.lock(); defer { lock.unlock(); onChange?() }
         guard x.isFinite, y.isFinite, contacts[id] != nil || contacts.count < 10 else { return }
-        contacts[id] = TouchContact(id: id, x: min(1, max(0, x)), y: min(1, max(0, y)))
+        contacts[id] = TouchContact(id: id, x: min(1, max(0, x)), y: min(1, max(0, y))); revision &+= 1
     }
 
     func endTouch(id: Int) {
         lock.lock(); defer { lock.unlock(); onChange?() }
-        contacts.removeValue(forKey: id)
+        contacts.removeValue(forKey: id); revision &+= 1
     }
 
     func clear() {
         lock.lock(); defer { lock.unlock(); onChange?() }
-        sources.removeAll(); contacts.removeAll()
+        sources.removeAll(); contacts.removeAll(); revision &+= 1; touchResetGeneration &+= 1
     }
 
     func snapshot() -> InputFrame {
@@ -81,8 +86,26 @@ final class InputStore {
             if magnitude(value.leftStick) > magnitude(pad.leftStick) { pad.leftStick = value.leftStick }
             if magnitude(value.rightStick) > magnitude(pad.rightStick) { pad.rightStick = value.rightStick }
         }
-        return InputFrame(timestampNanoseconds: DispatchTime.now().uptimeNanoseconds,
+        return InputFrame(revision: revision, touchResetGeneration: touchResetGeneration, timestampNanoseconds: DispatchTime.now().uptimeNanoseconds,
                           pad: pad, touches: contacts.values.sorted { $0.id < $1.id })
+    }
+}
+
+/// UIKit touches and controller callbacks can publish from different threads.
+/// Reject an older snapshot arriving after a release; serialize pad + touch
+/// publication so a controller callback cannot resurrect a lifted finger.
+final class OrderedInputSink {
+    private let lock = NSLock()
+    private var revision: UInt64?
+    private var resetGeneration: UInt64?
+    private let write: (InputFrame, Bool) -> Void
+    init(write: @escaping (InputFrame, Bool) -> Void) { self.write = write }
+    func publish(_ frame: InputFrame) {
+        lock.lock(); defer { lock.unlock() }
+        if let revision, frame.revision <= revision { return }
+        let reset = resetGeneration != frame.touchResetGeneration
+        revision = frame.revision; resetGeneration = frame.touchResetGeneration
+        write(frame, reset)
     }
 }
 

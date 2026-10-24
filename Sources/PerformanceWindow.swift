@@ -70,12 +70,12 @@ final class PerformanceWindow: UIView {
         #else
         let fpsLabel = "FPS"
         #endif
-        let fpsLine = performanceGameFGMode() == 1
+        let fpsLine = performanceGameFGMode() != 0
             ? String(format: "%@ %.0f (%.0f+%.0f)", fpsLabel, sample.fps, gameFGSourceFPS(), gameFGGeneratedFPS())
             : String(format: "%@ %.1f", fpsLabel, sample.fps)
         label.text = String(format: "%@\nCPU    %@\nRAM    %@", fpsLine, cpu, ram)
         accessibilityLabel = label.text
-        accessibilityValue = L("CPU 单核满载为 100%，RAM 为 App 内存占用") + (performanceGameFGMode() == 1 ? L("；括号为真实源帧率＋生成帧率") : "")
+        accessibilityValue = L("CPU 单核满载为 100%，RAM 为 App 内存占用") + (performanceGameFGMode() != 0 ? L("；括号为真实源帧率＋生成帧率") : "")
     }
     @objc private func drag(_ gesture: UIPanGestureRecognizer) {
         guard let parent = superview else { return }

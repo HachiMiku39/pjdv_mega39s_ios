@@ -3,11 +3,17 @@
 // vectors/depth/UI layer in this compatibility layer yet. All UI is in color.
 #import <simd/simd.h>
 #include "pjdv_game_fg_shader.inc"
+#include "pjdv_fg_policy.h"
+#include "pjdv_fg_spatial.inc"
+#ifdef PJDV_FG_ALGORITHM_TEST
+static int pjdv_game_frame_generation_mode(void) { return 2; }
+#endif
 @interface PJDVGameFG : NSObject
 @property(nonatomic,strong) id<MTLDevice> device;
 @property(nonatomic,strong) id<MTLRenderPipelineState> capturePSO, displayPSO;
 @property(nonatomic,strong) id<MTLComputePipelineState> flowPSO, midpointPSO;
 @property(nonatomic,strong) id<MTLTexture> previous, current, midpoint, forward, backward;
+@property(nonatomic,strong) NSObject *spatial;
 @property(nonatomic) BOOL history, pendingReal;
 @property(nonatomic) NSUInteger width,height;
 @property(nonatomic) MTLPixelFormat displayFormat;
@@ -46,10 +52,25 @@
     return YES;
 }
 - (void)copy:(id<MTLCommandBuffer>)cb source:(id<MTLTexture>)source destination:(id<MTLTexture>)destination rect:(vector_float4)rect {
+#if PJDV_HAS_METALFX
+    if(destination!=self.current && destination!=self.previous){
+        if(@available(macOS 13.0, macCatalyst 16.0, iOS 16.0, *)){
+            if(!self.spatial)self.spatial=[PJDVFGSpatial new];
+            id<MTLTexture> scaled=[(PJDVFGSpatial *)self.spatial encode:cb source:source destination:destination device:self.device];
+            if(scaled)source=scaled;
+        }
+    }
+#endif
     MTLRenderPassDescriptor *rp=[MTLRenderPassDescriptor renderPassDescriptor];
     rp.colorAttachments[0].texture=destination;rp.colorAttachments[0].loadAction=MTLLoadActionClear;
     rp.colorAttachments[0].clearColor=MTLClearColorMake(0,0,0,1);rp.colorAttachments[0].storeAction=MTLStoreActionStore;
     id<MTLRenderCommandEncoder> en=[cb renderCommandEncoderWithDescriptor:rp];
+#if PJDV_HAS_METALFX
+    if(@available(macOS 13.0, macCatalyst 16.0, iOS 16.0, *)){
+        PJDVFGSpatial *fx=(PJDVFGSpatial *)self.spatial;
+        if(fx && source==fx.output)[en waitForFence:fx.scaler.fence beforeStages:MTLRenderStageFragment];
+    }
+#endif
     // Exact-size snapshots fill the texture; display preserves the game aspect.
     double w=destination.width,h=destination.height,aspect=self.width/(double)self.height;
     if(destination==self.current || destination==self.previous)aspect=w/h;
@@ -61,7 +82,7 @@
 }
 - (BOOL)source:(id<MTLTexture>)source crop:(const int *)crop command:(id<MTLCommandBuffer>)cb destination:(id<MTLTexture>)destination stats:(id<MTLBuffer>)stats {
     double now=CACurrentMediaTime();
-    if(self.lastSourceTime && now-self.lastSourceTime>0.16)self.history=NO;
+    if(self.lastSourceTime && now-self.lastSourceTime>5.0/pjdv_fg_source_hz(pjdv_game_frame_generation_mode()))self.history=NO;
     self.lastSourceTime=now;
     id<MTLTexture> old=self.previous;self.previous=self.current;self.current=old;
     vector_float4 rect={0,0,1,1};
@@ -86,6 +107,7 @@
 @end
 
 #ifndef PJDV_FG_ALGORITHM_TEST
+extern double pjdv_presented_fps(void) __attribute__((weak_import));
 static PJDVGameFG *g_game_fg;
 #if !DM_NVN_M3
 static id<MTLSharedEvent> g_fg_return_event;
@@ -95,7 +117,9 @@ static _Atomic int g_fg_capture;
 static void pjdv_fg_capture_complete(NSArray *items,NSUInteger w,NSUInteger h){
     const char *root=getenv("DM_TEMP");if(!root)return;
     for(NSArray *item in items){id<MTLBuffer> buffer=item[1];NSString *name=item[0];
-        CGColorSpaceRef cs=CGColorSpaceCreateDeviceRGB();CGContextRef cx=CGBitmapContextCreate(buffer.contents,w,h,8,w*4,cs,kCGImageAlphaPremultipliedLast|kCGBitmapByteOrder32Big);
+        NSUInteger iw=item.count>2?[item[2] unsignedIntegerValue]:w,ih=item.count>3?[item[3] unsignedIntegerValue]:h;
+        BOOL bgra=item.count>4 && [item[4] boolValue];
+        CGColorSpaceRef cs=CGColorSpaceCreateDeviceRGB();CGContextRef cx=CGBitmapContextCreate(buffer.contents,iw,ih,8,iw*4,cs,bgra?(kCGImageAlphaPremultipliedFirst|kCGBitmapByteOrder32Little):(kCGImageAlphaPremultipliedLast|kCGBitmapByteOrder32Big));
         CGImageRef image=cx?CGBitmapContextCreateImage(cx):NULL;
         NSURL *url=[NSURL fileURLWithPath:[@(root) stringByAppendingPathComponent:[name stringByAppendingString:@".png"]]];
         CGImageDestinationRef dst=image?CGImageDestinationCreateWithURL((__bridge CFURLRef)url,CFSTR("public.png"),1,NULL):NULL;
@@ -104,7 +128,7 @@ static void pjdv_fg_capture_complete(NSArray *items,NSUInteger w,NSUInteger h){
 }
 static _Atomic uint64_t g_game_fg_epoch;
 static _Atomic uint64_t g_fg_source_count,g_fg_generated_count,g_fg_real_count,g_fg_cut_count,g_fg_errors,g_fg_bypass_count;
-static _Atomic double g_fg_gpu_ms,g_fg_source_rate,g_fg_generated_rate;
+static _Atomic double g_fg_gpu_ms,g_fg_real_gpu_ms,g_fg_source_rate,g_fg_generated_rate;
 double pjdv_game_fg_source_fps(void){return atomic_load(&g_fg_source_rate);}
 double pjdv_game_fg_generated_fps(void){return atomic_load(&g_fg_generated_rate);}
 static void pjdv_game_fg_reset(void){atomic_fetch_add(&g_game_fg_epoch,1);}
@@ -122,8 +146,9 @@ static void pjdv_game_fg_report(void){
     NSDictionary *data=@{@"mode":@(pjdv_game_frame_generation_mode()),@"backend":@"image-based bidirectional block flow; NOT MetalFX",@"gameAttached":@YES,
         @"sourceFPS":@(atomic_load(&g_fg_source_rate)),@"generatedFPS":@(atomic_load(&g_fg_generated_rate)),@"sourceFrames":@(sc),
         @"generatedPresented":@(gc),@"realPresented":@(atomic_load(&g_fg_real_count)),@"cutBypasses":@(atomic_load(&g_fg_cut_count)),
-        @"errors":@(atomic_load(&g_fg_errors)),@"lastFGGPUms":@(atomic_load(&g_fg_gpu_ms)),@"sourceTarget":@(pjdv_game_frame_generation_mode()?30:60),@"displayTarget":@60,@"bypassPresented":@(atomic_load(&g_fg_bypass_count)),
-        @"scope":@"whole color frame including chart/UI; source pacing changed; rhythm timing not qualified"};
+        @"errors":@(atomic_load(&g_fg_errors)),@"lastFGGPUms":@(atomic_load(&g_fg_gpu_ms)),@"sourceTarget":@(pjdv_fg_source_hz(pjdv_game_frame_generation_mode())),@"displayTarget":@(pjdv_fg_output_hz(pjdv_game_frame_generation_mode())),@"lastRealCopyGPUms":@(atomic_load(&g_fg_real_gpu_ms)),@"bypassPresented":@(atomic_load(&g_fg_bypass_count)),
+        @"presentedFPS":@(pjdv_presented_fps?pjdv_presented_fps():0),@"upscaleStatus":@(pjdv_upscale_status()),
+        @"scope":pjdv_game_frame_generation_mode()==2?@"source60 retained; whole color frame including chart/UI; extra display latency; rhythm timing not qualified":@"whole color frame including chart/UI; source pacing changed; rhythm timing not qualified"};
     NSData *json=[NSJSONSerialization dataWithJSONObject:data options:NSJSONWritingPrettyPrinted error:nil];
     [json writeToFile:[@(root) stringByAppendingPathComponent:@"game-fg.json"] atomically:YES];
 }
@@ -132,7 +157,8 @@ static void pjdv_game_fg_commit(id<MTLCommandBuffer> cb,id<CAMetalDrawable> dr,u
     [cb addCompletedHandler:^(id<MTLCommandBuffer> done){
         if(done.error){atomic_fetch_add(&g_fg_errors,1);pjdv_set_game_frame_generation(0);MLOG("PJDV game FG GPU error, reverting native60: %s",done.error.description.UTF8String);}
         else{
-            atomic_store(&g_fg_gpu_ms,(done.GPUEndTime-done.GPUStartTime)*1000);
+            if(stats)atomic_store(&g_fg_gpu_ms,(done.GPUEndTime-done.GPUStartTime)*1000);
+            else atomic_store(&g_fg_real_gpu_ms,(done.GPUEndTime-done.GPUStartTime)*1000);
             if(stats){const uint32_t *s=stats.contents;if(s[0] && s[1]*2>s[0])atomic_fetch_add(&g_fg_cut_count,1);}
 #if TARGET_OS_SIMULATOR
             extern void pjdv_frame_presented(double);pjdv_frame_presented(done.GPUEndTime);
@@ -187,10 +213,16 @@ static int pjdv_game_fg_present(id<MTLTexture> src,const int crop[4],id<CAMetalD
     BOOL generated=[g_game_fg source:src crop:crop command:cb destination:dr.texture stats:stats];
     if(generated && atomic_exchange(&g_fg_capture,0)){
         NSMutableArray *items=[NSMutableArray array];id<MTLBlitCommandEncoder> en=[cb blitCommandEncoder];
-        NSArray *textures=@[g_game_fg.previous,g_game_fg.current,g_game_fg.midpoint];NSArray *names=@[@"fg-previous",@"fg-current",@"fg-generated"];
-        for(NSUInteger i=0;i<3;i++){id<MTLBuffer> buffer=[g_dev newBufferWithLength:w*h*4 options:MTLResourceStorageModeShared];
-            [en copyFromTexture:textures[i] sourceSlice:0 sourceLevel:0 sourceOrigin:MTLOriginMake(0,0,0) sourceSize:MTLSizeMake(w,h,1)
-                toBuffer:buffer destinationOffset:0 destinationBytesPerRow:w*4 destinationBytesPerImage:w*h*4];[items addObject:@[names[i],buffer]];}
+        NSMutableArray *textures=[@[g_game_fg.previous,g_game_fg.current,g_game_fg.midpoint] mutableCopy];NSMutableArray *names=[@[@"fg-previous",@"fg-current",@"fg-generated"] mutableCopy];
+#if PJDV_HAS_METALFX
+        if(@available(macOS 13.0, macCatalyst 16.0, iOS 16.0, *)){
+            PJDVFGSpatial *fx=(PJDVFGSpatial *)g_game_fg.spatial;
+            if(fx.output){[textures addObject:fx.output];[names addObject:@"fg-spatial-output"];}
+        }
+#endif
+        for(NSUInteger i=0;i<textures.count;i++){id<MTLTexture> texture=textures[i];NSUInteger tw=texture.width,th=texture.height;id<MTLBuffer> buffer=[g_dev newBufferWithLength:tw*th*4 options:MTLResourceStorageModeShared];
+            [en copyFromTexture:textures[i] sourceSlice:0 sourceLevel:0 sourceOrigin:MTLOriginMake(0,0,0) sourceSize:MTLSizeMake(tw,th,1)
+                toBuffer:buffer destinationOffset:0 destinationBytesPerRow:tw*4 destinationBytesPerImage:tw*th*4];[items addObject:@[names[i],buffer,@(tw),@(th),@(texture.pixelFormat==MTLPixelFormatBGRA8Unorm)]];}
         [en endEncoding];NSArray *immutable=[items copy];[cb addCompletedHandler:^(id<MTLCommandBuffer> done){if(!done.error)pjdv_fg_capture_complete(immutable,w,h);}];
     }
     atomic_fetch_add(&g_fg_source_count,1);

@@ -5991,17 +5991,20 @@ static void rt_toggle_poll(void) { static int tg = -1; if (tg < 0) { const char 
 void mtl_rt_force_full(int n) { g_rt.force_full = n; }   // 宿主调：要换 3D 渲染比例等画面整体变化前，之后 n 帧一律全画 | Called by the host: before an overall picture change such as switching the 3D render scale, the following n frames are all fully drawn
 // Game image interpolation is opt-in and defaults to native60. The lower
 // source cadence reduces actual game submissions, not just drawable copies.
+#include "pjdv_fg_policy.h"
 static _Atomic int g_game_fg_mode;
 static int g_game_fg_previous_link;
 static void pjdv_game_fg_reset(void);
 int pjdv_game_frame_generation_mode(void){return atomic_load(&g_game_fg_mode);}
 void pjdv_set_game_frame_generation(int mode){
-    mode=mode==1?1:0;
+    mode=(mode==1 || mode==2)?mode:0;
     if (pjdv_test_macos11_api()) mode=0;
     if (@available(macOS 14.0, macCatalyst 17.0, iOS 17.0, *)) {} else mode=0;
-    if(atomic_exchange(&g_game_fg_mode,mode)!=mode){pjdv_game_fg_reset();
-        if(mode){g_game_fg_previous_link=g_dm_present_link;g_dm_present_link=1;}else g_dm_present_link=g_game_fg_previous_link;
-        MLOG("PJDV real-game image FG %s; source %d, output60; whole frame, NOT MetalFX",mode?"on":"off",mode?30:60);}
+    int previous=atomic_exchange(&g_game_fg_mode,mode);
+    if(previous!=mode){pjdv_game_fg_reset();
+        if(mode){if(!previous)g_game_fg_previous_link=g_dm_present_link;g_dm_present_link=pjdv_fg_link_mode(mode);}
+        else g_dm_present_link=g_game_fg_previous_link;
+        MLOG("PJDV real-game image FG mode%d; source %d, output%d; whole frame, NOT MetalFX",mode,pjdv_fg_source_hz(mode),pjdv_fg_output_hz(mode));}
 }
 // ---------- 省电模式（30 帧）----------
 // 开：显示节拍对象改 30 Hz（帧率范围 30–30，ProMotion 屏跟着降刷新率；front_ios.m 的帧率提示一起降），游戏每拍出一帧；运行时外推关（每帧真画）。
@@ -6013,7 +6016,7 @@ void pjdv_set_game_frame_generation(int mode){
 // The switch is on the 「自定义」(Custom) page (dm_custom.c eco_fps, off by default, takes effect on apply); the test switch DM_FPS=30/60 pins it.
 __attribute__((weak)) int dm_fps_setting(void) { return 60; }   // 宿主 dm_custom.c 提供强定义；图形单测不链宿主时恒 60 | The host's dm_custom.c provides the strong definition; always 60 when graphics unit tests do not link the host
 int mtl_fps_target(void) { static int env = -2; if (env == -2) { const char *e = getenv("DM_FPS"); env = e ? atoi(e) : -1; if (env != 30 && env != 60) env = -1; else MLOG("DM_FPS=%d：帧数由测试开关钉住", env); }
-    return pjdv_game_frame_generation_mode()?30:env > 0 ? env : dm_fps_setting() == 30 ? 30 : 60; }
+    int fg=pjdv_game_frame_generation_mode(); return fg?pjdv_fg_source_hz(fg):env > 0 ? env : dm_fps_setting() == 30 ? 30 : 60; }
 // 外推启用状态一变（省电模式切换、世界冻结接手 / 交回）：先让「跨帧不写回」账本重学（试用期里照常写回），外推晚一帧再真正切换——
 // 保证切换前最后一次提交是全量写回的。不然 30 帧时每帧先清空的附件被学成不写回，切回 60 帧的第一个外推帧读到旧内容、闪一帧（测试版实测，xv 自检报红后才撤销）
 // Whenever the extrapolation enabled state changes (power-saving mode toggled, world freeze takes over / hands back): first let the "no store across frames" ledger relearn (during the trial period it stores as usual), and the extrapolation really switches one frame later --
@@ -7030,7 +7033,7 @@ static void link_sync(void) {
     if (@available(macOS 14.0, macCatalyst 17.0, iOS 17.0, *)) {
     if (pjdv_test_macos11_api()) { g_dm_present_link = 0; return; }
    // 游戏出图线程每帧调：把节拍对象的状态对齐到 g_dm_present_link 与省电模式（运行中可改） | Called every frame by the game's present thread: aligns the display link object's state to g_dm_present_link and the power-saving mode (can change at run time)
-    static int applied; if(pjdv_game_frame_generation_mode())g_dm_present_link=1; int want = g_dm_present_link;
+    static int applied; int fg=pjdv_game_frame_generation_mode(); if(fg)g_dm_present_link=pjdv_fg_link_mode(fg); int want = g_dm_present_link;
     if (want < 0 || want > 2) { g_dm_present_link = applied == 3 ? 1 : applied; return; }
     if (want && mtl_fps_target() == 30 && !pjdv_game_frame_generation_mode()) want = 3;   // 省电模式：显示节拍 30 Hz | Power-saving mode: display link at 30 Hz
     if (want == applied) return;
@@ -7171,6 +7174,10 @@ int mtl_link_active(void) { return link_on(); }
 void mtl_link_pause(int on) { if (@available(macOS 14.0, macCatalyst 17.0, iOS 17.0, *)) { CAMetalDisplayLink *l = g_link; if (l) l.paused = on != 0; } }   // 测试用（DM_TEST_BG）：模仿系统在后台停掉节拍回调 | For testing (DM_TEST_BG): imitates the system stopping the display-link callback in the background
 int mtl_link_wait_tick(uint64_t timeout_ns) {
     if (!mtl_link_active()) return 0;
+    // ProMotion may reduce callbacks below 120Hz. Mode 2 uses the original
+    // 60Hz NVN source pacer, not a fixed two-display-tick wait (which would
+    // accidentally throttle the game to 30Hz when the display delivers 60Hz).
+    if (pjdv_game_frame_generation_mode()==2) return 0;
     // 只在跑得比显示快时才等节拍：上一帧开工之后若已经过了节拍（这一帧已落后），立刻开工，不再白等到下一个节拍——
     // 否则帧时间略大于一个节拍时会「错过节拍 → 再等一整拍」，帧率直接锁到一半（Mac 有窗口负载下实测成串掉帧）
     // Wait for the display link only when running faster than the display: if a display-link tick has already passed since the previous frame started work (this frame is already behind), start immediately instead of waiting in vain for the next display-link tick --

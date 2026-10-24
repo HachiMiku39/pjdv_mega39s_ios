@@ -76,12 +76,13 @@ final class LabController: UIViewController {
 
     private let status = UILabel()
     private let input = InputStore()
+    private let inputSink = OrderedInputSink { frame, reset in publishGuestInput(frame, resetTouches: reset) }
     private var controllers: ControllerBridge?
     private var virtualPad: VirtualPad?
     private var duoPose = GameDisplayPolicy.DuoPose.ordinary
     private var isPhone: Bool { UIDevice.current.userInterfaceIdiom == .phone }
     private var renderer: LabRenderer?
-    private var metalView: MTKView?
+    private var metalView: TouchMetalView?
     private var lastUpdate = 0.0
     private var sessionTimer: Timer?
     private var sessionHasStarted = false
@@ -110,6 +111,15 @@ final class LabController: UIViewController {
             return Float((view.window?.screen ?? UIScreen.main).currentEDRHeadroom)
         }
         return 1
+    }
+    private var supportsGame120: Bool {
+        #if targetEnvironment(simulator)
+        return false
+        #else
+        return GameFrameGenerationPolicy.permits120(hardware: DeviceGraphicsProfile.policy, phone: isPhone,
+            maximumRefresh: (view.window?.screen ?? UIScreen.main).maximumFramesPerSecond,
+            lowPower: ProcessInfo.processInfo.isLowPowerModeEnabled)
+        #endif
     }
     private var supportsMetalFX = false
     private var supportsRTStage = false
@@ -244,6 +254,8 @@ final class LabController: UIViewController {
         view.backgroundColor = .black
         backgroundObserver = NotificationCenter.default.addObserver(forName: UIApplication.willResignActiveNotification, object: nil, queue: .main) { [weak self] _ in
             self?.input.clear()
+            self?.metalView?.resetTouchTracking()
+            self?.virtualPad?.releaseButtons()
             self?.heldKeyboardKeys.removeAll()
         }
         guard let device = MTLCreateSystemDefaultDevice() else {
@@ -258,14 +270,14 @@ final class LabController: UIViewController {
             return
         }
         #endif
-        if ProcessInfo.processInfo.environment["PJDV_GAME_FG"] == "1" {
-            hdrEnabled = false; outputMode = "1080p"; setGameFG(1)
-        } else { setGameFG(0) }
+        setGameFG(0)
         supportsMetalFX = metalFXSupported(Unmanaged.passUnretained(device as AnyObject).toOpaque()) != 0
         if UserDefaults.standard.string(forKey: outputPreferenceKey) == nil {
             outputMode = DeviceGraphicsProfile.policy.defaultOutput(phone: isPhone, metalFX: supportsMetalFX)
         }
         outputMode = GameDisplayPolicy.outputMode(outputMode, phone: isPhone, conservative: DeviceGraphicsProfile.policy.conservative)
+        let launchFG = GameFrameGenerationPolicy.launchMode(ProcessInfo.processInfo.environment["PJDV_GAME_FG"], permits120: supportsGame120)
+        if launchFG != 0 { hdrEnabled = false; setGameFG(launchFG) }
         NSLog("PJDV GPU policy family=%d conservative=%d HDR=%d RT=%d output=%@", DeviceGraphicsProfile.policy.family,
               DeviceGraphicsProfile.policy.conservative ? 1 : 0, DeviceGraphicsProfile.policy.allowsHDR ? 1 : 0,
               DeviceGraphicsProfile.policy.allowsRayTracing ? 1 : 0, outputMode)
@@ -273,7 +285,7 @@ final class LabController: UIViewController {
         supportsRTStage = DeviceGraphicsProfile.policy.allowsRayTracing && rtStageSupported(Unmanaged.passUnretained(device as AnyObject).toOpaque()) != 0
         let rtEnabled = ProcessInfo.processInfo.environment["PJDV_RT_STAGE"] == "1" || UserDefaults.standard.bool(forKey: "rtStageShadowEnabled")
         setRTStageMode(supportsRTStage && rtEnabled ? 1 : 0)
-        input.onChange = { [weak input] in if let input { publishGuestInput(input.snapshot()) } }
+        input.onChange = { [weak input, inputSink] in if let input { inputSink.publish(input.snapshot()) } }
         let canvas = TouchMetalView(device: device, input: input)
         controllers = ControllerBridge(input: input) { [weak self] count in
             self?.connectedControllers = count
@@ -477,7 +489,7 @@ final class LabController: UIViewController {
         outputMode = GameDisplayPolicy.outputMode(outputMode, phone: isPhone, conservative: DeviceGraphicsProfile.policy.conservative)
         let modes = [("720p", "720p"), ("1080p", L("1080p（普通放大）")),
                      ("1080fx", L("1080p（MetalFX 超分）")), ("1440fx", L("1440p（MetalFX 超分）")),
-                     ("screenfx", L("匹配屏幕（MetalFX 超分）")), ("screen", L("匹配屏幕（普通放大）"))].filter { !DeviceGraphicsProfile.policy.cappedTo1080(phone: isPhone) || ["720p", "1080p", "1080fx"].contains($0.0) }.filter { gameFGMode() == 0 || ["720p", "1080p"].contains($0.0) }
+                     ("screenfx", L("匹配屏幕（MetalFX 超分）")), ("screen", L("匹配屏幕（普通放大）"))].filter { !DeviceGraphicsProfile.policy.cappedTo1080(phone: isPhone) || ["720p", "1080p", "1080fx"].contains($0.0) }
         if !modes.contains(where: { $0.0 == outputMode }) { outputMode = "1080p" }
         canvas.drawableSize = GameDisplayPolicy.drawableSize(mode: outputMode, bounds: canvas.bounds, scale: displayScale)
         NSLog("PJDV output mode=%@ bounds=%.1fx%.1f displayScale=%.2f canvasScale=%.2f drawable=%.0fx%.0f", outputMode,
@@ -488,7 +500,7 @@ final class LabController: UIViewController {
         let resolutionActions = modes.map { key, title in
             UIAction(title: L(title), attributes: GameDisplayPolicy.usesMetalFX(mode: key) && !supportsMetalFX ? [.disabled] : [], state: key == outputMode ? .on : .off) { [weak self] _ in
                 self?.outputMode = key
-                if !["720p", "1080p"].contains(key) { setGameFG(0) }
+                // Spatial runs after interpolation on real and generated frames.
                 UserDefaults.standard.set(key, forKey: self?.outputPreferenceKey ?? "outputResolution")
                 self?.applyOutputMode()
             }
@@ -503,19 +515,23 @@ final class LabController: UIViewController {
         // Keep the unqualified algorithm behind an explicit research launch.
         // Real PV captures show hair/outline artifacts; a 60Hz counter alone
         // must not promote this prototype into a usable performance preset.
-        let fgResearch = ProcessInfo.processInfo.environment["PJDV_GAME_FG"] == "1"
-        let fgActions = [(Int32(0), L("原生 60 FPS")), (Int32(1), L(fgResearch ? "省电 30→60（实验，增加显示延迟）" : "省电 30→60（画质验证中）"))].map { mode, title in
-            UIAction(title: title, attributes: mode == 1 && !fgResearch ? [.disabled] : [], state: gameFGMode() == mode ? .on : .off) { [weak self] _ in
-                guard let self else { return }
-                if mode == 1 {
+        let fgResearch = ["1", "2"].contains(ProcessInfo.processInfo.environment["PJDV_GAME_FG"] ?? "")
+        var fgModes: [(Int32, String)] = [(0, L("原生 60 FPS")), (1, L(fgResearch ? "省电 30→60（实验，增加显示延迟）" : "省电 30→60（画质验证中）"))]
+        if DeviceGraphicsProfile.policy.allows120(phone: isPhone) {
+            fgModes.append((2, L("60→120（ProMotion 图像插帧实验）")))
+        }
+        let fgActions = fgModes.map { mode, title in
+            UIAction(title: title, attributes: (mode != 0 && !fgResearch) || (mode == 2 && !supportsGame120) ? [.disabled] : [], state: gameFGMode() == mode ? .on : .off) { [weak self] _ in
+                guard let self, mode != 2 || self.supportsGame120 else { return }
+                if mode != 0 {
                     self.hdrEnabled = false; setHDRMode(0, 1)
-                    self.outputMode = "1080p"
                 }
                 setGameFG(mode); self.applyOutputMode()
             }
         }
         let hdrActions = [(false, L("SDR（原版色调映射）")), (true, L("HDR 高光映射（实验）"))].map { enabled, title in
-            UIAction(title: L(title), attributes: enabled && (!supportsHDR || gameFGMode() == 1) ? [.disabled] : [], state: (hdrEnabled && supportsHDR) == enabled ? .on : .off) { [weak self] _ in
+            UIAction(title: L(title), attributes: enabled && !supportsHDR ? [.disabled] : [], state: (hdrEnabled && supportsHDR) == enabled ? .on : .off) { [weak self] _ in
+                if enabled { setGameFG(0) }
                 self?.hdrEnabled = enabled
                 UserDefaults.standard.set(enabled, forKey: "gameHDREnabled")
                 self?.applyOutputMode()
@@ -525,6 +541,9 @@ final class LabController: UIViewController {
     }
 
     private func updateOutputLabel() {
+        // The OS can cap ProMotion during low power or after a display change.
+        // Return to source60/display60 instead of silently running source30.
+        if gameFGMode() == 2 && !supportsGame120 { setGameFG(0) }
         let label: String
         switch outputMode {
         case "720p": label = "720p"
@@ -550,7 +569,8 @@ final class LabController: UIViewController {
             setHDRMode(1, currentEDRHeadroom)
             shadow += hdrStatus() == 1 ? " · HDR" : hdrStatus() == 4 ? L(" · HDR 错误") : L(" · HDR 待3D")
         }
-        outputToggle.setTitle(L("输出：") + label + shadow + (gameFGMode() == 1 ? L(" · 30→60 图像插帧") : ""), for: .normal)
+        let fgLabel = gameFGMode() == 2 ? L(" · 60→120 ProMotion（实验）") : gameFGMode() == 1 ? L(" · 30→60 图像插帧") : ""
+        outputToggle.setTitle(L("输出：") + label + shadow + fgLabel, for: .normal)
     }
 
     @objc private func toggleFrameRate() {
@@ -690,7 +710,7 @@ final class HostLaunchController: UIViewController {
         })
         language.accessibilityIdentifier = "launcher.language"; language.showsMenuAsPrimaryAction = true
         updateLanguageMenu()
-        let sticks = UIButton(type: .system); sticks.setTitle(L("摇杆布局"), for: .normal); sticks.accessibilityIdentifier = "launcher.stickLayout"
+        let sticks = UIButton(type: .system); sticks.setTitle(L("虚拟手柄布局"), for: .normal); sticks.accessibilityIdentifier = "launcher.stickLayout"
         sticks.addTarget(self, action: #selector(editSticks), for: .touchUpInside)
         let settings = UIStackView(arrangedSubviews: [language, sticks]); settings.spacing = 20
         #if !targetEnvironment(macCatalyst)

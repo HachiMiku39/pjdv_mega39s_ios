@@ -93,3 +93,32 @@ check(GameHardwarePolicy.cappedFamily(detected: 6, requested: 7) == 6, "Diagnost
 check(GameHardwarePolicy.cappedFamily(detected: 9, requested: 7) == 7, "Entry diagnostic cap unavailable")
 check(!GameHardwarePolicy(family: 6).supported, "Below minimum GPU admitted")
 print("Apple7/8 conservative preset, saved resolution, HDR/RT/120 and minimum-GPU regression: PASS")
+
+// Existing two-stick JSON must decode with no button overrides.
+let legacy = Data(#"{"left":{"scale":0.65,"x":0.2,"y":0.7},"right":{"scale":1}}"#.utf8)
+let migrated = try JSONDecoder().decode(StickLayout.self, from: legacy).sanitized
+check(migrated.left.scale == 0.65 && migrated.buttons == nil, "Legacy stick settings lost")
+var allControls = migrated
+for control in PadControl.allCases {
+    allControls.setPlacement(StickPlacement(scale: 0.7, x: 0.95, y: 0.9), for: control)
+}
+let decoded = try JSONDecoder().decode(StickLayout.self, from: JSONEncoder().encode(allControls)).sanitized
+for control in PadControl.allCases {
+    check(decoded.placement(for: control).scale == 0.7 && decoded.placement(for: control).x == 0.95, "Control layout did not round trip")
+    let f = StickLayout.frame(CGRect(x: 0, y: 0, width: 150, height: 80), in: area, placement: decoded.placement(for: control))
+    check(area.contains(f) && abs(f.width / f.height - 150.0 / 80) < 0.001, "Shoulder aspect/bounds changed")
+}
+check(StickLayout.defaults("tablet").placement(for: .a).scale == 1, "Default face key size changed")
+print("All 18 virtual controls, legacy migration, persistence codec and rectangular shoulder sizing: PASS")
+
+// ProMotion must preserve source60 and remain unavailable on phones/entry GPUs.
+for family in [7, 8, 9] { for phone in [false, true] { for hz in [60, 80, 120] { for lowPower in [false, true] {
+    let allowed = GameFrameGenerationPolicy.permits120(hardware: GameHardwarePolicy(family: family), phone: phone, maximumRefresh: hz, lowPower: lowPower)
+    check(allowed == (family >= 9 && !phone && hz >= 120 && !lowPower), "ProMotion hardware/screen/power cap bypass")
+    check(GameFrameGenerationPolicy.launchMode("2", permits120: allowed) == (allowed ? 2 : 0), "Launch override bypassed ProMotion gate")
+} } } }
+check(GameFrameGenerationPolicy.launchMode("1", permits120: false) == 1, "30-to-60 research mode removed")
+for value: String? in [nil, "0", "3", "120", "invalid"] {
+    check(GameFrameGenerationPolicy.launchMode(value, permits120: true) == 0, "Unknown FG mode admitted")
+}
+print("ProMotion family/display/phone/low-power gates and research launch modes: PASS")

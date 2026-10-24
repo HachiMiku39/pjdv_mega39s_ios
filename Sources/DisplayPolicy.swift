@@ -21,6 +21,17 @@ struct GameHardwarePolicy {
     }
 }
 
+enum GameFrameGenerationPolicy {
+    static func permits120(hardware: GameHardwarePolicy, phone: Bool, maximumRefresh: Int, lowPower: Bool) -> Bool {
+        hardware.allows120(phone: phone) && maximumRefresh >= 120 && !lowPower
+    }
+    static func launchMode(_ requested: String?, permits120: Bool) -> Int32 {
+        if requested == "1" { return 1 }
+        if requested == "2", permits120 { return 2 }
+        return 0
+    }
+}
+
 struct GameDisplayPolicy {
     enum DuoPose: String { case ordinary, folded, tabletop, expanded }
     static func outputMode(_ requested: String, phone: Bool, conservative: Bool = false) -> String {

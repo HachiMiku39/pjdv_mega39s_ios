@@ -1,6 +1,6 @@
 # 源码与构建（2026-10-24）
 
-本仓库现在包含实际使用的 Swift/UIKit 宿主、Mac AppKit 辅助组件、NVN → Metal／Horizon 兼容层、逆向处理工具和测试。当前源码版本为 **0.1.5 build14 导入内存修复预览**；本轮发布 build14 精简 IPA／DMG，不覆盖历史附件。
+本仓库现在包含实际使用的 Swift/UIKit 宿主、Mac AppKit 辅助组件、NVN → Metal／Horizon 兼容层、逆向处理工具和测试。当前源码版本为 **0.1.5 build15 输入修复本地候选**；本轮只生成精简 IPA／DMG，真机回归待解锁，尚未发布 GitHub，不覆盖历史附件。
 
 ## 源码目录
 
@@ -91,3 +91,27 @@ M1 8 GB iPad 用户报告累计提取约 7 GB 后退出。只读复现发现，D
 M4／iPadOS 27.2 本轮已备份存档、卸载并重装 build14；42,716,664,832 字节原始 XCI 完整传入并抽样核验。用户重新信任开发签名后，自动导入在 95.89 秒内成功写入 41,943,373,493 字节，读入 42,359,651,800 字节；0.5 秒采样峰值为 124,601,208 字节，结束内存 117,359,480 字节，无内存警告或异常退出。全部 28 个卷（本体＋27 DLC）的完成标记、22,391 条唯一文件记录及字节总数核对一致，没有未完成标记。个人存档已从重装前备份恢复并回读哈希；合并恢复原显示／输入／语言设置，保留新导入完成签名。M1 8 GB／iPadOS 18 仍需反馈设备回测；这不是同款设备终止原因的确认，也不是全曲游戏内存或帧率验收。
 
 独立模拟器 `com.local.pjdv.memimport14` 验证通过：64 MiB 虚构容器从 App 根目录自动导入，界面显示 100%、约 28 MB 进程内存和采样峰值；再次手动检测同一文件完成校验续导，新增写入为零。当前／上一轮日志都以 success 结束，上一轮 67,109,009 字节写入记录保留。此测试不使用真实密钥，不替代 M4 整份 XCI 写盘验收。
+
+## build15 原生 Touch Play 与全部控件布局（2026-10-24）
+
+快速重复使用同一触点 ID 时，旧单槽会把未读取的再次按下合并；改为每 ID 最多 16 个有界 stroke，保留每次 Start／End，移动在同一次 stroke 内合并，溢出不遗留按住状态。`dm_touch_reset()` 在失焦时清空全部排队／按住触点。Swift 发布端串行提交 pad 与 touch，并拒绝较旧修订号，避免控制器线程把已松开的触点写回。
+
+旧代码三次快速点击复现断言失败；修复后扩展 NativeTouchTests、ASan／UBSan、原 13 项触控 ABI、InputCore 并发与旧快照回归通过。布局模型兼容旧 two-stick JSON；18 控件、矩形肩键比例、边界及编解码测试通过。A16 模拟器验证 A／ZR 位置、尺寸、保存重启与取消不覆盖。Device Hub 的远程拖动未能移动控件，当前验证的是点空白定位；真实手指拖动仍需实机回归。
+
+M4 覆盖安装输入候选成功，但启动因设备锁屏被阻止；M1／iPadOS18 未直测。M1《39みゅーじっく！》40–50 FPS 尚无匹配场景的前后对比，不声称已优化。现有 whole-frame 光流插帧候选此前 PV 轮廓失真，且 source30 改变原游戏出帧节奏，维持研究启动参数门控。苹果 SDK 的 MTLFXFrameInterpolator 标注 iOS／Mac Catalyst 26 起可用；不能把该 API 当成 iPadOS18 的回退方案。
+
+
+## build16 ProMotion / Spatial 回归
+
+`Runtime/dm/gfx/nvn/pjdv_fg_policy.h` 统一源帧／显示节奏，模式1为30/60，模式2为60/120。120的显示回调不再以固定两个tick阻塞源游戏，系统降至60Hz时不应因此将游戏减半为30。退出插帧恢复此前显示链模式。宿主按GPU family、设备种类、屏幕刷新率与低电量状态限制120；GPU错误回退原生60。
+
+`pjdv_fg_spatial.inc` 在图像插帧使用的传统Metal队列中编码Spatial，使真实／生成帧经过相同的超分路径。取消研究启动强制1080p普通放大和菜单过滤；M3+ Mac／iPad保留1440p／屏幕匹配。HDR选择退出插帧。帧生成本身仍为图像光流，不是Apple MetalFX FrameInterpolator。
+
+新增 `Tests/FrameGenerationPolicy/main.c` 验证两个模式的源帧周期／显示目标；`Tests/FrameGenerationSpatial/main.m` 需支持MetalFX的真实GPU，验证首个真实帧、生成帧的Spatial输出、尺寸、GPU成功及关闭回退。不支持时返回77，不以模拟器代替真实GPU验收。示例（从项目根目录，编译输出放自己的构建目录）：
+
+```sh
+xcrun clang -fobjc-arc -O2 -I Runtime/dm/gfx/nvn -framework Foundation -framework Metal -framework MetalFX -framework QuartzCore Tests/FrameGenerationSpatial/main.m -o /tmp/pjdv-fg-spatial-test
+/tmp/pjdv-fg-spatial-test
+```
+
+研究日志分别记录sourceFPS、generatedFPS、presentedFPS、lastFGGPUms和lastRealCopyGPUms；普通复制不能覆盖插帧GPU耗时。`PJDV_FG_CAPTURE=1` 下可向GuestTemp/fg-capture.request写入新整数，下一次生成时本地读回previous/current/generated及存在时的Spatial输出；仅用于开发诊断，勿把游戏图像或设备日志当作公开安装包内容。

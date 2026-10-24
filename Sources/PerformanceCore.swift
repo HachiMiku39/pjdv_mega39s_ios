@@ -70,3 +70,10 @@ func pjdvFramePresented(_ timestamp: Double) {
 
 @_cdecl("pjdv_monitor_reset")
 func resetGamePerformanceFrames() { PerformanceMonitor.shared.frames.reset() }
+
+// Same actual drawable-presented clock as the overlay; source commits and
+// synthetic-frame attempts must not be mistaken for physical display FPS.
+@_cdecl("pjdv_presented_fps")
+func reportedGamePresentedFPS() -> Double {
+    PerformanceMonitor.shared.frames.fps(at: CACurrentMediaTime())
+}

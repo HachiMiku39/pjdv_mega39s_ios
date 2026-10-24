@@ -221,6 +221,7 @@ final class TouchMetalView: MTKView {
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) { update(touches) }
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) { finish(touches) }
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) { finish(touches) }
+    func resetTouchTracking() { touchIDs.removeAll() }
     private func finish(_ touches: Set<UITouch>) {
         for touch in touches {
             if let id = touchIDs.removeValue(forKey: ObjectIdentifier(touch)) { input.endTouch(id: id) }
@@ -408,6 +409,7 @@ final class VirtualPad: UIView {
     static let preferredScale: CGFloat = 2.0
     var layoutProfile = "tablet"
     var configurationOverride: StickLayout?
+    var highlightedControl: PadControl? { didSet { setNeedsLayout() } }
     static let baselineHeight: CGFloat = 286
     private let input: InputStore
     private var buttons: [UIButton: PadButtons] = [:]
@@ -495,6 +497,32 @@ final class VirtualPad: UIView {
         let custom = configurationOverride ?? StickLayout.load(layoutProfile)
         leftStick.frame = StickLayout.frame(leftStick.frame, in: bounds, placement: custom.left)
         rightStick.frame = StickLayout.frame(rightStick.frame, in: bounds, placement: custom.right)
+        for control in PadControl.allCases where control != .leftStick && control != .rightStick {
+            guard let button = named[control.title] else { continue }
+            let base = button.frame
+            button.frame = StickLayout.frame(base, in: bounds, placement: custom.placement(for: control))
+            let factor = base.height > 0 ? button.frame.height / base.height : 1
+            button.layer.cornerRadius = min(button.frame.width, button.frame.height) / 2
+            button.titleLabel?.font = .systemFont(ofSize: max(9, 14 * scale * factor), weight: .semibold)
+            button.layer.borderColor = (highlightedControl == control ? UIColor.systemYellow : UIColor.white.withAlphaComponent(0.4)).cgColor
+            button.layer.borderWidth = highlightedControl == control ? 3 : scale
+        }
+        for (control, stick) in [(PadControl.leftStick, leftStick), (.rightStick, rightStick)] {
+            stick.layer.cornerRadius = stick.bounds.width / 2
+            stick.layer.borderColor = UIColor.systemYellow.cgColor
+            stick.layer.borderWidth = highlightedControl == control ? 3 : 0
+        }
+    }
+    func controlFrame(_ control: PadControl) -> CGRect {
+        switch control {
+        case .leftStick: return leftStick.frame
+        case .rightStick: return rightStick.frame
+        default: return named[control.title]?.frame ?? .zero
+        }
+    }
+    func control(at point: CGPoint) -> PadControl? {
+        // Matches the UIKit subview stacking order for overlapping custom keys.
+        PadControl.allCases.reversed().first { controlFrame($0).contains(point) }
     }
     override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
         guard let hit = super.hitTest(point, with: event) else { return nil }

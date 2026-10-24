@@ -93,7 +93,10 @@ private func setGuestPad(_ buttons: UInt64, _ lx: Int32, _ ly: Int32, _ rx: Int3
 private struct NativeTouch { let id: UInt32; let x: Float; let y: Float }
 @_silgen_name("dm_touch_set")
 private func setGuestTouches(_ values: UnsafePointer<NativeTouch>?, _ count: Int32)
-func publishGuestInput(_ frame: InputFrame) {
+@_silgen_name("dm_touch_reset")
+private func resetGuestTouches()
+func publishGuestInput(_ frame: InputFrame, resetTouches: Bool = false) {
+    if resetTouches { resetGuestTouches() }
     func axis(_ n: Float) -> Int32 { Int32((n * 32767).rounded()) }
     let pad = frame.pad
     setGuestPad(pad.buttons.rawValue, axis(pad.leftStick.x), axis(pad.leftStick.y), axis(pad.rightStick.x), axis(pad.rightStick.y))

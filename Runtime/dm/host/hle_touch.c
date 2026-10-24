@@ -17,25 +17,55 @@
 #include "dm.h"
 #include "front.h"
 #include <pthread.h>
-enum { F_EMPTY, F_DOWN, F_LIFTED };
-static struct { int st, reported, again; float x, y, ax, ay; } g_f[16];   // again/ax/ay：End 还没报出去时同 id 又按下（下次读先报 End 再报新 Start） | again/ax/ay: the same id was pressed again before End went out (the next read reports End first, then the new Start)
+#include <math.h>
+// Keep distinct strokes until the guest has observed Start and End. UIKit may
+// reuse a released slot before the next game poll; a single "again" bit loses
+// these taps. Movement is coalesced within a stroke, never across two presses.
+enum { TOUCH_STROKES = 16 };
+typedef struct { int reported, ended; float sx, sy, x, y; } touch_stroke;
+static struct {
+    int down, accepted;
+    unsigned head, count;
+    touch_stroke strokes[TOUCH_STROKES];
+} g_f[16];
 static pthread_mutex_t g_tl = PTHREAD_MUTEX_INITIALIZER;
 static int64_t g_tsamp; static uint64_t g_tlast_ns;
 
+void dm_touch_reset(void) {
+    pthread_mutex_lock(&g_tl);
+    memset(g_f, 0, sizeof g_f); // cancellation must not replay queued taps later
+    pthread_mutex_unlock(&g_tl);
+}
 void dm_touch_set(const dm_touch *t, int n) {
+    if (!t || n < 0) n = 0;
+    if (n > 16) n = 16;
     pthread_mutex_lock(&g_tl);
     int seen[16] = {0};
     for (int i = 0; i < n; i++) {
-        uint32_t id = t[i].id; if (id >= 16) continue;
+        uint32_t id = t[i].id;
+        if (id >= 16 || !isfinite(t[i].x) || !isfinite(t[i].y)) continue;
         seen[id] = 1;
-        if (g_f[id].st == F_LIFTED && g_f[id].reported) { g_f[id].again = 1; g_f[id].ax = t[i].x; g_f[id].ay = t[i].y; continue; }
-        if (g_f[id].st == F_EMPTY) { g_f[id].st = F_DOWN; g_f[id].reported = 0; }
-        else if (g_f[id].st == F_LIFTED) g_f[id].st = F_DOWN;              // 抬起还没报过又按下：当作一直按着 | Pressed again before the lift was reported: treat it as held down all along
-        g_f[id].x = t[i].x; g_f[id].y = t[i].y;
+        if (!g_f[id].down) {
+            g_f[id].down = 1;
+            // Bounded backpressure: do not corrupt an earlier stroke if the
+            // consumer has stopped polling and the ring is full.
+            g_f[id].accepted = g_f[id].count < TOUCH_STROKES;
+            if (g_f[id].accepted) {
+                unsigned tail = (g_f[id].head + g_f[id].count++) % TOUCH_STROKES;
+                g_f[id].strokes[tail] = (touch_stroke){.sx=t[i].x,.sy=t[i].y,.x=t[i].x,.y=t[i].y};
+            }
+        }
+        if (g_f[id].accepted && g_f[id].count) {
+            unsigned tail = (g_f[id].head + g_f[id].count - 1) % TOUCH_STROKES;
+            g_f[id].strokes[tail].x = t[i].x; g_f[id].strokes[tail].y = t[i].y;
+        }
     }
-    for (int id = 0; id < 16; id++) {
-        if (!seen[id] && g_f[id].st == F_DOWN) g_f[id].st = F_LIFTED;
-        if (!seen[id] && g_f[id].again) g_f[id].again = 0;                   // 重按后又抬起（End 都还没报）：重按丢掉，仍按原抬起报 End | Pressed again and then lifted again (End not even reported yet): drop the re-press, still report End for the original lift
+    for (int id = 0; id < 16; id++) if (!seen[id] && g_f[id].down) {
+        if (g_f[id].accepted && g_f[id].count) {
+            unsigned tail = (g_f[id].head + g_f[id].count - 1) % TOUCH_STROKES;
+            g_f[id].strokes[tail].ended = 1;
+        }
+        g_f[id].down = g_f[id].accepted = 0;
     }
     pthread_mutex_unlock(&g_tl);
 }
@@ -50,18 +80,16 @@ int touch_fill_capacity(void *out, unsigned capacity, uint64_t now_ns) {
     int64_t samp = ++g_tsamp; int64_t dt = g_tlast_ns ? (int64_t)(now_ns - g_tlast_ns) : 0; g_tlast_ns = now_ns;
     int k = 0;
     for (int id = 0; id < 16; id++) {
-        if (g_f[id].st == F_EMPTY || k >= (int)capacity) continue;
-        uint32_t attr = 0;
-        if (!g_f[id].reported) { attr |= 1; g_f[id].reported = 1; }          // Start（本次第一次报） | Start (reported for the first time this time)
-        else if (g_f[id].st == F_LIFTED) attr |= 2;                         // End（已报过 Start、已抬起） | End (Start already reported, already lifted)
+        if (!g_f[id].count || k >= (int)capacity) continue;
+        touch_stroke *stroke = &g_f[id].strokes[g_f[id].head];
+        uint32_t attr = !stroke->reported ? 1 : stroke->ended ? 2 : 0;
+        stroke->reported = 1;
         uint8_t *s = o + 0x10 + 0x28 * k++;
-        int32_t x = clampi(g_f[id].x, 1279), y = clampi(g_f[id].y, 719), d = 30, zero = 0, fid = id;
+        float px = attr & 1 ? stroke->sx : stroke->x, py = attr & 1 ? stroke->sy : stroke->y;
+        int32_t x = clampi(px, 1279), y = clampi(py, 719), d = 30, zero = 0, fid = id;
         memcpy(s + 0x00, &dt, 8); memcpy(s + 0x08, &attr, 4); memcpy(s + 0x0c, &fid, 4);
         memcpy(s + 0x10, &x, 4); memcpy(s + 0x14, &y, 4); memcpy(s + 0x18, &d, 4); memcpy(s + 0x1c, &d, 4); memcpy(s + 0x20, &zero, 4);
-        if (attr & 2) {                                                      // End 报过：释放；若期间同 id 又按下，转成新的按下 | End has been reported: release; if the same id was pressed again in the meantime, turn it into a new press
-            if (g_f[id].again) { g_f[id].st = F_DOWN; g_f[id].reported = 0; g_f[id].again = 0; g_f[id].x = g_f[id].ax; g_f[id].y = g_f[id].ay; }
-            else g_f[id].st = F_EMPTY;
-        }
+        if (attr & 2) { g_f[id].head = (g_f[id].head + 1) % TOUCH_STROKES; g_f[id].count--; }
     }
     pthread_mutex_unlock(&g_tl);
     int32_t cnt = k; memcpy(o + 0, &samp, 8); memcpy(o + 8, &cnt, 4);

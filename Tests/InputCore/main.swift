@@ -36,3 +36,18 @@ assert(input.snapshot().pad.buttons == [.a, .x])
 input.clear()
 assert(input.snapshot().pad.buttons.isEmpty && input.snapshot().touches.isEmpty)
 print("Input invariants passed: source isolation, axes, multitouch limit, cancellation, concurrency")
+
+// Simulate a controller-thread callback completing after the main-thread lift.
+let orderedInput = InputStore()
+orderedInput.touch(id: 0, x: 0.2, y: 0.5)
+let staleDown = orderedInput.snapshot()
+orderedInput.endTouch(id: 0)
+let released = orderedInput.snapshot()
+var delivered: [InputFrame] = [], resets = 0
+let sink = OrderedInputSink { frame, reset in delivered.append(frame); if reset { resets += 1 } }
+sink.publish(released); sink.publish(staleDown); sink.publish(released)
+assert(delivered.count == 1 && delivered.last!.touches.isEmpty)
+orderedInput.touch(id: 0, x: 0.8, y: 0.5); sink.publish(orderedInput.snapshot())
+orderedInput.clear(); sink.publish(orderedInput.snapshot())
+assert(delivered.count == 3 && delivered.last!.touches.isEmpty && resets == 2)
+print("Ordered native input publication passed: stale down rejection, duplicate rejection and cancellation generation")
