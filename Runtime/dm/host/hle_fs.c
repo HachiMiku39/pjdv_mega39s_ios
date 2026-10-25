@@ -24,6 +24,7 @@
 #include <sys/attr.h>
 #if defined(DM_GAME_M39)
 #include "pjdv_profile.inc"
+#include "pjdv_mod_interface.inc"
 #endif
 
 #define RES_PATH_NOT_FOUND 0x202u      // fs 模块 2，描述 1 | fs module 2, description 1
@@ -459,6 +460,17 @@ static int host_path_ex(const char *p, char *out, size_t n, int *ro, int create)
         if (strlen(g_mnt[i].name) != ln || strncmp(g_mnt[i].name, p, ln)) continue;
         if (ro) *ro = g_mnt[i].ro;
         const char *rest = c + 1;
+#if defined(DM_GAME_M39)
+        // Reserved read-only extension seam. build18 always falls through;
+        // save/temp writes and existing built-in compatibility overlays are unchanged.
+        if (g_mnt[i].ro && !create) {
+            const pjdv_mod_read_request_v1 request = {
+                PJDV_MOD_ABI_VERSION, sizeof(pjdv_mod_read_request_v1), g_mnt[i].name, rest
+            };
+            if (pjdv_mod_try_resolve_readonly_v1(&request, out, n) == PJDV_MOD_RESOLVED)
+                return 1;
+        }
+#endif
         if (g_mnt[i].overlay[0] && !create) return rom_overlay_path(&g_mnt[i], rest, out, n);
 #if defined(DM_GAME_M39)
         if(g_mnt[i].ro && !create)return root_path(g_mnt[i].dir,rest,out,n);

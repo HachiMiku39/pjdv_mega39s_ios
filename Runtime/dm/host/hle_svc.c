@@ -93,6 +93,7 @@ int svc_thread(int num, uint64_t *regs);   // hle_thread.c：线程与同步类 
 
 #if defined(DM_GAME_M39)
 #include "pjdv_archive.inc"
+#include "pjdv_autoplay.inc"
 #endif
 
 uint64_t svc_dispatch(int num, uint64_t *regs, uint64_t orig_addr) {
@@ -100,6 +101,7 @@ uint64_t svc_dispatch(int num, uint64_t *regs, uint64_t orig_addr) {
     mem_init();
 #if defined(DM_GAME_M39)
     if(num==0x90){regs[0]=pjdv_archive_gzip(regs,orig_addr);return regs[0];}
+    if(num==0x91){regs[0]=pjdv_autoplay_judge(regs,orig_addr);return regs[0];}
 #endif
     if (svc_thread(num, regs)) return regs[0];
     if (num >= 0x80) die("Unexpected private service number %d",num);   // 0x80 起：剪口约定的宿主调用（hle_tact.c） | from 0x80: host calls by cut convention (hle_tact.c)

@@ -862,6 +862,23 @@ if NAME == 'main' and BUILD_ID == '179265bd41f7781dac979e7770201124':
         'M39 common FARC gzip wrapper call -> host gzip (same bounded stream contract); original callee 0x38430 retained for A/B/verification', '仅宿主'))
     stat('m39_archive_gzip')
 
+# Optional diagnostic build, deliberately excluded from the ordinary rewrite.
+# The sole caller is the native per-target judgment in GetHitState. Original
+# target/group updates, chart timing, effect rendering and results still run.
+if NAME == 'main' and BUILD_ID == '179265bd41f7781dac979e7770201124' and os.environ.get('PJDV_BUILD_AUTOPLAY') == '1':
+    assert hashlib.sha256(d).hexdigest() == 'a370a68b4700a63d943a316916eb41ddedea5f5382c5b04eb3f126a9b8614e52'
+    off = 0x1af6a4
+    expected = struct.pack('<I', 0x94000000 | ((0x1b11f0-off)//4))
+    assert IMG[off:off+4] == expected
+    assert off not in kinds and not any(s[0].address <= off < s[-1].address+4 for s in windows)
+    start = site_gate(dis(struct.unpack_from('<I', IMG, off)[0], off), 'svc', 0x91)
+    replacement = struct.pack('<I', B(off, start))
+    IMG[off:off+4] = replacement
+    kinds[off] = ('svc', 0x91)
+    cuts.append((off, expected.hex(), replacement.hex(),
+        'M39 diagnostic AutoPlay judgment call; off forwards original 0x1b11f0, on COOL at native due time with disposable host save', '仅宿主'))
+    stat('m39_autoplay_diagnostic')
+
 os.makedirs(outdir, exist_ok=True)
 P = lambda ext: os.path.join(outdir, f'{NAME}.{ext}')
 # Keep original guest segment addresses and put signed trampolines before text.

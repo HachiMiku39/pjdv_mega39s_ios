@@ -2,24 +2,24 @@
 
 **简体中文** | [English](README.en.md)
 
-**build17 验证预览（2026-10-24）：** AutoPlay 压力测试、硬件诊断与游戏内热切换改进，具体结果见文末。 保留 build15 的原生 Touch Play 快速重按／乱序快照修复与全部 18 个控件布局编辑。加入 M4 真机 ProMotion 60→120 研究显示链：源游戏保持 60 FPS，真实帧与生成帧分别计数，并统计实际 drawable 呈现率。普通启动仍默认原生 60 FPS；图像插帧的舞台大屏、头发轮廓及打歌时序尚未验收。修复研究模式隐藏高级分辨率、强制普通 1080p 放大的问题，真实帧和生成帧都可使用 MetalFX Spatial。**1440p／匹配屏幕仅 M3 及更新 Mac／iPad（family 9+）开放，iPhone、family 7／8 最高 1080p。** M1《39みゅーじっく！》40–50 FPS 的反馈仍待该设备回测，不承诺插帧降低功耗。
+**build18 验证预览（2026-10-25）：** 启动页新增“MOD 管理（实验）”，可检查和登记 ZIP／ZIP64 或已解压文件夹。7z／RAR 需先解压；当前不复制、不解压、不加载 MOD。Mac 界面流程及三平台构建通过，iPad 真机入口尚未验收。
+
+**继承 build17 的改进：** AutoPlay 压力测试、硬件诊断与游戏内热切换改进，具体结果见文末。 保留 build15 的原生 Touch Play 快速重按／乱序快照修复与全部 18 个控件布局编辑。加入 M4 真机 ProMotion 60→120 研究显示链：源游戏保持 60 FPS，真实帧与生成帧分别计数，并统计实际 drawable 呈现率。普通启动仍默认原生 60 FPS；图像插帧的舞台大屏、头发轮廓及打歌时序尚未验收。修复研究模式隐藏高级分辨率、强制普通 1080p 放大的问题，真实帧和生成帧都可使用 MetalFX Spatial。**1440p／匹配屏幕仅 M3 及更新 Mac／iPad（family 9+）开放，iPhone、family 7／8 最高 1080p。** M1《39みゅーじっく！》40–50 FPS 的反馈仍待该设备回测，不承诺插帧降低功耗。
 
 《初音未来 Project DIVA MEGA39’s》Switch JP v1.0.9 的 Apple Silicon 兼容移植研究。原游戏 ARM64 程序经 Horizon 服务兼容层运行，图形通过 **NVN → Metal** 输出。
 
-**0.1.5（build 17）验证预览｜2026-10-24。** 只发布不含游戏资源、密钥及个人存档的精简安装包，不再自动制作全量包。
+**0.1.5（build 18）验证预览｜2026-10-25。** 只发布不含游戏资源、密钥及个人存档的精简安装包，不再自动制作全量包。
 
 **build10 更新（2026-10-22）**：导入端改为识别同一 MEGA39’s Title ID（0100F3100DA46000）的包内内容，不再要求固定 NCA 文件名、v1.0.9 资源指纹或恰好 27 DLC。按 CNMT 选择更新、实际 DLC 数量和完整语言资源；包内已有内容默认开放现存难度与服装。不支持的语言回落日语。
 
 运行端仍使用已适配的 JP v1.0.9 程序，不执行新 XCI 中的任意 NSO；因此解除导入版本限制不等于所有资源版本、其他地区代码均已兼容。未知资源版本在启动页明确提示待验证。新导入记录写入 `game-content.json`，已有 v1.0.9 文件夹继续兼容。独立票据／TitleKey 加密仍需后续支持；缺少所需密钥、冲突更新和不完整包会停止导入，不修改原 XCI。
 
 
-[最新 build17 预览版](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b17) · [build14](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b14) · [build10](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b10) · [原 build7](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5) · [安装与测试指南](#安装包怎么选)
+[最新 build18 预览版](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b18) · [build17](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b17) · [build14](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b14) · [build10](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b10) · [原 build7](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5) · [安装与测试指南](#安装包怎么选)
 
 [演示视频（bilibili）](https://www.bilibili.com/video/BV1KGni6YEZd/)
 
 **已知兼容缺口：** v1.0.0 基础资源可以导入、进入打歌，但三维 PV 仍黑屏，部分帮助图片缺失。建议使用 JP v1.0.9 资源基线；macOS 11 是最低构建目标，尚未在 Big Sur／M1 实机验收。经典 drawable 回退路径的 FPS 呈现统计仍待核验。
-
-**build17 源码分发说明：** 本版完整、经过排除检查的宿主／运行层／工具源码提供为仓库内的 [PJDVM39-0.1.5b17-source.zip](PJDVM39-0.1.5b17-source.zip)，Release 也提供同名文件。请先解压该归档再按 BUILDING.md 构建。网页平铺源码目录暂保留 build16 快照，不能据此构建 build17；本机已保存待同步的 build17 提交。归档不含原游戏二进制输入或资源。
 
 ## 0.1.5 更新与验证范围
 
@@ -336,3 +336,10 @@ v1.0.0 已能进入打歌与结算，但《愛言葉》三维 PV 仍黑屏，部
 **热切换状态：** Mac 在《愛言葉》EXTREME 演奏中验证了1080p MetalFX→1440p MetalFX→720p，谱面继续运行。原候选在 M4 开启60→120后停帧；诊断确认 GPU 命令正常完成但没有实际呈现，关闭 MetalFX 或提前切 SDR 仍可复现。后续候选在游戏接管 CAMetalLayer 后停止 MTKView 占位绘制循环，由独立会话定时器更新 HUD；输入仍按事件提交。M4 回测未再复现这次阻塞。
 
 M4 实测场景为《39みゅーじっく！》实时3D **PV模式**与重播菜单：1080p→1440p MetalFX→60→120→720p→1080p MetalFX→30→60→原生60 均继续出图、可重播。检查点实际呈现率分别约120.00（真实59.51＋生成60.50）、60.00（真实29.51＋生成29.51），回原生后60.00 FPS；累计 GPU 错误0。原生30／60在标题和演示场景也已往返显示30／60。数值是检查点而非全曲锁帧承诺；本轮没有完成M4高难度打歌与手动判定时序验收。Mac 窗口测试仍低于目标呈现率，不以修复切换阻塞宣称性能优化完成。当前M3 Max不在原生120白名单，未测原生120。插帧伪影、额外显示延迟、HDR互斥及跨机型回归继续保留实验限制。
+
+
+## build18：MOD 管理入口（加载未启用，2026-10-25）
+
+启动页已加入“MOD 管理（实验）”：手动选择 ZIP／ZIP64 或已解压文件夹，识别资源覆盖、插件式包和代码补丁，保存原文件位置书签及检查结果。7z／RAR 请先解压，再添加文件夹。可重新检查、移除登记；不复制、不解压、不加载 MOD，也不修改 XCI、资源或存档。ZIP 当前仅检查目录结构，未验证内容 CRC、TOML 语义或游戏兼容性。
+
+研究基于 MikuMikuSwitchPlugin `13bc9fa`，只读接口和能力／ABI 仍拒绝激活。详见 [入口与测试说明](Reports/MOD-ENTRY-build18.md)、[Switch 安装方式研究](Reports/SWITCH-MOD-IMPORT-20261025.md)及[接口报告](Reports/MOD-INTERFACE-build18.md)。build18 提供精简 IPA／DMG 和对应源码。Mac 实际添加 ZIP／文件夹、书签重检、取消及移除登记通过；iOS／模拟器／Mac 编译通过，iPad 真机入口尚未验证。未进行真实 MOD 游戏内兼容验收。

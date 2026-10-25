@@ -65,12 +65,8 @@ static int pjdv_game_frame_generation_mode(void) { return 2; }
     rp.colorAttachments[0].texture=destination;rp.colorAttachments[0].loadAction=MTLLoadActionClear;
     rp.colorAttachments[0].clearColor=MTLClearColorMake(0,0,0,1);rp.colorAttachments[0].storeAction=MTLStoreActionStore;
     id<MTLRenderCommandEncoder> en=[cb renderCommandEncoderWithDescriptor:rp];
-#if PJDV_HAS_METALFX
-    if(@available(macOS 13.0, macCatalyst 16.0, iOS 16.0, *)){
-        PJDVFGSpatial *fx=(PJDVFGSpatial *)self.spatial;
-        if(fx && source==fx.output)[en waitForFence:fx.scaler.fence beforeStages:MTLRenderStageFragment];
-    }
-#endif
+    // Spatial's input/output are tracked textures on this command queue;
+    // encoder ordering supplies the dependency without an uninitialized fence.
     // Exact-size snapshots fill the texture; display preserves the game aspect.
     double w=destination.width,h=destination.height,aspect=self.width/(double)self.height;
     if(destination==self.current || destination==self.previous)aspect=w/h;
@@ -153,8 +149,16 @@ static void pjdv_game_fg_report(void){
     [json writeToFile:[@(root) stringByAppendingPathComponent:@"game-fg.json"] atomically:YES];
 }
 static void pjdv_game_fg_commit(id<MTLCommandBuffer> cb,id<CAMetalDrawable> dr,uint64_t ticket,BOOL generated,id<MTLBuffer> stats){
+    static unsigned diagnosticSubmissions;
+    unsigned diagnostic=++diagnosticSubmissions;
+    if(diagnostic<=4){
+        cb.label=[NSString stringWithFormat:@"PJDV FG hot switch %u",diagnostic];
+        NSLog(@"PJDV FG submit %u ticket=%llu generated=%d",diagnostic,(unsigned long long)ticket,generated);
+        [cb addScheduledHandler:^(id<MTLCommandBuffer> scheduled){ NSLog(@"PJDV FG scheduled %u status=%lu",diagnostic,(unsigned long)scheduled.status); }];
+    }
     pthread_mutex_lock(&g_pq_mu);g_pq_inflight++;pthread_mutex_unlock(&g_pq_mu);
     [cb addCompletedHandler:^(id<MTLCommandBuffer> done){
+        if(diagnostic<=4)NSLog(@"PJDV FG completed %u status=%lu error=%@",diagnostic,(unsigned long)done.status,done.error);
         if(done.error){atomic_fetch_add(&g_fg_errors,1);pjdv_set_game_frame_generation(0);MLOG("PJDV game FG GPU error, reverting native60: %s",done.error.description.UTF8String);}
         else{
             if(stats)atomic_store(&g_fg_gpu_ms,(done.GPUEndTime-done.GPUStartTime)*1000);

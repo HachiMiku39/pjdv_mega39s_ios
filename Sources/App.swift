@@ -2,6 +2,52 @@ import UIKit
 import MetalKit
 import GameController
 import AVFAudio
+import Darwin
+
+#if targetEnvironment(macCatalyst)
+@objc(PJDVMacHardware) private protocol MacHardwarePlugin { static func hardwareSnapshot() -> [String: NSNumber] }
+#endif
+private enum HostHardware {
+    static func sysctlString(_ name: String) -> String? {
+        var n = 0
+        guard sysctlbyname(name, nil, &n, nil, 0) == 0, n > 1, n < 1024 else { return nil }
+        var bytes = [CChar](repeating: 0, count: n)
+        guard sysctlbyname(name, &bytes, &n, nil, 0) == 0 else { return nil }
+        return String(cString: bytes)
+    }
+    static let mac: [String: NSNumber] = {
+        #if targetEnvironment(macCatalyst)
+        guard let url = Bundle.main.builtInPlugInsURL?.appendingPathComponent("PJDVMacLifecycle.bundle"),
+              let bundle = Bundle(url: url), bundle.load(), let plugin = bundle.principalClass as? MacHardwarePlugin.Type else { return [:] }
+        return plugin.hardwareSnapshot()
+        #else
+        return [:]
+        #endif
+    }()
+    static let soc: String = {
+        if let brand = sysctlString("machdep.cpu.brand_string"), brand.contains("Apple") { return brand }
+        let machine = sysctlString("hw.machine") ?? ""
+        if ["iPad16,3", "iPad16,4", "iPad16,5", "iPad16,6"].contains(machine) { return "Apple M4" }
+        if ["iPad13,4", "iPad13,5", "iPad13,6", "iPad13,7", "iPad13,8", "iPad13,9", "iPad13,10", "iPad13,11", "iPad13,16", "iPad13,17"].contains(machine) { return "Apple M1" }
+        return MTLCreateSystemDefaultDevice()?.name ?? machine
+    }()
+    static let summary: String = {
+        let machine = sysctlString("hw.machine") ?? ""
+        let gpu: String
+        if let cores = mac["gpuCores"], cores.intValue > 0 { gpu = "\(cores)" }
+        // iPadOS has no public Metal API for core counts. Only exact, known
+        // device identifiers use a documented specification fallback.
+        // Apple M4 iPad Pro: https://support.apple.com/119892
+        else if ["iPad16,3", "iPad16,4", "iPad16,5", "iPad16,6"].contains(machine) { gpu = "10 (spec)" }
+        else if soc == "Apple M1", machine.hasPrefix("iPad13,") { gpu = "8 (spec)" }
+        else { gpu = L("系统未提供") }
+        return "SoC: \(soc)\nCPU: \(ProcessInfo.processInfo.processorCount) cores · GPU: \(gpu) cores\nRAM total: \(String(format: "%.1f GiB", Double(ProcessInfo.processInfo.physicalMemory) / 1_073_741_824))"
+    }()
+    static func maximumRefresh(fallback: Int) -> Int { max(fallback, mac["maximumRefresh"]?.intValue ?? 0) }
+}
+
+@_silgen_name("pjdv_set_native_fps") private func setNativeFPS(_ value: Int32)
+@_silgen_name("pjdv_native_fps_target") private func nativeFPS() -> Int32
 
 @_silgen_name("pjdv_set_upscale_mode")
 private func setUpscaleMode(_ mode: Int32)
@@ -92,6 +138,7 @@ final class LabController: UIViewController {
     private let performance = PerformanceWindow(frame: .zero)
     private let padToggle = UIButton(type: .system)
     private let outputToggle = UIButton(type: .system)
+    private let autoplayBadge = UILabel()
     private var outputPreferenceKey: String { DeviceGraphicsProfile.policy.conservative ? "entryOutputResolution" : "outputResolution" }
     private var outputMode = UserDefaults.standard.string(forKey: DeviceGraphicsProfile.policy.conservative ? "entryOutputResolution" : "outputResolution") ?? "1080p"
     private var hdrEnabled = ProcessInfo.processInfo.environment["PJDV_GAME_HDR"] == "1" || UserDefaults.standard.bool(forKey: "gameHDREnabled")
@@ -117,7 +164,7 @@ final class LabController: UIViewController {
         return false
         #else
         return GameFrameGenerationPolicy.permits120(hardware: DeviceGraphicsProfile.policy, phone: isPhone,
-            maximumRefresh: (view.window?.screen ?? UIScreen.main).maximumFramesPerSecond,
+            maximumRefresh: HostHardware.maximumRefresh(fallback: (view.window?.screen ?? UIScreen.main).maximumFramesPerSecond),
             lowPower: ProcessInfo.processInfo.isLowPowerModeEnabled)
         #endif
     }
@@ -126,6 +173,15 @@ final class LabController: UIViewController {
     private var connectedControllers = 0
     private var virtualEnabled = UserDefaults.standard.object(forKey: "virtualPadEnabled") as? Bool ?? true
     private var guestStatus = "Guest image mapping pending"
+    private var debugVisible = UserDefaults.standard.object(forKey: "debugInfoVisible") as? Bool ?? true
+    private var performanceVisible = UserDefaults.standard.object(forKey: "performanceVisible") as? Bool ?? true
+    private var supportsNative120: Bool {
+        #if targetEnvironment(macCatalyst)
+        return supportsGame120 && GameFrameGenerationPolicy.native120ModelAllowed(soc: HostHardware.soc, mac: true)
+        #else
+        return false
+        #endif
+    }
 
     // The same fixed keyboard layout works on iPad hardware, Catalyst and Simulator.
     private var keyboardGeneration: [String: Int] = [:]
@@ -271,6 +327,7 @@ final class LabController: UIViewController {
         }
         #endif
         setGameFG(0)
+        setNativeFPS(60)
         supportsMetalFX = metalFXSupported(Unmanaged.passUnretained(device as AnyObject).toOpaque()) != 0
         if UserDefaults.standard.string(forKey: outputPreferenceKey) == nil {
             outputMode = DeviceGraphicsProfile.policy.defaultOutput(phone: isPhone, metalFX: supportsMetalFX)
@@ -323,17 +380,18 @@ final class LabController: UIViewController {
                 guard let self, elapsed - self.lastUpdate >= 1 else { return }
                 self.lastUpdate = elapsed
                 self.updateOutputLabel()
+                guard self.debugVisible else { return }
                 #if targetEnvironment(simulator)
                 let platform = "Simulator — performance requires a physical device"
                 #else
                 #if targetEnvironment(macCatalyst)
-                let platform = "macOS · Apple GPU family 7+"
+                let platform = "macOS · Apple GPU family \(DeviceGraphicsProfile.policy.family)"
                 #else
-                let platform = self.isPhone ? "iOS 17+ · Apple GPU family 7+" : "iPadOS 17+ · Apple GPU family 7+"
+                let platform = "\(self.isPhone ? "iOS" : "iPadOS") \(UIDevice.current.systemVersion) · Apple GPU family \(DeviceGraphicsProfile.policy.family)"
                 #endif
                 #endif
                 let frame = self.input.snapshot()
-                self.status.text = "PJDV M39 • Metal host\n\(platform)\n\(device.name)\nDrawable: \(Int(canvas.drawableSize.width)) × \(Int(canvas.drawableSize.height))\nFrames submitted: \(frames) • Controllers: \(GCController.controllers().count)\nButtons: \(String(frame.pad.buttons.rawValue, radix: 16)) • Touches: \(frame.touches.count)\n\(self.guestStatus)\n\(GuestRuntime.currentStatus())"
+                self.status.text = "PJDV M39 • Metal host\n\(platform)\n\(HostHardware.summary)\nDrawable: \(Int(canvas.drawableSize.width)) × \(Int(canvas.drawableSize.height))\nFrames submitted: \(frames) • Controllers: \(GCController.controllers().count)\nButtons: \(String(frame.pad.buttons.rawValue, radix: 16)) • Touches: \(frame.touches.count)\n\(GuestRuntime.currentStatus())"
             }
             canvas.delegate = renderer
             status.text = "Metal host initializing…"
@@ -341,6 +399,7 @@ final class LabController: UIViewController {
             status.text = "Metal initialization failed: \(error.localizedDescription)"
         }
         showStatus()
+        status.isHidden = !debugVisible
         let pad = VirtualPad(input: input)
         view.addSubview(pad)
         virtualPad = pad
@@ -358,6 +417,12 @@ final class LabController: UIViewController {
         view.addSubview(outputToggle)
         applyOutputMode()
         view.addSubview(performance)
+        performance.isHidden = !performanceVisible
+        autoplayBadge.text = L("AutoPlay 测试 · 不记录成绩")
+        autoplayBadge.font = .boldSystemFont(ofSize: 12); autoplayBadge.textColor = .systemOrange
+        autoplayBadge.textAlignment = .center; autoplayBadge.backgroundColor = UIColor.black.withAlphaComponent(0.7)
+        autoplayBadge.isUserInteractionEnabled = false; autoplayBadge.isHidden = !AutoPlaySession.enabled
+        autoplayBadge.accessibilityIdentifier = "autoplay.testIndicator"; view.addSubview(autoplayBadge)
         updatePadVisibility()
         AppLanguage.prepareSession()
         GameRenderProfile.prepareSession()
@@ -378,13 +443,14 @@ final class LabController: UIViewController {
         let padToggleWidth = min(controls.width - 16, isPhone ? 250.0 : 330.0)
         padToggle.frame = CGRect(x: controls.midX - padToggleWidth / 2, y: controls.minY + 6, width: padToggleWidth, height: 30)
         outputToggle.frame = CGRect(x: controls.midX - 126, y: controls.minY + 38, width: 252, height: 30)
+        autoplayBadge.frame = CGRect(x: controls.maxX - 230, y: controls.minY + 6, width: 220, height: 24)
         padToggle.titleLabel?.font = .systemFont(ofSize: isPhone ? 12 : 16)
         padToggle.titleLabel?.adjustsFontSizeToFitWidth = true
         padToggle.titleLabel?.minimumScaleFactor = 0.7
         outputToggle.titleLabel?.adjustsFontSizeToFitWidth = true
         outputToggle.titleLabel?.minimumScaleFactor = 0.55
         outputToggle.titleLabel?.font = .systemFont(ofSize: isPhone ? 12 : 16)
-        status.isHidden = isPhone && gameGraphicsActive() != 0
+        status.isHidden = !debugVisible
         if ["screen", "screenfx"].contains(outputMode), let canvas = metalView {
             canvas.drawableSize = GameDisplayPolicy.drawableSize(mode: outputMode, bounds: canvas.bounds, scale: displayScale)
         }
@@ -397,6 +463,7 @@ final class LabController: UIViewController {
     }
 
     private func pollSession() {
+        renderer?.updateGuestHUD()
         let phase = guestSessionPhase()
         if phase != 0 { sessionHasStarted = true }
         let error = guestExitError()
@@ -486,6 +553,7 @@ final class LabController: UIViewController {
             if #available(iOS 16.0, macCatalyst 16.0, *) { layer.wantsExtendedDynamicRangeContent = edr }
         }
         setHDRMode(edr ? 1 : 0, currentEDRHeadroom)
+        canvas.preferredFramesPerSecond = gameFGMode() == 2 ? 120 : gameFGMode() == 1 ? 60 : Int(nativeFPS())
         outputMode = GameDisplayPolicy.outputMode(outputMode, phone: isPhone, conservative: DeviceGraphicsProfile.policy.conservative)
         let modes = [("720p", "720p"), ("1080p", L("1080p（普通放大）")),
                      ("1080fx", L("1080p（MetalFX 超分）")), ("1440fx", L("1440p（MetalFX 超分）")),
@@ -512,22 +580,35 @@ final class LabController: UIViewController {
                 self?.applyOutputMode()
             }
         }
-        // Keep the unqualified algorithm behind an explicit research launch.
-        // Real PV captures show hair/outline artifacts; a 60Hz counter alone
-        // must not promote this prototype into a usable performance preset.
-        let fgResearch = ["1", "2"].contains(ProcessInfo.processInfo.environment["PJDV_GAME_FG"] ?? "")
-        var fgModes: [(Int32, String)] = [(0, L("原生 60 FPS")), (1, L(fgResearch ? "省电 30→60（实验，增加显示延迟）" : "省电 30→60（画质验证中）"))]
-        if DeviceGraphicsProfile.policy.allows120(phone: isPhone) {
-            fgModes.append((2, L("60→120（ProMotion 图像插帧实验）")))
-        }
-        let fgActions = fgModes.map { mode, title in
-            UIAction(title: title, attributes: (mode != 0 && !fgResearch) || (mode == 2 && !supportsGame120) ? [.disabled] : [], state: gameFGMode() == mode ? .on : .off) { [weak self] _ in
-                guard let self, mode != 2 || self.supportsGame120 else { return }
-                if mode != 0 {
-                    self.hdrEnabled = false; setHDRMode(0, 1)
+        // Selecting an explicitly labelled experiment is the opt-in. Hardware,
+        // refresh-rate and power checks remain independent of launch variables.
+        func rateAction(_ mode: Int32, _ title: String, available: Bool = true) -> UIAction {
+            let selected = mode == 1 || mode == 2 ? gameFGMode() == mode : gameFGMode() == 0 && nativeFPS() == (mode == 3 ? 30 : mode == 4 ? 120 : 60)
+            return UIAction(title: L(title), attributes: available ? [] : [.disabled], state: selected ? .on : .off) { [weak self] _ in
+                guard let self, available else { return }
+                if mode == 1 || mode == 2 {
+                    self.hdrEnabled = false; setHDRMode(0, 1); setNativeFPS(60); setGameFG(mode)
+                } else {
+                    setGameFG(0); setNativeFPS(mode == 3 ? 30 : mode == 4 ? 120 : 60)
                 }
-                setGameFG(mode); self.applyOutputMode()
+                self.applyOutputMode()
             }
+        }
+        let frameMenus = [
+            UIMenu(title: "30 FPS", options: .displayInline, children: [rateAction(3, "原生 30 FPS（实验）")]),
+            UIMenu(title: "60 FPS", options: .displayInline, children: [rateAction(0, "原生 60 FPS"), rateAction(1, "30→60 图像插帧（实验，增加延迟）")]),
+            UIMenu(title: "120 FPS", options: .displayInline, children: [
+                rateAction(4, supportsNative120 ? "原生 120 FPS（实验，时序待验证）" : "原生120：仅指定Mac及120Hz屏幕", available: supportsNative120),
+                rateAction(2, supportsGame120 ? "60→120 图像插帧（实验）" : "120插帧：需family9+、120Hz且非低电量", available: supportsGame120)
+            ])
+        ]
+        let debugAction = UIAction(title: L(debugVisible ? "隐藏左上角调试信息" : "显示左上角调试信息"), state: debugVisible ? .on : .off) { [weak self] _ in
+            guard let self else { return }; self.debugVisible.toggle(); self.status.isHidden = !self.debugVisible
+            UserDefaults.standard.set(self.debugVisible, forKey: "debugInfoVisible"); self.applyOutputMode()
+        }
+        let metricsAction = UIAction(title: L(performanceVisible ? "隐藏 FPS／CPU／RAM" : "显示 FPS／CPU／RAM"), state: performanceVisible ? .on : .off) { [weak self] _ in
+            guard let self else { return }; self.performanceVisible.toggle(); self.performance.isHidden = !self.performanceVisible
+            UserDefaults.standard.set(self.performanceVisible, forKey: "performanceVisible"); self.applyOutputMode()
         }
         let hdrActions = [(false, L("SDR（原版色调映射）")), (true, L("HDR 高光映射（实验）"))].map { enabled, title in
             UIAction(title: L(title), attributes: enabled && !supportsHDR ? [.disabled] : [], state: (hdrEnabled && supportsHDR) == enabled ? .on : .off) { [weak self] _ in
@@ -537,13 +618,23 @@ final class LabController: UIViewController {
                 self?.applyOutputMode()
             }
         }
-        outputToggle.menu = UIMenu(children: [UIMenu(title: L("游戏插帧（实验）"), options: .displayInline, children: fgActions), UIMenu(title: L("输出分辨率"), options: .displayInline, children: resolutionActions), UIMenu(title: L("舞台光照"), options: .displayInline, children: shadowActions), UIMenu(title: L("动态范围"), options: .displayInline, children: hdrActions)])
+        outputToggle.menu = UIMenu(children: [UIMenu(title: L("帧率与插帧（实验）"), children: frameMenus), UIMenu(title: L("输出分辨率"), options: .displayInline, children: resolutionActions), UIMenu(title: L("舞台光照"), options: .displayInline, children: shadowActions), UIMenu(title: L("动态范围"), options: .displayInline, children: hdrActions), UIMenu(title: L("显示信息"), options: .displayInline, children: [debugAction, metricsAction])])
+        // UIKit's menu takes keyboard focus. Restore game key handling after
+        // dismissal so changing graphics settings cannot strand keyboard input.
+        // The iPad responder still uses a zero-height inputView.
+        if view.window != nil {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
+                guard let self, self.view.window != nil, self.presentedViewController == nil else { return }
+                self.becomeFirstResponder()
+            }
+        }
     }
 
     private func updateOutputLabel() {
         // The OS can cap ProMotion during low power or after a display change.
         // Return to source60/display60 instead of silently running source30.
-        if gameFGMode() == 2 && !supportsGame120 { setGameFG(0) }
+        if gameFGMode() == 2 && !supportsGame120 { setGameFG(0); setNativeFPS(60) }
+        if nativeFPS() == 120 && !supportsNative120 { setNativeFPS(60) }
         let label: String
         switch outputMode {
         case "720p": label = "720p"
@@ -610,9 +701,19 @@ final class LabRenderer: NSObject, MTKViewDelegate {
 
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {}
 
+    func updateGuestHUD() {
+        guard gameGraphicsActive() != 0 else { return }
+        onFrame?(Int(guestSubmittedFrames()), CACurrentMediaTime() - started)
+    }
+
     func draw(in view: MTKView) {
         if gameGraphicsActive() != 0 {
-            onFrame?(Int(guestSubmittedFrames()), CACurrentMediaTime() - started)
+            // The guest owns this CAMetalLayer and its presentation clock.
+            // Stop MTKView's placeholder display loop before a guest display
+            // link is attached or its refresh rate changes. The session timer
+            // updates diagnostics independently; input is event-driven.
+            view.isPaused = true
+            updateGuestHUD()
             return
         }
         guard view.drawableSize.width > 0, view.drawableSize.height > 0,
@@ -664,6 +765,7 @@ final class HostLaunchController: UIViewController {
     private let resourceStatus = UILabel()
     private let start = UIButton(type: .system)
     private let language = UIButton(type: .system)
+    private let autoplay = UIButton(type: .system)
     private var startedExperiment = false
     private var launchDuoProfile = "phone"
     private let inbox=AppImportInbox()
@@ -693,6 +795,10 @@ final class HostLaunchController: UIViewController {
         resources.titleLabel?.font = .systemFont(ofSize: 20, weight: .medium)
         resources.accessibilityIdentifier = "launcher.resources"
         resources.addTarget(self, action: #selector(manageResources), for: .touchUpInside)
+        let mods=UIButton(type:.system);mods.setTitle(L("MOD 管理（实验）"),for:.normal)
+        mods.titleLabel?.font = .systemFont(ofSize:20,weight:.medium)
+        mods.accessibilityIdentifier="launcher.mods"
+        mods.addTarget(self,action:#selector(manageMods),for:.touchUpInside)
         let experiments = UIButton(type: .system);experiments.setTitle(L(DeviceGraphicsProfile.policy.conservative ? "实验功能" : "实验功能：HDR／帧生成显示链测试"), for: .normal)
         experiments.accessibilityIdentifier = "launcher.graphicsExperiments"
         experiments.showsMenuAsPrimaryAction = true
@@ -710,9 +816,13 @@ final class HostLaunchController: UIViewController {
         })
         language.accessibilityIdentifier = "launcher.language"; language.showsMenuAsPrimaryAction = true
         updateLanguageMenu()
-        let sticks = UIButton(type: .system); sticks.setTitle(L("虚拟手柄布局"), for: .normal); sticks.accessibilityIdentifier = "launcher.stickLayout"
+        let sticks = UIButton(type: .system); sticks.setTitle(L("虚拟按键：大小与位置"), for: .normal); sticks.accessibilityIdentifier = "launcher.stickLayout"
         sticks.addTarget(self, action: #selector(editSticks), for: .touchUpInside)
         let settings = UIStackView(arrangedSubviews: [language, sticks]); settings.spacing = 20
+        autoplay.accessibilityIdentifier = "launcher.autoplay"
+        autoplay.showsMenuAsPrimaryAction = true
+        autoplay.isHidden = !AutoPlaySession.supported
+        updateAutoplayMenu()
         #if !targetEnvironment(macCatalyst)
         if #available(iOS 27.1, *) {
             view.addInteraction(UIHingeInteraction { [weak self] _, update in
@@ -728,10 +838,16 @@ final class HostLaunchController: UIViewController {
         let phone = UIDevice.current.userInterfaceIdiom == .phone
         title.font = .boldSystemFont(ofSize: phone ? 32 : 44)
         inboxStatus.font = .systemFont(ofSize:13);inboxStatus.textColor = .lightGray;inboxStatus.numberOfLines=0;inboxStatus.textAlignment = .center;inboxStatus.accessibilityIdentifier="launcher.inboxStatus"
-        let stack = UIStackView(arrangedSubviews: [title, detail, resourceStatus, resources,inboxStatus, quality, start, settings, experiments]);stack.axis = .vertical;stack.spacing = phone ? 8 : 18;stack.alignment = .center
-        stack.translatesAutoresizingMaskIntoConstraints = false;view.addSubview(stack)
-        NSLayoutConstraint.activate([stack.centerXAnchor.constraint(equalTo: view.centerXAnchor),stack.centerYAnchor.constraint(equalTo: view.centerYAnchor),
-            stack.widthAnchor.constraint(lessThanOrEqualTo: view.widthAnchor, multiplier: 0.8),start.heightAnchor.constraint(greaterThanOrEqualToConstant: 60)])
+        let stack = UIStackView(arrangedSubviews: [title, detail, resourceStatus, resources,inboxStatus, mods, quality, start, settings, autoplay, experiments]);stack.axis = .vertical;stack.spacing = phone ? 8 : 18;stack.alignment = .center
+        let scroll=UIScrollView(),content=UIView()
+        scroll.translatesAutoresizingMaskIntoConstraints=false;content.translatesAutoresizingMaskIntoConstraints=false
+        stack.translatesAutoresizingMaskIntoConstraints=false
+        view.addSubview(scroll);scroll.addSubview(content);content.addSubview(stack)
+        let fillHeight=content.heightAnchor.constraint(equalTo:scroll.frameLayoutGuide.heightAnchor);fillHeight.priority = .defaultLow
+        NSLayoutConstraint.activate([scroll.leadingAnchor.constraint(equalTo:view.safeAreaLayoutGuide.leadingAnchor),scroll.trailingAnchor.constraint(equalTo:view.safeAreaLayoutGuide.trailingAnchor),scroll.topAnchor.constraint(equalTo:view.safeAreaLayoutGuide.topAnchor),scroll.bottomAnchor.constraint(equalTo:view.safeAreaLayoutGuide.bottomAnchor),
+            content.leadingAnchor.constraint(equalTo:scroll.contentLayoutGuide.leadingAnchor),content.trailingAnchor.constraint(equalTo:scroll.contentLayoutGuide.trailingAnchor),content.topAnchor.constraint(equalTo:scroll.contentLayoutGuide.topAnchor),content.bottomAnchor.constraint(equalTo:scroll.contentLayoutGuide.bottomAnchor),content.widthAnchor.constraint(equalTo:scroll.frameLayoutGuide.widthAnchor),content.heightAnchor.constraint(greaterThanOrEqualTo:scroll.frameLayoutGuide.heightAnchor),fillHeight,
+            stack.centerXAnchor.constraint(equalTo:content.centerXAnchor),stack.centerYAnchor.constraint(equalTo:content.centerYAnchor),stack.topAnchor.constraint(greaterThanOrEqualTo:content.topAnchor,constant:20),stack.bottomAnchor.constraint(lessThanOrEqualTo:content.bottomAnchor,constant:-20),stack.widthAnchor.constraint(equalTo:content.widthAnchor,multiplier:0.88),start.heightAnchor.constraint(greaterThanOrEqualToConstant:60)])
+
     }
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated);refreshResources()
@@ -762,6 +878,15 @@ final class HostLaunchController: UIViewController {
     @objc private func editSticks() {
         let editor = StickLayoutController(profile: UIDevice.current.userInterfaceIdiom == .phone ? launchDuoProfile : "tablet")
         editor.modalPresentationStyle = .fullScreen; present(editor, animated: true)
+    }
+    private func updateAutoplayMenu() {
+        autoplay.setTitle(L(AutoPlaySession.enabled ? "实验性 AutoPlay：开（不记录成绩）" : "实验性 AutoPlay：关"), for: .normal)
+        autoplay.menu = UIMenu(title: L("仅在开始游戏前设置；自动 COOL，使用临时存档。"), children: [false, true].map { enabled in
+            UIAction(title: L(enabled ? "开启 AutoPlay（不记录成绩）" : "关闭 AutoPlay"), state: AutoPlaySession.enabled == enabled ? .on : .off) { [weak self] _ in
+                guard guestSessionPhase() == 0 else { return }
+                AutoPlaySession.enabled = enabled; self?.updateAutoplayMenu()
+            }
+        })
     }
     private func showExperiment(_ mode: GraphicsExperimentMode) {
         guard mode != .hdr || DeviceGraphicsProfile.policy.allowsHDR,
@@ -797,6 +922,11 @@ final class HostLaunchController: UIViewController {
                 AppLanguage.select(key);self?.view.window?.rootViewController=HostLaunchController()
             }
         })
+    }
+    @objc private func manageMods() {
+        guard guestSessionPhase() == 0 else{return}
+        let panel=UINavigationController(rootViewController:ModImportController(style:.insetGrouped))
+        panel.modalPresentationStyle = .formSheet;present(panel,animated:true)
     }
     @objc private func manageResources() {
         let panel = ResourceImportController();panel.modalPresentationStyle = .formSheet

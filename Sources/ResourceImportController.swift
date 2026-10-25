@@ -2,7 +2,7 @@ import UIKit
 import UniformTypeIdentifiers
 
 #if targetEnvironment(macCatalyst)
-@objc(PJDVMacFileSelection) private protocol MacFileSelectionPlugin {
+@objc(PJDVMacFileSelection) protocol MacFileSelectionPlugin {
     static func chooseLocalItem(withTitle title:String,directory:Bool,completion:@escaping(URL?)->Void)
 }
 #endif

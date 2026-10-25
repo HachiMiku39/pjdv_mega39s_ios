@@ -8,7 +8,7 @@ struct GameHardwarePolicy {
     var conservative: Bool { family < 9 }
     var allowsHDR: Bool { supported && !conservative }
     var allowsRayTracing: Bool { supported && !conservative }
-    func allows120(phone: Bool) -> Bool { supported && !conservative && !phone }
+    func allows120(phone: Bool) -> Bool { supported && !conservative }
     func cappedTo1080(phone: Bool) -> Bool { phone || conservative }
     func defaultOutput(phone: Bool, metalFX: Bool) -> String {
         if conservative { return "720p" }
@@ -22,6 +22,9 @@ struct GameHardwarePolicy {
 }
 
 enum GameFrameGenerationPolicy {
+    static func native120ModelAllowed(soc: String, mac: Bool) -> Bool {
+        mac && ["Apple M3 Ultra", "Apple M5 Max", "Apple M5 Ultra"].contains(soc)
+    }
     static func permits120(hardware: GameHardwarePolicy, phone: Bool, maximumRefresh: Int, lowPower: Bool) -> Bool {
         hardware.allows120(phone: phone) && maximumRefresh >= 120 && !lowPower
     }

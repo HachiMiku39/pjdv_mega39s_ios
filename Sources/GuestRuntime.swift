@@ -5,6 +5,37 @@ import AVFAudio
 private func loadGuestImages(_ error: UnsafeMutablePointer<CChar>, _ capacity: UInt) -> Int32
 @_silgen_name("pjdv_guest_math_probe")
 private func guestMathProbe() -> Int32
+@_silgen_name("pjdv_guest_autoplay_supported") private func autoplaySupported() -> Int32
+@_silgen_name("pjdv_autoplay_configure") private func configureAutoplay(_ enabled: Int32)
+
+// Changed only on the idle launcher. Every enabled session gets a fresh save
+// snapshot; no test scores, options or clear flags are ever merged back.
+enum AutoPlaySession {
+    static var supported: Bool { autoplaySupported() != 0 }
+    static var enabled = ProcessInfo.processInfo.environment["PJDV_AUTOPLAY"] == "1"
+    private static var disposableRoot: URL?
+    static func saveDirectory(normal: URL, temp: URL, enabled: Bool) throws -> URL {
+        configureAutoplay(0)
+        guard enabled else { return normal }
+        guard supported else { throw NSError(domain: "PJDV.AutoPlay", code: 1,
+            userInfo: [NSLocalizedDescriptionKey: L("当前构建未包含 AutoPlay 测试入口")]) }
+        let root = temp.appendingPathComponent("AutoPlay", isDirectory: true).appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let save = root.appendingPathComponent("GuestSave", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        do {
+            if FileManager.default.fileExists(atPath: normal.path) { try FileManager.default.copyItem(at: normal, to: save) }
+            else { try FileManager.default.createDirectory(at: save, withIntermediateDirectories: true) }
+        } catch { try? FileManager.default.removeItem(at: root); throw error }
+        disposableRoot = root
+        configureAutoplay(1)
+        return save
+    }
+    static func end() {
+        configureAutoplay(0)
+        if let root = disposableRoot { try? FileManager.default.removeItem(at: root) }
+        disposableRoot = nil
+    }
+}
 
 @_silgen_name("pjdv_attach_metal_layer")
 func attachGuestMetalLayer(_ layer: UnsafeMutableRawPointer)
@@ -16,13 +47,14 @@ private func readGuestState(_ out: UnsafeMutablePointer<CChar>, _ capacity: UInt
 
 enum GuestRuntime {
     private static var resources: ResourceAccess?
-    static func releaseResourceAccess() { resources = nil }
+    static func releaseResourceAccess() { resources = nil; AutoPlaySession.end() }
     static func currentStatus() -> String {
         var value = [CChar](repeating: 0, count: 256)
         value.withUnsafeMutableBufferPointer { readGuestState($0.baseAddress!, UInt($0.count)) }
         return String(cString: value)
     }
     static func validateMapping(completion: @escaping (String) -> Void) {
+        let autoplay = AutoPlaySession.enabled
         DispatchQueue.global(qos: .userInitiated).async {
             var error = [CChar](repeating: 0, count: 256)
             let loaded = error.withUnsafeMutableBufferPointer {
@@ -48,14 +80,15 @@ enum GuestRuntime {
                 #if targetEnvironment(macCatalyst)
                 // An explicit isolated profile is useful for first-boot regression.
                 // Ordinary launches always keep the existing Documents profile.
-                let save = ProcessInfo.processInfo.environment["PJDV_SAVE_TEST_ROOT"].map { URL(fileURLWithPath: $0, isDirectory: true) }
+                let normalSave = ProcessInfo.processInfo.environment["PJDV_SAVE_TEST_ROOT"].map { URL(fileURLWithPath: $0, isDirectory: true) }
                     ?? documents.appendingPathComponent("GuestSave", isDirectory: true)
                 #else
-                let save = documents.appendingPathComponent("GuestSave", isDirectory: true)
+                let normalSave = documents.appendingPathComponent("GuestSave", isDirectory: true)
                 #endif
                 let temp = documents.appendingPathComponent("GuestTemp", isDirectory: true)
-                try FileManager.default.createDirectory(at: save, withIntermediateDirectories: true)
+                try FileManager.default.createDirectory(at: normalSave, withIntermediateDirectories: true)
                 try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
+                let save = try AutoPlaySession.saveDirectory(normal: normalSave, temp: temp, enabled: autoplay)
                 let access = try ResourceLibrary.open()
                 let layout = try ResourceLayout.locate(access.root)
                 AppLanguage.configure(available: layout.languages)
@@ -78,6 +111,7 @@ enum GuestRuntime {
                     documents.appendingPathComponent("PJDV-runtime.log").path.withCString { log in bootGuest(r, d, s, t, log) }
                 } } } }
             } catch {
+                AutoPlaySession.end()
                 DispatchQueue.main.async { completion("Guest storage: " + error.localizedDescription) }
             }
         }

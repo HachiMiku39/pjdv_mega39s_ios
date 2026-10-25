@@ -16,6 +16,12 @@ static pthread_key_t keys[8];
 static pthread_mutex_t state_lock = PTHREAD_MUTEX_INITIALIZER;
 static int loaded;
 
+int pjdv_guest_autoplay_supported(void) {
+    for (size_t i = 0; i < sizeof(pjdv_gates)/sizeof(*pjdv_gates); i++)
+        if (pjdv_gates[i].arg == 0x91 && !strcmp(pjdv_gates[i].kind, "svc")) return 1;
+    return 0;
+}
+
 static int remap(vm_address_t to, const void *source, uint64_t length, boolean_t copy, vm_prot_t need) {
     vm_address_t address=to;vm_prot_t cur=0,max=0;
     kern_return_t k=vm_remap(mach_task_self(),&address,length,0,VM_FLAGS_FIXED|VM_FLAGS_OVERWRITE,

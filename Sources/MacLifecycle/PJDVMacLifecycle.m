@@ -1,4 +1,8 @@
 #import <AppKit/AppKit.h>
+#import <IOKit/IOKitLib.h>
+@protocol PJDVMacHardware
++ (NSDictionary *)hardwareSnapshot;
+@end
 @protocol PJDVMacTermination
 + (void)terminateApplication;
 @end
@@ -6,10 +10,28 @@
 + (void)chooseLocalItemWithTitle:(NSString *)title directory:(BOOL)directory
                      completion:(void (^)(NSURL * _Nullable))completion;
 @end
-@interface PJDVMacLifecycle : NSObject <PJDVMacTermination, PJDVMacFileSelection>
+@interface PJDVMacLifecycle : NSObject <PJDVMacTermination, PJDVMacFileSelection, PJDVMacHardware>
 + (void)terminateApplication;
 @end
 @implementation PJDVMacLifecycle
++ (NSDictionary *)hardwareSnapshot {
+    NSMutableDictionary *result = [NSMutableDictionary dictionary];
+    NSScreen *screen = NSApplication.sharedApplication.keyWindow.screen ?: NSScreen.mainScreen;
+    if (@available(macOS 12.0, *)) result[@"maximumRefresh"] = @(screen.maximumFramesPerSecond);
+    // Read the actual enabled GPU core count; SoC names alone do not identify
+    // Mac GPU bins. No private Metal selectors or external command execution.
+    io_iterator_t iterator = IO_OBJECT_NULL;
+    if (IOServiceGetMatchingServices(kIOMasterPortDefault, IOServiceMatching("AGXAccelerator"), &iterator) == KERN_SUCCESS) {
+        io_object_t service; unsigned total = 0;
+        while ((service = IOIteratorNext(iterator))) {
+            CFTypeRef value = IORegistryEntryCreateCFProperty(service, CFSTR("gpu-core-count"), kCFAllocatorDefault, 0);
+            if (value && CFGetTypeID(value) == CFNumberGetTypeID()) { int cores = 0; if (CFNumberGetValue(value, kCFNumberIntType, &cores) && cores > 0) total += cores; }
+            if (value) CFRelease(value); IOObjectRelease(service);
+        }
+        IOObjectRelease(iterator); if (total) result[@"gpuCores"] = @(total);
+    }
+    return result;
+}
 static NSOpenPanel *activeFilePanel;
 + (void)chooseLocalItemWithTitle:(NSString *)title directory:(BOOL)directory
                      completion:(void (^)(NSURL * _Nullable))completion {

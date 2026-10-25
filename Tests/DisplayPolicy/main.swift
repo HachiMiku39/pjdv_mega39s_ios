@@ -88,7 +88,7 @@ for family in [7, 8] {
 }
 let modern = GameHardwarePolicy(family: 9)
 check(modern.allowsHDR && modern.allowsRayTracing && modern.allows120(phone: false), "Modern feature policy regressed")
-check(!modern.allows120(phone: true), "Phone enabled 120 FPS")
+check(modern.allows120(phone: true), "Family9 phone interpolation research must be eligible")
 check(GameHardwarePolicy.cappedFamily(detected: 6, requested: 7) == 6, "Diagnostic cap grants unsupported GPU capability")
 check(GameHardwarePolicy.cappedFamily(detected: 9, requested: 7) == 7, "Entry diagnostic cap unavailable")
 check(!GameHardwarePolicy(family: 6).supported, "Below minimum GPU admitted")
@@ -111,10 +111,10 @@ for control in PadControl.allCases {
 check(StickLayout.defaults("tablet").placement(for: .a).scale == 1, "Default face key size changed")
 print("All 18 virtual controls, legacy migration, persistence codec and rectangular shoulder sizing: PASS")
 
-// ProMotion must preserve source60 and remain unavailable on phones/entry GPUs.
+// ProMotion research includes family9+ phones; real refresh and power still gate.
 for family in [7, 8, 9] { for phone in [false, true] { for hz in [60, 80, 120] { for lowPower in [false, true] {
     let allowed = GameFrameGenerationPolicy.permits120(hardware: GameHardwarePolicy(family: family), phone: phone, maximumRefresh: hz, lowPower: lowPower)
-    check(allowed == (family >= 9 && !phone && hz >= 120 && !lowPower), "ProMotion hardware/screen/power cap bypass")
+    check(allowed == (family >= 9 && hz >= 120 && !lowPower), "ProMotion hardware/screen/power cap bypass")
     check(GameFrameGenerationPolicy.launchMode("2", permits120: allowed) == (allowed ? 2 : 0), "Launch override bypassed ProMotion gate")
 } } } }
 check(GameFrameGenerationPolicy.launchMode("1", permits120: false) == 1, "30-to-60 research mode removed")
@@ -122,3 +122,10 @@ for value: String? in [nil, "0", "3", "120", "invalid"] {
     check(GameFrameGenerationPolicy.launchMode(value, permits120: true) == 0, "Unknown FG mode admitted")
 }
 print("ProMotion family/display/phone/low-power gates and research launch modes: PASS")
+
+for name in ["Apple M3 Ultra", "Apple M5 Max", "Apple M5 Ultra"] {
+ check(GameFrameGenerationPolicy.native120ModelAllowed(soc: name, mac: true), "Requested native120 allowlist missing")
+ check(!GameFrameGenerationPolicy.native120ModelAllowed(soc: name, mac: false), "Non-Mac enabled native120")
+}
+for name in ["Apple M3 Max", "Apple M4", "Apple M5", "Unknown"] { check(!GameFrameGenerationPolicy.native120ModelAllowed(soc: name, mac: true), "Native120 allowlist bypass") }
+print("Native120 exact Mac SoC allowlist and family9+ interpolation policy: PASS")

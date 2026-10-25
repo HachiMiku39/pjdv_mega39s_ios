@@ -85,12 +85,17 @@ def generate(directory, names):
             ret=int(ret,16);arg=int(arg);orig=int(orig,16)
             if kind not in ('svc','cntpct','cntvct') or not -prefix<=ret<-prefix+patch_pages or not 0<=orig<text['file_bytes']:
                 raise ValueError('Invalid gate record')
-            # The only M39 private service is the verified common archive call.
+            # Allow only the verified archive call and optional diagnostic
+            # judgment call. A generic private SVC remains rejected.
             # Keep rejecting unrelated private SVCs, even with valid segments.
             archive_gate=(kind=='svc' and arg==0x90 and name=='main' and orig==0x1f0850
                 and original=='a370a68b4700a63d943a316916eb41ddedea5f5382c5b04eb3f126a9b8614e52'
                 and proof.get('archive_gzip',{}).get('service')=='0x90')
-            if (kind=='svc' and not (0<=arg<128 or archive_gate)) or (kind!='svc' and not 0<=arg<=30):
+            autoplay_gate=(kind=='svc' and arg==0x91 and name=='main' and orig==0x1af6a4
+                and original=='a370a68b4700a63d943a316916eb41ddedea5f5382c5b04eb3f126a9b8614e52'
+                and proof.get('autoplay',{}).get('service')=='0x91'
+                and proof.get('autoplay',{}).get('caller')=='0x1af6a4')
+            if (kind=='svc' and not (0<=arg<128 or archive_gate or autoplay_gate)) or (kind!='svc' and not 0<=arg<=30):
                 raise ValueError('Unsupported gate argument')
             gates.append('{%d,%d,"%s",%d,%d}'%(len(records)-1,ret,kind,arg,orig))
     header='''#pragma once

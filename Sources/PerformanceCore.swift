@@ -8,18 +8,26 @@ final class PresentedFrames {
     private let lock = NSLock()
     private var times: [Double] = []
     private var diagnosticCount = 0
+    private let timingDiagnostic = ProcessInfo.processInfo.environment["PJDV_TIMING_DIAG"] == "1"
+    private var benchmark = ProcessInfo.processInfo.environment["PJDV_PERF_TRACE"] == "1"
+    private var intervals: [Double] = []
     func record(_ time: Double) {
         guard time.isFinite, time > 0 else { return }
         lock.lock(); defer { lock.unlock() }
         guard times.last.map({ time > $0 }) ?? true else { return }
-        if diagnosticCount < 3 && ProcessInfo.processInfo.environment["PJDV_TIMING_DIAG"] == "1" {
+        if diagnosticCount < 3 && timingDiagnostic {
             diagnosticCount += 1
             NSLog("PJDV present clock timestamp=%.6f now=%.6f uptime=%.6f", time, CACurrentMediaTime(), Double(DispatchTime.now().uptimeNanoseconds)/1e9)
         }
+        if benchmark, let last = times.last { intervals.append((time - last) * 1000); if intervals.count > 1024 { intervals.removeFirst(intervals.count - 1024) } }
         times.append(time)
         if times.count > 240 { times.removeFirst(times.count - 240) }
     }
-    func reset() { lock.lock(); times.removeAll(); lock.unlock() }
+    func reset() { lock.lock(); times.removeAll(); intervals.removeAll(); lock.unlock() }
+    func enableBenchmark() { lock.lock(); benchmark = true; lock.unlock() }
+    func takeBenchmarkIntervals() -> [Double] {
+        lock.lock(); defer { lock.unlock() }; let value = intervals; intervals.removeAll(keepingCapacity: true); return value
+    }
     func fps(at now: Double) -> Double {
         lock.lock(); defer { lock.unlock() }
         times.removeAll { $0 < now - 1 }
@@ -59,9 +67,11 @@ final class PerformanceMonitor {
             percent = 100 * (cpu - old) / (now - wall)
         }
         lastCPU = cpu; lastWall = now
-        return Sample(fps: frames.fps(at: now), cpuPercent: percent, memoryBytes: Self.memoryBytes())
+        let value = Sample(fps: frames.fps(at: now), cpuPercent: percent, memoryBytes: Self.memoryBytes())
+        return value
     }
 }
+
 
 @_cdecl("pjdv_frame_presented")
 func pjdvFramePresented(_ timestamp: Double) {

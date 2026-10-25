@@ -5,6 +5,9 @@ void *front_metal_layer(void){return (__bridge void *)gameLayer;}
 
 #include <stdatomic.h>
 static _Atomic int graphicsActive;
+static _Atomic int nativeFPS = 60;
+int pjdv_native_fps_target(void){ return atomic_load(&nativeFPS); }
+void pjdv_set_native_fps(int value){ atomic_store(&nativeFPS, value==30 || value==120 ? value : 60); }
 extern void pjdv_monitor_reset(void);
 void pjdv_begin_game_graphics(void){if(!atomic_exchange(&graphicsActive,1))pjdv_monitor_reset();}
 int pjdv_game_graphics_active(void){return atomic_load(&graphicsActive);}

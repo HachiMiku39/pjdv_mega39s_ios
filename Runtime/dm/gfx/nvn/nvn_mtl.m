@@ -6015,8 +6015,11 @@ void pjdv_set_game_frame_generation(int mode){
 // Game logic already runs at 25 ticks / second and unit positions are interpolated by time, so there are no repeated frames at 30 frames (measured on a real device: coefficient of variation of per-frame camera displacement 0.292 at 30 frames, 0.296 at 60 frames).
 // The switch is on the 「自定义」(Custom) page (dm_custom.c eco_fps, off by default, takes effect on apply); the test switch DM_FPS=30/60 pins it.
 __attribute__((weak)) int dm_fps_setting(void) { return 60; }   // 宿主 dm_custom.c 提供强定义；图形单测不链宿主时恒 60 | The host's dm_custom.c provides the strong definition; always 60 when graphics unit tests do not link the host
+extern int pjdv_native_fps_target(void) __attribute__((weak_import));
 int mtl_fps_target(void) { static int env = -2; if (env == -2) { const char *e = getenv("DM_FPS"); env = e ? atoi(e) : -1; if (env != 30 && env != 60) env = -1; else MLOG("DM_FPS=%d：帧数由测试开关钉住", env); }
-    int fg=pjdv_game_frame_generation_mode(); return fg?pjdv_fg_source_hz(fg):env > 0 ? env : dm_fps_setting() == 30 ? 30 : 60; }
+    int fg=pjdv_game_frame_generation_mode(); if(fg)return pjdv_fg_source_hz(fg);
+    int native=pjdv_native_fps_target?pjdv_native_fps_target():0;
+    return native==30 || native==60 || native==120 ? native : env > 0 ? env : dm_fps_setting() == 30 ? 30 : 60; }
 // 外推启用状态一变（省电模式切换、世界冻结接手 / 交回）：先让「跨帧不写回」账本重学（试用期里照常写回），外推晚一帧再真正切换——
 // 保证切换前最后一次提交是全量写回的。不然 30 帧时每帧先清空的附件被学成不写回，切回 60 帧的第一个外推帧读到旧内容、闪一帧（测试版实测，xv 自检报红后才撤销）
 // Whenever the extrapolation enabled state changes (power-saving mode toggled, world freeze takes over / hands back): first let the "no store across frames" ledger relearn (during the trial period it stores as usual), and the extrapolation really switches one frame later --

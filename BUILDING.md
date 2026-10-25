@@ -1,14 +1,8 @@
-# 源码与构建（2026-10-24）
+# 源码与构建（2026-10-25）
 
-本仓库包含 Swift/UIKit 宿主、Mac AppKit 辅助组件、NVN → Metal／Horizon 兼容层、逆向工具和测试。公开源码与精简预览包为 **0.1.5 build17**。AutoPlay、调试信息和热切换的实际验证范围及限制见中英文 README。游戏资源、密钥、存档和本机签名数据不发布。
+本仓库包含 Swift/UIKit 宿主、Mac AppKit 辅助组件、NVN → Metal／Horizon 兼容层、逆向工具和测试。公开源码与精简预览包为 **0.1.5 build18**。AutoPlay、调试信息和热切换的实际验证范围及限制见中英文 README。游戏资源、密钥、存档和本机签名数据不发布。
 
-The public source and lightweight preview installers are **0.1.5 build17**. Both READMEs describe measured AutoPlay, diagnostics and hot-switch checks and outstanding limitations. Game payloads, keys, saves and local signing data are excluded.
-
-## 本版源码位置 / Source location
-
-网页平铺目录当前仍为 build16。build17 的完整源码以同目录 `PJDVM39-0.1.5b17-source.zip` 提供，也可从 Release 下载；先解压到新的外置 SSD 目录，再使用归档内的构建说明和 Xcode 工程。归档内 `SOURCE_MANIFEST.json` 对应 build17；网页根目录清单保留原快照身份。Git 推送认证暂不可用，本机待同步提交为 `00b1ba4`，没有把源码上传失败写成推送成功。
-
-The flat web directories remain build16. For build17, extract `PJDVM39-0.1.5b17-source.zip` to a fresh external-SSD folder and use its build instructions/project. Its SOURCE_MANIFEST describes build17; the web root manifest belongs to the earlier flat snapshot. Git push authentication was unavailable, so the pending local commit00b1ba4 is not claimed as pushed.
+The public source and lightweight preview installers are **0.1.5 build18**. Both READMEs describe measured AutoPlay, diagnostics and hot-switch checks and outstanding limitations. Game payloads, keys, saves and local signing data are excluded.
 
 ## 源码目录
 
@@ -123,3 +117,17 @@ xcrun clang -fobjc-arc -O2 -I Runtime/dm/gfx/nvn -framework Foundation -framewor
 ```
 
 研究日志分别记录sourceFPS、generatedFPS、presentedFPS、lastFGGPUms和lastRealCopyGPUms；普通复制不能覆盖插帧GPU耗时。`PJDV_FG_CAPTURE=1` 下可向GuestTemp/fg-capture.request写入新整数，下一次生成时本地读回previous/current/generated及存在时的Spatial输出；仅用于开发诊断，勿把游戏图像或设备日志当作公开安装包内容。
+
+
+## build18 MOD 入口与合成包测试
+
+启动页新增 MOD 管理，只检查结构并登记原位置书签，运行层加载仍关闭。ZIP/ZIP64 仅读目录；7z/RAR 请先解压后添加文件夹。见 [入口与测试说明](Reports/MOD-ENTRY-build18.md)。
+
+```sh
+export PJDV_TEST_ROOT="/Volumes/你的APFS外置盘/PJDVTests/mod-01"
+bash Scripts/test-mod-packages.sh
+```
+
+测试输出目录必须尚未存在；ASan 检查 ZIP64、路径与元数据边界、取消、150 次元数据变异、书签登记和源文件保留。没有真实 MOD／游戏资源。Mac UI 已验证，iPad 真机入口尚未验收。
+
+The launcher MOD manager only inspects and registers source bookmarks; loading remains disabled. Run the synthetic ASan package tests above in a fresh output directory. These tests do not qualify real MOD playback.

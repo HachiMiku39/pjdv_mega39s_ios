@@ -1,9 +1,10 @@
 {
   "format": "pjdv-public-source-v1",
-  "date": "2026-10-24",
-  "source_build": "0.1.5 build16 input fixes and ProMotion research candidate",
-  "public_release": "build16 experimental preview; native60 default, game interpolation research gated",
-  "scope": "host/runtime/tools/tests; generated game inputs excluded",
+  "date": "2026-10-25",
+  "source_build": "0.1.5 build18",
+  "public_release": "v0.1.5b18",
+  "mod_loader_enabled": false,
+  "upstream_research_commit": "13bc9fabdf5e8249a7e65c5c724ec0a52d345e2a",
   "excluded_production_keys_game_payloads_saves_profiles": true,
   "files": [
     {
@@ -57,37 +58,37 @@
     },
     {
       "path": "Assets/Localizations/en.lproj/Localizable.strings",
-      "bytes": 11615,
-      "sha256": "aefe64ce8a082d1f7ab8bfd21fdf8519185c3f67b349124aa32ab02abd667d29",
-      "git_blob_sha": "fc0b09a6ecfbfcc8fd8998ea2ac4b2ceb59b83ba",
+      "bytes": 16831,
+      "sha256": "fe64b1e3f6f9f61cba0e6ea42951230476a7799bc295b1b0611dfe552ce9a5a4",
+      "git_blob_sha": "febba613130dcc0ad93af3beb0d0c3e6a1357a17",
       "mode": "100644"
     },
     {
       "path": "Assets/Localizations/ja.lproj/Localizable.strings",
-      "bytes": 13599,
-      "sha256": "cd6fb587850c07ec4ee49514b7246e51f9ab8901b806e2f2d11753b428e11d3d",
-      "git_blob_sha": "3cefbf92c10eb37348aa50b90bcd97f58a616735",
+      "bytes": 19575,
+      "sha256": "36bc6787465fd74f86192273dfb379617e2d246307c5eeb5b460b588d7258a6a",
+      "git_blob_sha": "17c8363ec02d25b8a02226a341bf38728c248fba",
       "mode": "100644"
     },
     {
       "path": "Assets/Localizations/ko.lproj/Localizable.strings",
-      "bytes": 12417,
-      "sha256": "41bbe5016c04db1f54061ba303433b6451e5cc776b557e19d758126c59f6ba3e",
-      "git_blob_sha": "c531af5a487b663465fbf700ecb04108bc0207b5",
+      "bytes": 18265,
+      "sha256": "5af8272c71a071c6c86f342db9b653969c31b65d3147fbb2c5e31cab45ead0f3",
+      "git_blob_sha": "1b3fae45694661415120f26a2865cfc7cc22de46",
       "mode": "100644"
     },
     {
       "path": "Assets/Localizations/zh-Hans.lproj/Localizable.strings",
-      "bytes": 11379,
-      "sha256": "1d4f5313c297a1c5030660704603925ef54713f8418601d9f9da590a2a0789b3",
-      "git_blob_sha": "31cac3b403372dfac480c2ee5d0ecc24a3e31ad8",
+      "bytes": 16355,
+      "sha256": "68f0b1ccd1ea1e91c133084af499217dd0980066bfaa091156376c9883c46435",
+      "git_blob_sha": "77c7e4edeca07bc22b71cf7316ef65f10a1ebb16",
       "mode": "100644"
     },
     {
       "path": "Assets/Localizations/zh-Hant.lproj/Localizable.strings",
-      "bytes": 11411,
-      "sha256": "04759c779f70148c3a7fc375cf1be67e4b97266f0ef5f8101ebcd8ddfe730a7e",
-      "git_blob_sha": "0c9800072ae09d7c2b67e168c8d407b1cd83d49b",
+      "bytes": 16443,
+      "sha256": "5208103a8297ce488a6a0bfd3b5c5ba172cbc64670e8888cfb9fef5355487701",
+      "git_blob_sha": "dbad6ddfb50561fd4bd62ef84bc45c49c7ef6ffd",
       "mode": "100644"
     },
     {
@@ -99,30 +100,51 @@
     },
     {
       "path": "BUILDING.md",
-      "bytes": 13783,
-      "sha256": "adbc46495938e8e19fd75cdcdc0b537b13b8f4ab11ffc5b2b3671c4daa3885bc",
-      "git_blob_sha": "2b3a84e8c24a43393c29a58f28962a8daede09da",
+      "bytes": 14453,
+      "sha256": "1e0e29ec4f0b7ef244b79527d3652b05c7e329fc3e660075e5ec188335c8e226",
+      "git_blob_sha": "24bac1982afc8685befc259a7110a6a97c4b540e",
       "mode": "100644"
     },
     {
       "path": "Info.plist",
       "bytes": 2882,
-      "sha256": "580168ebcae6335d9f3cf2662465d8e6c32f7824844fc7a43a9ebeb512583974",
-      "git_blob_sha": "f82a027448a9f2fc237fd59c7f6d7c292e3d14e3",
+      "sha256": "c1187e4cc6cb267c91a9b698d1044951ca5fb5c49e24c0aeccc8a0c45b003eb7",
+      "git_blob_sha": "0da33594cf7dad5545594364a99f2510ee88b53f",
       "mode": "100644"
     },
     {
       "path": "README.en.md",
-      "bytes": 46542,
-      "sha256": "a82717de98dbfecceda978a13d1ec8831961141f197f359c35f36cff156b0973",
-      "git_blob_sha": "de09930f72f7aaa7c2739708c2a91c2e8a279633",
+      "bytes": 48281,
+      "sha256": "65d9f1c2d0a672a65b40217b931b2639748be0bc36f14433abf5e683a444f896",
+      "git_blob_sha": "819cab29bd35ec3b3ed71a23feeeb117b8f88648",
       "mode": "100644"
     },
     {
       "path": "README.md",
-      "bytes": 40223,
-      "sha256": "2b254e6fa7ffc6dc07e8bcd6ce88dcbcbbac8d95a0ff24d663dfc7dd841e20f5",
-      "git_blob_sha": "38f761317edcaa4a1462f3a325f2fd9be540d04a",
+      "bytes": 41713,
+      "sha256": "3e71d84cbe435a69dfd0bc73fa7d2a7461cfd7ac544848c23ba197e9f4078df7",
+      "git_blob_sha": "70ec0d06bd6d66cfc1cdaecf20cc8ebe85e466f7",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/MOD-ENTRY-build18.md",
+      "bytes": 4659,
+      "sha256": "0762964dfb21f55054c023222dd8d33eb37dda4e43a0412371f1414fbfe314b2",
+      "git_blob_sha": "d59ed79e2b0886d4d71eb465929b6a77b6b6425e",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/MOD-INTERFACE-build18.md",
+      "bytes": 9880,
+      "sha256": "29ad5981dd3f0a16e230cdd2c60bc1cf8991919ba97d8480107a05f978b1aa55",
+      "git_blob_sha": "2bdf48b23f964f727b06944a203bfe1af802320b",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/SWITCH-MOD-IMPORT-20261025.md",
+      "bytes": 14115,
+      "sha256": "c142d7852a4a1d15d085677e10064f35e33dd82936cbf3316fe82daf859bae07",
+      "git_blob_sha": "3b99b4dec07111705338e9855d68d3ee95ad25a3",
       "mode": "100644"
     },
     {
@@ -232,9 +254,9 @@
     },
     {
       "path": "Runtime/dm/gfx/nvn/hle_nvn.c",
-      "bytes": 120377,
-      "sha256": "8b56c84361efe2e74c73fffff14df9ef230cea10ecf222b7d89496f879a58634",
-      "git_blob_sha": "5ce44b12b7362295f5a00b325477718b6b18a069",
+      "bytes": 120552,
+      "sha256": "f4ad7d8bebcb720cdabb3df38e21997a8a56a39f28d93edbbe8b875bea8af540",
+      "git_blob_sha": "7c234fa0947fd2b3f8389f0225cbcd7819715914",
       "mode": "100644"
     },
     {
@@ -309,9 +331,9 @@
     },
     {
       "path": "Runtime/dm/gfx/nvn/nvn_mtl.m",
-      "bytes": 701372,
-      "sha256": "424af2902793fcb4c640daa205e8615f808a19c1af73633d4c27dea70ac91e97",
-      "git_blob_sha": "384a1c4bbb44bd296d7fc75cf2d3c5444ce235a8",
+      "bytes": 701574,
+      "sha256": "002b43dc9e9c638b5d83e3b297c434c07d013f7ccd9cab8be050184c5e4dae94",
+      "git_blob_sha": "c62dee6b72f1d137f854a95cacf6bdbebcb6a6ac",
       "mode": "100644"
     },
     {
@@ -428,16 +450,16 @@
     },
     {
       "path": "Runtime/dm/gfx/nvn/pjdv_fg_spatial.inc",
-      "bytes": 3423,
-      "sha256": "25bb4d33ca34e7f0361e4b5ee8bc7d735227cb0a0ad9dcf2047fdd3d5abcf115",
-      "git_blob_sha": "7a9d07cd35f776e20b048b01d15b070581a889e5",
+      "bytes": 3701,
+      "sha256": "3c7178eeadef0148dc86e5c1ec6a1761100c50aad32364dc9d8ce86853f59762",
+      "git_blob_sha": "87465fbffacb96daa4b455f33bbb93ed1d6ddbda",
       "mode": "100644"
     },
     {
       "path": "Runtime/dm/gfx/nvn/pjdv_game_fg.inc",
-      "bytes": 17931,
-      "sha256": "551581dc07add8ebb2fbc66cba62e97a1f25e3ed0a3aa6031e97b0a661ed02ac",
-      "git_blob_sha": "e7e090594f2293438bd4e7feecb18485ec73fbc0",
+      "bytes": 18421,
+      "sha256": "4e477a15f1e2286292be947a51c0434f6bb2bc29b61849bc6e0d32770936043c",
+      "git_blob_sha": "b28fd98e9007ceb339d1f27a4853fdafdfe27bba",
       "mode": "100644"
     },
     {
@@ -1506,9 +1528,9 @@
     },
     {
       "path": "Runtime/dm/host/hle_fs.c",
-      "bytes": 85077,
-      "sha256": "3e8756c9d8b4d6c24d7520ac8d2c32ce6b2ed6c144b5ab461f1955f3aea5754d",
-      "git_blob_sha": "d47fc649efcbe1e9883bc19b67a830635e07b93d",
+      "bytes": 85632,
+      "sha256": "5dbe6e5753d6d8c6347af0235e5b5fcecd3c2913fa526d189d9a824bcaaba1fc",
+      "git_blob_sha": "c446384c7f461ead2182c92093f151a8ea5ca89c",
       "mode": "100644"
     },
     {
@@ -1590,9 +1612,9 @@
     },
     {
       "path": "Runtime/dm/host/hle_svc.c",
-      "bytes": 18771,
-      "sha256": "17ed6946de70b53f37013c801acb5090578a60a891934678a3c8729d4cda26d4",
-      "git_blob_sha": "65329a1984b114ae2f356166bf956159d31023c2",
+      "bytes": 18879,
+      "sha256": "e5d134328f0207a773d2fb616aff77bb734c017d0293d4182464dcd1946c0e78",
+      "git_blob_sha": "90ed4942e8ba1b4a137cf18a984f5c2e8ee2f455",
       "mode": "100644"
     },
     {
@@ -1687,6 +1709,20 @@
       "mode": "100644"
     },
     {
+      "path": "Runtime/dm/host/pjdv_autoplay.h",
+      "bytes": 628,
+      "sha256": "8073603faa85d7e20254be288990177b9d93420cf9c4a25be092d086e77bdb0a",
+      "git_blob_sha": "5a86c18f2b0d99fcc9cbd8e597c7f54738a0aaf9",
+      "mode": "100644"
+    },
+    {
+      "path": "Runtime/dm/host/pjdv_autoplay.inc",
+      "bytes": 2015,
+      "sha256": "7219379a504be7497dc037b10c2b2c147d49b62cd8a81ec1bb053c4a88db6358",
+      "git_blob_sha": "509525134308248276df4b6e4c74c9848b4c3511",
+      "mode": "100644"
+    },
+    {
       "path": "Runtime/dm/host/pjdv_boot.c",
       "bytes": 8522,
       "sha256": "d5655ba7a9e5fc976cfaf767a3418ccf17a57a38f98eb6db33ab19e094a1baed",
@@ -1712,6 +1748,20 @@
       "bytes": 10743,
       "sha256": "d7e00e5e01a73d33f151f8037209e33e2636420af8c77523a8661686a0d0ef81",
       "git_blob_sha": "0e744212082ad69e1bb56b33e5880a092150462f",
+      "mode": "100644"
+    },
+    {
+      "path": "Runtime/dm/host/pjdv_mod_interface.h",
+      "bytes": 2123,
+      "sha256": "e72eb3b82b12b6bfea63004231dab18201c75d8bf655ad26e77ed58ad69cc45f",
+      "git_blob_sha": "b44801e2c97232cb40bfdb3de39e1dba51fb4038",
+      "mode": "100644"
+    },
+    {
+      "path": "Runtime/dm/host/pjdv_mod_interface.inc",
+      "bytes": 876,
+      "sha256": "95074d0338f111e7048f7160da26bd34d6b0d18bfaf0f41d42541dbe700d63da",
+      "git_blob_sha": "9653a981a6f2526c27c3f1c885720f3dadf9f699",
       "mode": "100644"
     },
     {
@@ -4690,10 +4740,24 @@
       "mode": "100755"
     },
     {
+      "path": "Scripts/test-mod-interface.sh",
+      "bytes": 648,
+      "sha256": "2f6496ea58a8125dda88e9cc08871071d8c88ec09c43c4b075942f3c063cf84c",
+      "git_blob_sha": "e3cd9381f5543cabb240f40f15885ab6320ef5b6",
+      "mode": "100755"
+    },
+    {
+      "path": "Scripts/test-mod-packages.sh",
+      "bytes": 984,
+      "sha256": "1060189b6706a3e7fd02dae463c16abf036a76f430fbf741b2ec323b6c77717b",
+      "git_blob_sha": "3c6614cb31d125962982ef527490e7597fa12dc5",
+      "mode": "100755"
+    },
+    {
       "path": "Sources/App.swift",
-      "bytes": 51001,
-      "sha256": "c399ef9da4fbfa904f10f5c6829e00122360ff8517e4dfe9e4e732b5cb5b025f",
-      "git_blob_sha": "21d971aaf944ef82e6d3cc9e16dea6039da13993",
+      "bytes": 60516,
+      "sha256": "0aea16de4deb3bc2f747751834f8df43135e54f8c33263cd73af8f4ec3918082",
+      "git_blob_sha": "7551f44c63de190a55879f646a9b5c9ac38d4854",
       "mode": "100644"
     },
     {
@@ -4705,9 +4769,9 @@
     },
     {
       "path": "Sources/DisplayPolicy.swift",
-      "bytes": 4333,
-      "sha256": "b6f225214d33b9206ced68ad2618e8de21ce9679317587efc66256ec3627a254",
-      "git_blob_sha": "79639ce71f8bd49bb9babe711973760184877a62",
+      "bytes": 4483,
+      "sha256": "5c7e20389af209e7269bfcb0c6829b780dce8fb1662509a353cdf80269d3adfb",
+      "git_blob_sha": "13336ce77ace32ee7c2cbe36d8f9c2ec904c01b6",
       "mode": "100644"
     },
     {
@@ -4726,23 +4790,23 @@
     },
     {
       "path": "Sources/GuestImageLoader.c",
-      "bytes": 6879,
-      "sha256": "3d94d9eaab0c369f93988dcd7f84a0fc061bd99a0d8ba9f74ff327592d8a02c0",
-      "git_blob_sha": "55961c80da9e7de4c4107c5994cdee430ff3fa3d",
+      "bytes": 7097,
+      "sha256": "5786f0eb66e78a7d39e4a52986080740a7043c104477b1f7be5aa2bca0757040",
+      "git_blob_sha": "33f5dabc3c91917d1b9eaaf889f842807b0e2ddf",
       "mode": "100644"
     },
     {
       "path": "Sources/GuestMetalBridge.m",
-      "bytes": 571,
-      "sha256": "7d697c725a9b49ca3171518a1b48113aafccafe325f325ea647336830adab737",
-      "git_blob_sha": "0ffc30baabde0e0cdfec56241a98e6409275a96d",
+      "bytes": 777,
+      "sha256": "3b0ccbc5b4b9d9d25a2fc40f821846f8d3863cd9a7dc6c52606c0b2b28fa44fa",
+      "git_blob_sha": "646763b2c8943c6216bf0a765be6b8f19c2cc992",
       "mode": "100644"
     },
     {
       "path": "Sources/GuestRuntime.swift",
-      "bytes": 5801,
-      "sha256": "cf4d8d23e51179c6d2cb7d8656d2dcfacbf1f5499bdbcdc9147d5db7d848ec94",
-      "git_blob_sha": "49be1743ee0494af6df0ed07da2798b1fabe6bae",
+      "bytes": 7821,
+      "sha256": "b708ed58819bce52495cd4bf3e8d96b87ae36a9a2ef325340d3bf03ac87d5909",
+      "git_blob_sha": "5858ff82183c242eb24464b01114ae61a9a5dc4f",
       "mode": "100644"
     },
     {
@@ -4761,37 +4825,51 @@
     },
     {
       "path": "Sources/MacLifecycle/PJDVMacLifecycle.m",
-      "bytes": 1772,
-      "sha256": "306c436fe61f514958f3734c04493e7f1288988596a6b8dffe4d6eeb9bce1dda",
-      "git_blob_sha": "8f5396e33cdedeea7be03f5028325c89d8bc375f",
+      "bytes": 3088,
+      "sha256": "c6c39f41a756f94a922f4d4b404dc61df8738f6cfd5166c2f9454290fe324e3e",
+      "git_blob_sha": "ed1d6a28d40c3cfb45d12304272095fd58a072cb",
       "mode": "100644"
     },
     {
       "path": "Sources/MacLifecycle/build.sh",
-      "bytes": 1119,
-      "sha256": "5f0f7583a7414e0680e7bfcb232a267b865f6b6fcfaeac902e1b9c71d282c3a7",
-      "git_blob_sha": "6062e3091ac9ae210a5bb8203d7324212ac29d9f",
+      "bytes": 1136,
+      "sha256": "8e7e8631d47f1b94fecf75a8aaa0554089162a2bcfb97165db5abc4131e08376",
+      "git_blob_sha": "2f108611dc7a547eef66ab54c2c836be23e4414f",
       "mode": "100755"
     },
     {
+      "path": "Sources/ModImportController.swift",
+      "bytes": 10413,
+      "sha256": "385390d3ea373a2111949f82e5f9ef7efb39c0caf097f1ad4f6f2dc64f8f4926",
+      "git_blob_sha": "8df2535269cc7b7ca601445c878871d3c78c2bfc",
+      "mode": "100644"
+    },
+    {
+      "path": "Sources/ModPackage.swift",
+      "bytes": 18695,
+      "sha256": "11d26b588f15153c629f37a4762dea17257fe0e4088f91b934e5249da805228c",
+      "git_blob_sha": "0b25f2ea7820dfc2a49c2af1a5f14844a261e44d",
+      "mode": "100644"
+    },
+    {
       "path": "Sources/PerformanceCore.swift",
-      "bytes": 3420,
-      "sha256": "e0556ad00c0884725c5c1498819f9e3f4abaa9d86c4f6eb9e74f5e82e9b5b065",
-      "git_blob_sha": "9ecfa761de119d1b173d722af5065f3a251475ad",
+      "bytes": 4073,
+      "sha256": "7e855684de7c9b52ea68752889c046693d9cead8eca97ce82d40b8c595686a34",
+      "git_blob_sha": "25d5f8ab67c1bde701fcacaff9c031f93cbee693",
       "mode": "100644"
     },
     {
       "path": "Sources/PerformanceWindow.swift",
-      "bytes": 4586,
-      "sha256": "aa2693a78cbe7bd6cf58ac587eb528c91d8c08d3442fd5e846dea1d1bc6794dc",
-      "git_blob_sha": "db91f8d01f546518e3bee7560e53ef451415af55",
+      "bytes": 6271,
+      "sha256": "7d4d8d2389d45aedf9159dcf4bf4b57628b4a2c9a8a93bfa09a207e2d93fccef",
+      "git_blob_sha": "5a853f11aa4b31baa54a4aa35afebb3da934b616",
       "mode": "100644"
     },
     {
       "path": "Sources/ResourceImportController.swift",
-      "bytes": 26390,
-      "sha256": "631c85fceb8127c78d6bc0d92311279b1d3d0aea354874187c9ad1ed4d05e926",
-      "git_blob_sha": "fb782cb8121dea021265e9a53793fd403c17e570",
+      "bytes": 26382,
+      "sha256": "3fd9698e7e3e71aabf18aad8d16cc4c32ea6b118165d2858ef18f9b8dde6b702",
+      "git_blob_sha": "4b3f0d584a1c78a0816f66eda9fd1f56bd9fd01e",
       "mode": "100644"
     },
     {
@@ -4852,9 +4930,9 @@
     },
     {
       "path": "SwitchIOSLab.xcodeproj/project.pbxproj",
-      "bytes": 25714,
-      "sha256": "12066da924d462b52b03bea8eba47544a375543bac20f3198222293f64d5d7f5",
-      "git_blob_sha": "97df7a5b1d50924bec0d12763fbd5a5aeb9e1a98",
+      "bytes": 26290,
+      "sha256": "6741defb591b9891b935c90280c093a80ebc957ad19549a376b063d262ab0f92",
+      "git_blob_sha": "760d744c8e96b589d1b7344dbd2e5e565be7f17d",
       "mode": "100644"
     },
     {
@@ -4869,6 +4947,13 @@
       "bytes": 651,
       "sha256": "72ac497ec98574fe45d781b71cb2b2315d9e600132fa68cbc7c7203b62d1a792",
       "git_blob_sha": "39bf23a14a7188e9b4eacb5663cf64dbcedfa866",
+      "mode": "100644"
+    },
+    {
+      "path": "Tests/AutoPlay/main.c",
+      "bytes": 734,
+      "sha256": "2a2bb5d6103223994269020278d0b363dda4d237051127beb98d300d70750935",
+      "git_blob_sha": "ac11337235c2f5b830b86df23cf2cd63373dd408",
       "mode": "100644"
     },
     {
@@ -4887,9 +4972,9 @@
     },
     {
       "path": "Tests/DisplayPolicy/main.swift",
-      "bytes": 9126,
-      "sha256": "8ee9a03840e88e0e9492301cdc3e025655204524310cb477f32e62ea77ec4249",
-      "git_blob_sha": "acca94edf434c6d58d7898d817352f03f1d22730",
+      "bytes": 9706,
+      "sha256": "7d3691d4719914e56b963a90855665592db16ab2818ed0b2aa290fc90c26caaa",
+      "git_blob_sha": "36b12a58195c13d388314ae36e570849ff00295a",
       "mode": "100644"
     },
     {
@@ -4939,6 +5024,27 @@
       "bytes": 2803,
       "sha256": "40d13cc153a68b9aa7534e8507335291fa526b802397a47550fd73ef9b8c51c4",
       "git_blob_sha": "fddfb7baf5ecee8621137341ce08c7fd74cb57c4",
+      "mode": "100644"
+    },
+    {
+      "path": "Tests/ModInterface/main.c",
+      "bytes": 1883,
+      "sha256": "fd045ebb5dce010225c3dc3aa14414fa1f505b50a30571dafc251c571f4a47b3",
+      "git_blob_sha": "0f9b75db8b1114156212e85afc77c180d4b9efdb",
+      "mode": "100644"
+    },
+    {
+      "path": "Tests/ModPackages/build_fixtures.py",
+      "bytes": 4302,
+      "sha256": "975c83182aa3c25f5a6cabcb91ff0d3f9ccdbec3c970f1f08b962d84532c62a2",
+      "git_blob_sha": "d787aef6424ceb43b0e07bf9955eec5559238385",
+      "mode": "100644"
+    },
+    {
+      "path": "Tests/ModPackages/main.swift",
+      "bytes": 3469,
+      "sha256": "51e11e30b16f4c1edb3e1d0c671f4a165ed8985927c087543dc2342ea2e81cc5",
+      "git_blob_sha": "47c20e74b144d1006752fe05d2499194ad4e0377",
       "mode": "100644"
     },
     {
@@ -5132,9 +5238,9 @@
     },
     {
       "path": "Tools/rewriter/gen_guest_embed.py",
-      "bytes": 7397,
-      "sha256": "52725bd9ac85ee9b8254b4c50fdc231cf0f350d9623e84277d702d30a19c3caf",
-      "git_blob_sha": "32fd5e75181c2fbc21e73a7000e7e383f6a924df",
+      "bytes": 7804,
+      "sha256": "df1c0d470e932783ea6f5e55a01bcd4fbf09bc49ffe7b9cb4a4a1e5fc9bbb1b7",
+      "git_blob_sha": "5d0893f50123d127a901be8aa9676ac45653e140",
       "mode": "100644"
     },
     {
@@ -5146,9 +5252,9 @@
     },
     {
       "path": "Tools/rewriter/patch_nso_segmented.py",
-      "bytes": 88651,
-      "sha256": "38dc600d1148eeb757dbf0b010509d99c34675ce3f5dd697c6a6b40877ef66fd",
-      "git_blob_sha": "6274bfd222dcb92997f1c40a73f5634c4cea2efc",
+      "bytes": 89776,
+      "sha256": "4bdf555bda821a4c9b2c02d181918ada1c70bd0dde14d61d25e6386f8b690ffe",
+      "git_blob_sha": "96371072d65959a2a6aaaf718224d61cb6d91f40",
       "mode": "100644"
     },
     {
@@ -5165,6 +5271,5 @@
       "git_blob_sha": "807ee614ede30e65695e361790472a410abdd11e",
       "mode": "100644"
     }
-  ],
-  "documentation": "Full Chinese/English README; unreleased build17 results are explicitly separated from published build16 code."
+  ]
 }

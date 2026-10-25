@@ -28,7 +28,11 @@ API_AVAILABLE(macos(13.0), macCatalyst(16.0), ios(16.0))
         td.width=ow;td.height=oh;td.pixelFormat=dst.pixelFormat;td.usage=next.outputTextureUsage|MTLTextureUsageShaderRead;
         id<MTLTexture> output=[device newTextureWithDescriptor:td];
         if(!input || !output){atomic_store(&g_pjdv_upscale_state,4);return nil;}
-        next.fence=[device newFence];self.scaler=next;self.input=input;self.output=output;
+        // These textures use default hazard tracking on the same conventional
+        // command queue. An optional scaler fence is for untracked resources;
+        // no explicit fence is needed on this conventional tracked path.
+        // Presentation-clock hot-switch recovery is validated separately.
+        self.scaler=next;self.input=input;self.output=output;
         self.output.label=@"PJDV FG MetalFX Spatial display output";
         NSLog(@"PJDV FG MetalFX Spatial %lux%lu -> %lux%lu",src.width,src.height,ow,oh);
     }
