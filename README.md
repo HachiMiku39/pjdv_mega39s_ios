@@ -1,5 +1,8 @@
 # PJDV M39 · iPadOS / iOS / macOS 测试版
 
+NOW SUPPORT IPHONE DUO
+BETTER THAN MOST OF APPS
+
 **简体中文** | [English](README.en.md)
 
 **build18 验证预览（2026-10-25）：** 启动页新增“MOD 管理（实验）”，可检查和登记 ZIP／ZIP64 或已解压文件夹。7z／RAR 需先解压；当前不复制、不解压、不加载 MOD。Mac 界面流程及三平台构建通过，iPad 真机入口尚未验收。
