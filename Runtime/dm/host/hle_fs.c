@@ -991,7 +991,19 @@ HLE_FORCE("_ZN2nn2fs31QueryMountAddOnContentCacheSizeEPmi", "Host directory DLC 
 }
 HLE_FORCE("_ZN2nn2fs17MountAddOnContentEPKciPvm", "Mount authenticated local PJDV DLC directory", Result, h_fs_MountDlc, const char *name,int index,void *cache,size_t bytes) {
     char path[1024];if(!pjdv_dlc_path(index,path,sizeof path))return RES_FAIL;
-    return mount_ex(name,path,1,0);
+    Result result=mount_ex(name,path,1,0);
+#if defined(DM_GAME_M39)
+    // DLC can own the final sprite/database revision. Resource overlays use
+    // the full rom_switch_dlc/<pack>/... path, keeping each mount distinct.
+    // Save/temp mounts never inherit this read-only resource overlay.
+    const char *overlay=getenv("DM_ROMFS_OVERLAY");
+    if(result==RES_OK && overlay){PATH_LOCK();
+        for(int i=0;i<g_nmnt;i++)if(!strcmp(g_mnt[i].name,name)){
+            strlcpy(g_mnt[i].overlay,overlay,sizeof g_mnt[i].overlay);break;
+        }
+    }
+#endif
+    return result;
 }
 
 #if defined(DM_GAME_M39)

@@ -235,3 +235,28 @@
 "选择的文件在检查期间发生变化，请重试。" = "The selected file changed during inspection. Please retry.";
 "MOD 登记记录无法读取，请重新选择文件。" = "The MOD registration cannot be read. Select the source again.";
 "MOD 源位置不可用，请重新添加。" = "The MOD source is unavailable. Add it again.";
+
+/* Streaming MOD import and catalog */
+"此 MOD 压缩方式暂不支持，请先解压后导入文件夹。" = "This compression method is unsupported. Extract the MOD and import its folder.";
+"MOD 文件内容校验失败，未完成安装。请重新下载。" = "MOD integrity check failed. Installation was not completed. Download it again.";
+"可用空间不足，MOD 安装已安全停止。" = "Not enough free space. MOD installation has stopped safely.";
+"MOD 超过单包安装上限（32 GB），请分包导入。" = "The MOD exceeds the 32 GB installed-size limit. Import smaller packages.";
+"解压／校验 MOD" = "Extracting / verifying MOD";
+"MOD 已导入" = "MOD imported";
+"返回" = "Back";
+"目前仅测试过模型和歌曲两类 MOD，不保证所有同类包兼容。" = "Only model and song MODs have been tested. Compatibility varies by package.";
+"正在准备 MOD 下载…" = "Preparing MOD download…";
+"下载超过单包上限（16 GB），已停止。" = "Download exceeds the 16 GB package limit and has stopped.";
+"下载 MOD：%@ · %@/s" = "Downloading MOD: %@ · %@/s";
+"ZIP／文件夹可导入；7z、RAR 请先解压。" = "Import ZIPs or folders. Extract 7z / RAR archives first.";
+"导入与游戏内适配分开处理；含新增数据库或程序插件的包不会自动启用。" = "Importing and game compatibility are separate. Packages with additional databases or code plugins are not activated automatically.";
+"ZIP 内容 CRC 校验通过。" = "ZIP payload CRC verified.";
+"浏览／下载 MOD（GameBanana）" = "Browse / Download MODs (GameBanana)";
+"采用分块解压和独立安装目录，不改动原游戏资源。运行兼容性需另行验证。" = "Extracts in chunks into a separate directory. Original game assets are unchanged; runtime compatibility needs separate testing.";
+"MOD 已导入独立目录；游戏内适配与启用尚需验证。" = "MOD imported into a separate directory. Game compatibility and activation still require validation.";
+"重新导入" = "Import Again";
+"MOD 管理／下载（实验）" = "MOD Manager / Downloads (Experimental)";
+
+"已下载的压缩包" = "Downloaded Archives";
+"下载文件会保留，轻点可重新导入；7z／RAR 需先解压。" = "Downloads are kept. Tap to import again; extract 7z / RAR first.";
+"暂无已下载的 MOD 压缩包。" = "No downloaded MOD archives.";

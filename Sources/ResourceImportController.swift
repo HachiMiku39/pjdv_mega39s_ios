@@ -64,10 +64,16 @@ final class ResourceImportController:UIViewController,UIDocumentPickerDelegate {
         rows.append(fallback)
         #endif
         let inbox=button(L("检测 App 根目录中的 XCI／密钥"),"resources.scanInbox",#selector(scanInbox))
-        rows += [inbox,detail,activity,bar,transfer,cancel,help,close]
+        let mods=button(L("MOD 管理／下载（实验）"),"resources.mods",#selector(openMods))
+        rows += [inbox,mods,detail,activity,bar,transfer,cancel,help,close]
         let stack=UIStackView(arrangedSubviews:rows);stack.axis = .vertical;stack.spacing=14
         let scroll=UIScrollView();scroll.translatesAutoresizingMaskIntoConstraints=false;view.addSubview(scroll);stack.translatesAutoresizingMaskIntoConstraints=false;scroll.addSubview(stack)
         NSLayoutConstraint.activate([scroll.leadingAnchor.constraint(equalTo:view.safeAreaLayoutGuide.leadingAnchor),scroll.trailingAnchor.constraint(equalTo:view.safeAreaLayoutGuide.trailingAnchor),scroll.topAnchor.constraint(equalTo:view.safeAreaLayoutGuide.topAnchor),scroll.bottomAnchor.constraint(equalTo:view.safeAreaLayoutGuide.bottomAnchor),stack.leadingAnchor.constraint(equalTo:scroll.contentLayoutGuide.leadingAnchor,constant:24),stack.trailingAnchor.constraint(equalTo:scroll.contentLayoutGuide.trailingAnchor,constant:-24),stack.topAnchor.constraint(equalTo:scroll.contentLayoutGuide.topAnchor,constant:24),stack.bottomAnchor.constraint(equalTo:scroll.contentLayoutGuide.bottomAnchor,constant:-24),stack.widthAnchor.constraint(equalTo:scroll.frameLayoutGuide.widthAnchor,constant:-48)])
+    }
+    @objc private func openMods() {
+        guard operation==nil && !selecting else{return}
+        let panel=UINavigationController(rootViewController:ModImportController(style:.insetGrouped))
+        panel.modalPresentationStyle = .formSheet;present(panel,animated:true)
     }
     override func viewDidAppear(_ animated:Bool) {
         super.viewDidAppear(animated)

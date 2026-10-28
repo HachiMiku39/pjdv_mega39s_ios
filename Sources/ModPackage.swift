@@ -33,6 +33,18 @@ struct ModInspection: Codable {
     // No compatibility, CRC, decryption or payload validation is implied.
     let contentIntegrityChecked: Bool
 }
+struct ModZIPEntry {
+    let path: String
+    let rawName: Data
+    let directory: Bool
+    let flags: UInt16
+    let method: UInt16
+    let crc: UInt32
+    let compressed: UInt64
+    let expanded: UInt64
+    let localOffset: UInt64
+    let directoryOffset: UInt64
+}
 private struct ModDirectoryIndex {
     private var paths = [String: String]()
     private var files = Set<String>(), directories = Set<String>()
@@ -114,6 +126,11 @@ private struct ModDirectoryIndex {
     }
 }
 enum ModPackageInspector {
+    static func zipCatalog(_ url: URL, progress: Progress) throws -> (ModInspection, [ModZIPEntry]) {
+        var entries=[ModZIPEntry]()
+        let inspection=try inspectZIP(url,progress:progress,onEntry:{entries.append($0)})
+        return (inspection,entries)
+    }
     static func inspect(_ source: URL, progress: Progress = Progress(totalUnitCount: 1)) throws -> ModInspection {
         guard source.isFileURL else { throw ModPackageError.unsupportedArchive }
         let attr = try FileManager.default.attributesOfItem(atPath: source.path)
@@ -150,7 +167,7 @@ enum ModPackageInspector {
         if progress.isCancelled { throw ModPackageError.cancelled }
         return try index.finish()
     }
-    private static func inspectZIP(_ url: URL, progress: Progress) throws -> ModInspection {
+    private static func inspectZIP(_ url: URL, progress: Progress, onEntry: ((ModZIPEntry)->Void)? = nil) throws -> ModInspection {
         let file = try FileHandle(forReadingFrom: url); defer { try? file.close() }
         let before = try FileManager.default.attributesOfItem(atPath: url.path)
         let length = (before[.size] as? NSNumber)?.uint64Value ?? 0
@@ -223,7 +240,9 @@ enum ModPackageInspector {
             guard local <= offset, offset-local >= 30, compressed <= offset-local-30 else { throw ModPackageError.invalidZIP }
             let mode=try number(central,at+38,4) >> 16, type=mode & 0xf000
             guard type == 0 || type == 0x8000 || type == 0x4000 else { throw ModPackageError.specialFile }
-            try index.add(name, directory:name.hasSuffix("/") || type == 0x4000, size:expanded)
+            let directory=name.hasSuffix("/") || type == 0x4000
+            try index.add(name, directory:directory, size:expanded)
+            onEntry?(ModZIPEntry(path:name,rawName:rawName,directory:directory,flags:UInt16(flags),method:UInt16(method),crc:UInt32(try number(central,at+16,4)),compressed:compressed,expanded:expanded,localOffset:local,directoryOffset:offset))
             at+=total
         }
         guard at == central.count else { throw ModPackageError.invalidZIP }
@@ -257,7 +276,7 @@ struct ModRegistry {
             return r
         }.sorted{$0.registeredAt > $1.registeredAt}
     }
-    func register(_ source: URL, inspection: ModInspection) throws {
+    func register(_ source: URL, inspection: ModInspection, name: String? = nil) throws {
         let identity=SHA256.hash(data:Data(source.standardizedFileURL.absoluteString.utf8)).map{String(format:"%02x",$0)}.joined()
         let all=try records()
         let existing=all.first{$0.sourceID==identity}
@@ -267,7 +286,7 @@ struct ModRegistry {
         #else
         let bookmark=try source.bookmarkData(options:.minimalBookmark,includingResourceValuesForKeys:nil,relativeTo:nil)
         #endif
-        let r=ModRegistration(schema:"pjdv-mod-registration-v1",id:existing?.id ?? UUID(),sourceID:identity,name:source.lastPathComponent,bookmark:bookmark,registeredAt:Date(),inspection:inspection)
+        let r=ModRegistration(schema:"pjdv-mod-registration-v1",id:existing?.id ?? UUID(),sourceID:identity,name:name ?? source.lastPathComponent,bookmark:bookmark,registeredAt:Date(),inspection:inspection)
         try FileManager.default.createDirectory(at:root,withIntermediateDirectories:true)
         let bytes=try JSONEncoder().encode(r)
         guard bytes.count <= 256*1024 else { throw ModPackageError.limitExceeded }

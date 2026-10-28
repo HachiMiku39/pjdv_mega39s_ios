@@ -1,13 +1,16 @@
 import UIKit
 import UniformTypeIdentifiers
 
-// Launcher-only package registration. There is deliberately no enable/load action.
+// Launcher-only downloads/imports. Resource installation is separate from
+// runtime compatibility: importing never executes a PC DLL or unknown patch.
 final class ModImportController: UITableViewController, UIDocumentPickerDelegate {
     private let registry = ModRegistry(root: ResourceLibrary.appDataRoot.appendingPathComponent("Mods/Registrations", isDirectory: true))
     private var records = [ModRegistration]()
+    private var downloads = [URL]()
     private var operation: Progress?
     private var selecting = false
-    private var status = L("ZIP／文件夹可检查登记；7z、RAR 请先解压。")
+    private var fraction:Float=0
+    private var status = L("ZIP／文件夹可导入；7z、RAR 请先解压。")
     override var supportedInterfaceOrientations: UIInterfaceOrientationMask { .landscape }
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -20,17 +23,30 @@ final class ModImportController: UITableViewController, UIDocumentPickerDelegate
     private func reloadRecords() {
         do { records=try registry.records() }
         catch { status=L(error.localizedDescription) }
+        let root=ResourceLibrary.appDataRoot.appendingPathComponent("Mods/Downloads",isDirectory:true)
+        let fm=FileManager.default
+        downloads=[]
+        for folder in (try? fm.contentsOfDirectory(at:root,includingPropertiesForKeys:nil,options:.skipsHiddenFiles)) ?? [] {
+            guard UUID(uuidString:folder.lastPathComponent) != nil else {continue}
+            for file in (try? fm.contentsOfDirectory(at:folder,includingPropertiesForKeys:[.isRegularFileKey,.isSymbolicLinkKey],options:.skipsHiddenFiles)) ?? [] {
+                let values=try? file.resourceValues(forKeys:[.isRegularFileKey,.isSymbolicLinkKey])
+                if values?.isRegularFile==true && values?.isSymbolicLink != true && ["zip","7z","rar"].contains(file.pathExtension.lowercased()) {downloads.append(file)}
+                if downloads.count>=100 {break}
+            }
+            if downloads.count>=100 {break}
+        }
+        downloads.sort{$0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending}
         tableView.reloadData()
     }
-    override func numberOfSections(in tableView:UITableView)->Int { 3 }
+    override func numberOfSections(in tableView:UITableView)->Int { 4 }
     override func tableView(_ tableView:UITableView,numberOfRowsInSection section:Int)->Int {
-        section == 0 ? 3 : section == 1 ? max(1,records.count) : 1
+        section == 0 ? 4 : section == 1 ? max(1,records.count) : section == 2 ? max(1,downloads.count) : 1
     }
     override func tableView(_ tableView:UITableView,titleForHeaderInSection section:Int)->String? {
-        L(section == 0 ? "添加 MOD" : section == 1 ? "已登记（未启用）" : "检查结果")
+        L(section == 0 ? "添加 MOD" : section == 1 ? "已登记（未启用）" : section == 2 ? "已下载的压缩包" : "检查结果")
     }
     override func tableView(_ tableView:UITableView,titleForFooterInSection section:Int)->String? {
-        section == 1 ? L("当前只登记文件位置与检查结果，不复制、不解压、不加载 MOD。") : nil
+        section == 0 ? L("目前仅测试过模型和歌曲两类 MOD，不保证所有同类包兼容。") : section == 1 ? L("导入与游戏内适配分开处理；含新增数据库或程序插件的包不会自动启用。") : section == 2 ? L("下载文件会保留，轻点可重新导入；7z／RAR 需先解压。") : nil
     }
     private func kind(_ result:ModInspection)->String {
         switch result.kind {
@@ -43,6 +59,7 @@ final class ModImportController: UITableViewController, UIDocumentPickerDelegate
     private func summary(_ result:ModInspection)->String {
         let bytes=ByteCountFormatter.string(fromByteCount:Int64(result.expandedBytes),countStyle:.file)
         var lines=[kind(result),LF("未启用 · %d 个文件 · %@",result.fileCount,bytes)]
+        if result.contentIntegrityChecked {lines.append(L("ZIP 内容 CRC 校验通过。"))}
         if result.containsCode { lines.append(L("包含程序补丁或插件，当前不支持执行。")) }
         if result.declaredTitleIDs.contains(where:{$0 != "0100F3100DA46000"}) { lines.append(L("其他地区的资源，运行兼容性待验证。")) }
         if result.containsDatabases { lines.append(L("含新增内容数据库，仍需游戏内适配。")) }
@@ -55,11 +72,11 @@ final class ModImportController: UITableViewController, UIDocumentPickerDelegate
         cell.selectionStyle = .none
         if indexPath.section == 0 {
             if indexPath.row == 0 {
-                cell.textLabel?.text=L("ZIP／文件夹可检查登记；7z、RAR 请先解压。")
+                cell.textLabel?.text=L("ZIP／文件夹可导入；7z、RAR 请先解压。")
                 cell.textLabel?.font = .systemFont(ofSize:15)
             } else {
-                cell.textLabel?.text=L(indexPath.row == 1 ? "添加 ZIP 包" : "添加 MOD 文件夹")
-                cell.accessibilityIdentifier=indexPath.row == 1 ? "mods.addZIP" : "mods.addFolder"
+                cell.textLabel?.text=L(indexPath.row == 1 ? "浏览／下载 MOD（GameBanana）" : indexPath.row == 2 ? "添加 ZIP 包" : "添加 MOD 文件夹")
+                cell.accessibilityIdentifier=indexPath.row == 1 ? "mods.browse" : indexPath.row == 2 ? "mods.addZIP" : "mods.addFolder"
                 cell.textLabel?.textColor=operation == nil && !selecting ? .systemBlue : .secondaryLabel
                 cell.selectionStyle = .default
             }
@@ -71,18 +88,38 @@ final class ModImportController: UITableViewController, UIDocumentPickerDelegate
                 cell.accessibilityIdentifier="mods.record."+record.id.uuidString
                 cell.accessoryType = .disclosureIndicator;cell.selectionStyle = .default
             }
+        } else if indexPath.section == 2 {
+            if downloads.isEmpty {cell.textLabel?.text=L("暂无已下载的 MOD 压缩包。")}
+            else {
+                let file=downloads[indexPath.row];cell.textLabel?.text=file.lastPathComponent
+                cell.detailTextLabel?.text=L("重新导入");cell.textLabel?.textColor = .systemBlue
+                cell.accessibilityIdentifier="mods.download."+file.deletingLastPathComponent().lastPathComponent
+                cell.accessoryType = .disclosureIndicator;cell.selectionStyle = .default
+            }
         } else {
             cell.textLabel?.text=status;cell.accessibilityIdentifier="mods.status"
-            cell.detailTextLabel?.text=L("仅检查目录结构，未校验文件内容或运行兼容性。")
-            if operation != nil {let spinner=UIActivityIndicatorView(style:.medium);spinner.startAnimating();cell.accessoryView=spinner}
+            cell.detailTextLabel?.text=L("采用分块解压和独立安装目录，不改动原游戏资源。运行兼容性需另行验证。")
+            if operation != nil {
+                let bar=UIProgressView(progressViewStyle:.default);bar.progress=fraction
+                bar.frame=CGRect(x:0,y:0,width:100,height:8);bar.accessibilityIdentifier="mods.installProgress"
+                cell.accessoryView=bar
+            }
         }
         return cell
     }
     override func tableView(_ tableView:UITableView,didSelectRowAt indexPath:IndexPath) {
         tableView.deselectRow(at:indexPath,animated:true)
         guard operation == nil && !selecting else { return }
-        if indexPath.section == 0 && indexPath.row > 0 { pick(directory:indexPath.row == 2) }
+        if indexPath.section == 0 && indexPath.row == 1 {browse()}
+        else if indexPath.section == 0 && indexPath.row > 1 { pick(directory:indexPath.row == 3) }
         else if indexPath.section == 1 && !records.isEmpty { showRecord(records[indexPath.row]) }
+        else if indexPath.section == 2 && !downloads.isEmpty {inspect(ResourceAccess(downloads[indexPath.row]))}
+    }
+    private func browse() {
+        let browser=ModDownloadBrowser()
+        browser.onImport={ [weak self] url in self?.inspect(ResourceAccess(url)) }
+        let panel=UINavigationController(rootViewController:browser);panel.modalPresentationStyle = .fullScreen
+        present(panel,animated:true)
     }
     private func updateBusyState() {
         let busy=operation != nil || selecting
@@ -121,27 +158,40 @@ final class ModImportController: UITableViewController, UIDocumentPickerDelegate
         inspect(access ?? ResourceAccess(url))
     }
     private func inspect(_ access:ResourceAccess) {
-        let progress=Progress(totalUnitCount:1);operation=progress
+        let progress=Progress(totalUnitCount:1);operation=progress;fraction=0
         status=L("正在检查 MOD 结构…");updateBusyState()
         let registry=self.registry
-        DispatchQueue.global(qos:.userInitiated).async { [weak self,access] in
+        let started=Date()
+        DispatchQueue.global(qos:.utility).async { [weak self,access] in
             let result=Result<Void,Error> {
                 let coordinator=NSFileCoordinator(filePresenter:nil)
-                var coordinationError:NSError?, inspected:Result<ModInspection,Error>?
+                var coordinationError:NSError?, installed:Result<InstalledMod,Error>?
                 coordinator.coordinate(readingItemAt:access.root,options:.withoutChanges,error:&coordinationError) { url in
-                    inspected=Result { try ModPackageInspector.inspect(url,progress:progress) }
+                    installed=Result {try ModInstaller.install(url,under:ResourceLibrary.appDataRoot.appendingPathComponent("Mods/Installed",isDirectory:true),progress:progress) {update in
+                        DispatchQueue.main.async { [weak self] in
+                            guard let self else{return}
+                            let bytes=ByteCountFormatter.string(fromByteCount:Int64(update.completed),countStyle:.file)
+                            let total=ByteCountFormatter.string(fromByteCount:Int64(update.total),countStyle:.file)
+                            let speed=ByteCountFormatter.string(fromByteCount:Int64(Double(update.completed)/max(1,Date().timeIntervalSince(started))),countStyle:.file)
+                            self.status=L(update.phase)+"\n"+update.file+"\n"+bytes+" / "+total+" · "+speed+"/s"
+                            self.fraction=update.total>0 ? Float(Double(update.completed)/Double(update.total)) : 0
+                            self.tableView.reloadSections(IndexSet(integer:3),with:.none)
+                        }
+                    }}
                 }
                 if let error=coordinationError { throw error }
-                guard let inspected else { throw ModPackageError.invalidZIP }
-                let report=try inspected.get()
-                if progress.isCancelled { throw ModPackageError.cancelled }
-                try registry.register(access.root,inspection:report)
+                guard let installed else { throw ModPackageError.invalidZIP }
+                let package=try installed.get()
+                do {
+                    if progress.isCancelled {throw ModPackageError.cancelled}
+                    try registry.register(package.root,inspection:package.inspection,name:package.name)
+                } catch {try? FileManager.default.removeItem(at:package.root);throw error}
             }
             DispatchQueue.main.async { [weak self,access] in
                 guard let self else { return }
                 self.operation=nil
                 switch result {
-                case .success:self.status=L("结构已识别，已登记；加载未启用。")
+                case .success:self.status=L("MOD 已导入独立目录；游戏内适配与启用尚需验证。")
                 case .failure(let error):self.status=L(error.localizedDescription)
                 }
                 self.updateBusyState();self.reloadRecords()
@@ -150,8 +200,8 @@ final class ModImportController: UITableViewController, UIDocumentPickerDelegate
         }
     }
     private func showRecord(_ record:ModRegistration) {
-        let alert=UIAlertController(title:record.name,message:summary(record.inspection)+"\n\n"+L("仅检查目录结构，未校验文件内容或运行兼容性。"),preferredStyle:.alert)
-        alert.addAction(UIAlertAction(title:L("重新检查"),style:.default) { [weak self] _ in
+        let alert=UIAlertController(title:record.name,message:summary(record.inspection)+"\n\n"+L("导入与游戏内适配分开处理；含新增数据库或程序插件的包不会自动启用。"),preferredStyle:.alert)
+        alert.addAction(UIAlertAction(title:L("重新导入"),style:.default) { [weak self] _ in
             guard let self else{return}
             do { self.inspect(ResourceAccess(try self.registry.source(record))) }
             catch { self.status=L("MOD 源位置不可用，请重新添加。");self.tableView.reloadData() }

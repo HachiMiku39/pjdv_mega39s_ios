@@ -1,0 +1,258 @@
+{
+  "date": "2026-10-29",
+  "status": "MOD research source candidate, no new installer release",
+  "scope": "bounded downloads/imports; explicit offline conversion profiles; screenshots and bilingual reports",
+  "files": [
+    {
+      "path": "Assets/Localizations/en.lproj/Localizable.strings",
+      "bytes": 19230,
+      "sha256": "66a5c0d490ea8039c19fed208e17a358e50a521b2307d9611dd25fdcea7a1cb7",
+      "mode": "100644"
+    },
+    {
+      "path": "Assets/Localizations/ja.lproj/Localizable.strings",
+      "bytes": 22455,
+      "sha256": "6bca28ef686a3b321cf43c75ee02b8f8b3999dcb077d06faf95b7cc18b57dad8",
+      "mode": "100644"
+    },
+    {
+      "path": "Assets/Localizations/ko.lproj/Localizable.strings",
+      "bytes": 20926,
+      "sha256": "7287e3e26959ebfde9883b3e8b7fa2f6cda55b39d6959bdc38233229d60a2d0f",
+      "mode": "100644"
+    },
+    {
+      "path": "Assets/Localizations/zh-Hans.lproj/Localizable.strings",
+      "bytes": 18624,
+      "sha256": "5946326b3510e69074850cebaea9bd818dc9f39ace36b718def4bf564f622ba1",
+      "mode": "100644"
+    },
+    {
+      "path": "Assets/Localizations/zh-Hant.lproj/Localizable.strings",
+      "bytes": 18734,
+      "sha256": "627592da0d27f15c55dc6b8c0ac679891cfbd0d31efed2b3730e1c2c85022b50",
+      "mode": "100644"
+    },
+    {
+      "path": "README.en.md",
+      "bytes": 48953,
+      "sha256": "8b64c0a119f185cf5ee2746c7f252ec5ffed3b5f1facebc64bfa4315b80eea9a",
+      "mode": "100644"
+    },
+    {
+      "path": "README.md",
+      "bytes": 42415,
+      "sha256": "f2df5f112f3981411b8cbd34d26daa17fef7527764201ace0b917fe4b1279906",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/MOD-DOWNLOAD-CONVERSION-20261029.md",
+      "bytes": 11112,
+      "sha256": "c3bbf1302266becdbfaa8e369ba1a1c6a696d3914f79dcab3722644128d39972",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/MOD-RAGE-WINTER-20261028.md",
+      "bytes": 7449,
+      "sha256": "b341fea99acbcdcb9eac047851d11010cbb62364163734119d65bd23912f541c",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/mod-20261029/calc-lyrics-frame.png",
+      "bytes": 1044395,
+      "sha256": "533bf893f7cc48c7092539e7800b50ff795a010ae9bfc8c83f7c016d5930fc41",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/mod-20261029/electric-complete.png",
+      "bytes": 685469,
+      "sha256": "9781c1e848d5cbb252b2c739599414bf68beda4ec8e80be5fca3fc6e7fb53fcf",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/mod-20261029/electric-cover.png",
+      "bytes": 457378,
+      "sha256": "878d5769130ee86bbeadbf44255b109828b5a9f6cdc539f1388c4ecb3e4556a3",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/mod-20261029/electric-gameplay.png",
+      "bytes": 668894,
+      "sha256": "110f8b18f16633c73eec9fc8ecf369f5f8d1f1080405f976c1b8dda2ec019a08",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/mod-20261029/import-two-packages.png",
+      "bytes": 310789,
+      "sha256": "57f2aeda840eb1c2297711c71c3bf22b0e0ba653aa434edbb2dc0352dd3025e9",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/mod-20261029/rage-customization.png",
+      "bytes": 446306,
+      "sha256": "06902876a77120b774be29a71d1a0630a11133856eb57bc1a1f3cf6cb0f45cb6",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/mod-20261029/rage-pv.png",
+      "bytes": 382391,
+      "sha256": "9ed1d9cb0a6a92724592fd80e736419b8b72e6d0f960ae8b40ee409f6d447451",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/mod-20261029/strangers-complete.png",
+      "bytes": 394687,
+      "sha256": "328a97788f69b93114b6d9e002466da3acb92478f20ec4d579dfcb39b36bcca3",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/mod-20261029/umiyuri-complete.png",
+      "bytes": 700148,
+      "sha256": "7b0b0f07f6442869e45fd1f971edbb19f2cac7a4fc04ef283f9daf042e081b23",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/mod-20261029/umiyuri-lyrics.png",
+      "bytes": 754089,
+      "sha256": "408ef21a46b44c69722698b8f24d6eed70141c43f866f9e30d06ee0bdb69a54a",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/mod-20261029/umiyuri-thumbnail-fixed.png",
+      "bytes": 789228,
+      "sha256": "c4bb448c5bdf534d739c5bd1ca7c86c76b7bb625adc07f3226235123580eac6b",
+      "mode": "100644"
+    },
+    {
+      "path": "Runtime/dm/host/hle_fs.c",
+      "bytes": 86173,
+      "sha256": "5f9371f72337925012219a3d47f9a0b5675702b7cc7c8f24eed3eba6cd28a2b9",
+      "mode": "100644"
+    },
+    {
+      "path": "Scripts/test-mod-install.sh",
+      "bytes": 1448,
+      "sha256": "cba5e0a9276c8ab3224d7807153ed54f9b8ee1a81ae43b6655bf9385bb37f374",
+      "mode": "100755"
+    },
+    {
+      "path": "Sources/ModDownloadBrowser.swift",
+      "bytes": 7620,
+      "sha256": "fbfd51ed0ddbd707d16073f9e728c1853256723b412c589ebfb3cf60e3d10957",
+      "mode": "100644"
+    },
+    {
+      "path": "Sources/ModImportController.swift",
+      "bytes": 14526,
+      "sha256": "647d4f596d1c61a805fad69a155bb2dec31b5839c3352c22ad4244a40fe8c563",
+      "mode": "100644"
+    },
+    {
+      "path": "Sources/ModInstaller.swift",
+      "bytes": 13574,
+      "sha256": "209e3d57e014fb82665bb071ab392c845ca0ab2bdf622505ca16b7927a365494",
+      "mode": "100644"
+    },
+    {
+      "path": "Sources/ModPackage.swift",
+      "bytes": 19580,
+      "sha256": "83ef5c977fcef6b4a8bb66b8a2dd0536d0c49759c688ef92e26848d29f9c6236",
+      "mode": "100644"
+    },
+    {
+      "path": "Sources/ResourceImportController.swift",
+      "bytes": 26765,
+      "sha256": "244596a72ca67ceba1eb21c3f3db97cb92c42e79a5a364f0fef60885563750bb",
+      "mode": "100644"
+    },
+    {
+      "path": "SwitchIOSLab.xcodeproj/project.pbxproj",
+      "bytes": 26866,
+      "sha256": "17111837b562ce6b045d2e24a6fdded8e4ecf1e353ba16dd10b975708272455f",
+      "mode": "100644"
+    },
+    {
+      "path": "Tests/ModInstall/build_fixtures.py",
+      "bytes": 2533,
+      "sha256": "78c6a732e57d99cf41ce7153126a18f37ba9c4b34ea2496493f9ee868804688a",
+      "mode": "100644"
+    },
+    {
+      "path": "Tests/ModInstall/main.swift",
+      "bytes": 2071,
+      "sha256": "aee93d9c9660aef63fbd42b9839eaa24f6de49a7288f13556bdf8370bf2a73cd",
+      "mode": "100644"
+    },
+    {
+      "path": "Tools/pc_mods/README.md",
+      "bytes": 4445,
+      "sha256": "4fb4cd9931b7efb3015f71033fc94636f4137bc5d708e3fdf6b6921506a1897f",
+      "mode": "100644"
+    },
+    {
+      "path": "Tools/pc_mods/archive_reader.py",
+      "bytes": 2688,
+      "sha256": "c06844865ddd6163ef467b12fa04156b0cae6969c161c71667c7245cd85e8beb",
+      "mode": "100644"
+    },
+    {
+      "path": "Tools/pc_mods/asset_check.py",
+      "bytes": 2820,
+      "sha256": "a1754fa6d13c4d11cf812131723dbd9745cd4621dbe83c0f8fcc6a89d027fb4d",
+      "mode": "100644"
+    },
+    {
+      "path": "Tools/pc_mods/convert.py",
+      "bytes": 2131,
+      "sha256": "d2decd27615536b641ab4d352af99f1777cc377463b27f42e9e8800486d8a383",
+      "mode": "100644"
+    },
+    {
+      "path": "Tools/pc_mods/font_pairing.py",
+      "bytes": 2123,
+      "sha256": "ac57f6720ae2f93f3463566e908b9a9bcf5ca3c064191988840b105b457608d3",
+      "mode": "100644"
+    },
+    {
+      "path": "Tools/pc_mods/profile_electric_angel.py",
+      "bytes": 9360,
+      "sha256": "7c0559620663908d6b1ef14ddedde0d2ea156fd0d05e690b2ecd8a73956f9860",
+      "mode": "100644"
+    },
+    {
+      "path": "Tools/pc_mods/profile_model.py",
+      "bytes": 10489,
+      "sha256": "2b905f2950e1f265d452e4a5663404438357c04d4508ce4a1d70a822cd5a5d9e",
+      "mode": "100644"
+    },
+    {
+      "path": "Tools/pc_mods/profile_x_song.py",
+      "bytes": 12823,
+      "sha256": "e71dd1a76fde8604a6c362f9fafbaddfbb43495c930c755c07126858b1422e09",
+      "mode": "100644"
+    },
+    {
+      "path": "Tools/pc_mods/sprite_pairing.py",
+      "bytes": 3412,
+      "sha256": "e861ef8fc26c3f1e4dc567e46e9ff0664cfe11183c695a90d4fbae903a93b31f",
+      "mode": "100644"
+    },
+    {
+      "path": "Tools/pc_mods/thumbnail_merge.py",
+      "bytes": 3308,
+      "sha256": "3de5ac97c801499e643c977ee73b69a304cdc6002235042e09fa9ce0523d5ad4",
+      "mode": "100644"
+    }
+  ],
+  "validation": {
+    "private_keys_credentials": "passed",
+    "no_game_mod_resource_payloads": true,
+    "simulator_build": "passed",
+    "mac_catalyst_build": "passed",
+    "zip_regression": "passed, approximately 10.7 MiB child peak RSS",
+    "actual_downloads_imported": 2,
+    "electric_angel_normal": "371 COOL / 371 combo / 100.78%",
+    "calc_mv": "some shots inverted, unresolved",
+    "physical_device": "not tested"
+  }
+}

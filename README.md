@@ -5,6 +5,8 @@ BETTER THAN MOST OF APPS
 
 **简体中文** | [English](README.en.md)
 
+**2026-10-29 MOD 研究候选（尚未发布新安装包）：** 新增应用内 GameBanana 下载、ZIP 流式解压／CRC 校验与失败重试。两个实际下载包已完成 App 导入；导入后仍保持未启用。离线转换工具已用于单模型及单歌曲测试，《Electric Angel》NORMAL 完整结算；X Song 的 Strangers／海底谭也已完整演奏。**仅测试模型、歌曲两类的少量样本，不代表所有包兼容；Calc 的 MV 倒置尚未修复，X Charts 的 New Classics 玩法尚未接入。** [测试报告与截图](Reports/MOD-DOWNLOAD-CONVERSION-20261029.md) · [本地转换工具](Tools/pc_mods/README.md)
+
 **build18 验证预览（2026-10-25）：** 启动页新增“MOD 管理（实验）”，可检查和登记 ZIP／ZIP64 或已解压文件夹。7z／RAR 需先解压；当前不复制、不解压、不加载 MOD。Mac 界面流程及三平台构建通过，iPad 真机入口尚未验收。
 
 **继承 build17 的改进：** AutoPlay 压力测试、硬件诊断与游戏内热切换改进，具体结果见文末。 保留 build15 的原生 Touch Play 快速重按／乱序快照修复与全部 18 个控件布局编辑。加入 M4 真机 ProMotion 60→120 研究显示链：源游戏保持 60 FPS，真实帧与生成帧分别计数，并统计实际 drawable 呈现率。普通启动仍默认原生 60 FPS；图像插帧的舞台大屏、头发轮廓及打歌时序尚未验收。修复研究模式隐藏高级分辨率、强制普通 1080p 放大的问题，真实帧和生成帧都可使用 MetalFX Spatial。**1440p／匹配屏幕仅 M3 及更新 Mac／iPad（family 9+）开放，iPhone、family 7／8 最高 1080p。** M1《39みゅーじっく！》40–50 FPS 的反馈仍待该设备回测，不承诺插帧降低功耗。

@@ -1,0 +1,38 @@
+# 本地 PC MOD 转换试验 / Local PC MOD conversion trials
+
+这些工具复用本项目已验证的转换代码，读取**已解压**的单个 PC MOD，生成独立 RomFS 覆盖目录。不会修改原游戏、XCI、MOD 来源或存档，不执行 DLL。它不是通用 PC MOD 转换器，也不会自动启用 App 的 MOD ABI。
+
+These tools reuse this project's conversion paths to turn **one extracted package** into an isolated RomFS overlay. Sources, base assets, XCI files and saves remain unchanged. No DLL is executed. This is not a universal converter and does not activate the App MOD ABI.
+
+| Profile | 范围 / Scope |
+| --- | --- |
+| `rage-winter-2020` | Rage Winter 2020 Miku：重分配模型、纹理和服装部件编号；只在测试覆盖层中替换 Miku 默认服装 0。Remaps model/texture/item IDs and replaces Miku costume 0 in the test overlay; no additive costume menu registration. |
+| `x-song-pack` | X Song Pack 的 32 首曲目：注册 PV、舞台、动作、Auth3D、精灵与 AET，配对扩展字体和各语言缩略图。Registers 32 PVs, stages, motions, Auth3D, sprites/AET; pairs extended fonts and localized thumbnail atlases. |
+| `electric-angel-rin-len` | PC v2.0.1 的 Electric Angel 编曲版，PV237。紧凑化 Auth3D／精灵编号、分配独立舞台登记槽；保留全部原缩略图并追加新图。PC v2.0.1, PV237: compact Auth3D/sprite IDs, allocate a stage registry slot, preserve every base thumbnail and append the new one. |
+
+X Charts Pack 依赖 New Classics 的判定、长星键和计分逻辑，不能仅复制谱面启用。X Charts requires New Classics gameplay mechanics; merely copying its charts is insufficient.
+
+## 使用 / Usage
+
+需要 Python 3.10+ 和 `cryptography`（已有 FARC 格式读取器的依赖），自行提供提取后的游戏资源。输出目录必须为外置 SSD 上的新目录。转换为单进程、低优先级；逐个 FARC 处理，编码输入上限 128 MiB，单条展开上限 256 MiB，单档总展开上限 384 MiB。超过限制直接停止，不整包载入内存。
+
+Requires Python 3.10+ and `cryptography`, plus your own extracted game assets. Choose a **new output directory on the external SSD**. Conversion uses one low-priority process and handles one FARC at a time: 128 MiB encoded archive, 256 MiB per decoded member and 384 MiB total decoded payload per archive. Oversized archives are rejected.
+
+```sh
+python3 Tools/pc_mods/convert.py \
+  --profile rage-winter-2020 \
+  --source "/path/to/extracted/Rage Winter 2020 Miku" \
+  --base "/path/to/MEGA39-v1.0.9" \
+  --dlc "/path/to/DLC" \
+  --output "/Volumes/ExternalSSD/ModTrials/RageWinter"
+```
+
+输出 `manifest.json` 记录 ID 对照和文件校验值；模型使用 `overlay/`。X Song 需按 `ui-candidate:overlay` 的优先级测试，前者包含字体／精灵配对修复。必须使用隔离测试存档；默认服装覆盖不应写入个人测试外的存档。输出生成不等于所有画面通过：需实际检查模型、物理、歌词、封面、场景和歌曲结束。
+
+The manifest records ID mappings and hashes. Use `overlay/` for the model, or `ui-candidate:overlay` priority for X Song's paired fonts/sprites. **Use an isolated test save.** Conversion success is not visual acceptance: inspect models, physics, lyrics, covers, stages and song completion in the game.
+
+Electric Angel 同样使用 `overlay/`，已在模拟器完成 NORMAL：371 COOL、371 连击、100.78%，尚未完成所有镜头和双人表现的原版对照。X Song 已验证 Strangers／海底谭完整结算及海底谭的大小封面、中文歌词；**Calc 的 MV 倒置仍未解决**。模型下载包转换后 16 个文件与已验证配置逐字节相同；模型仍只是覆盖默认服装的试验。
+
+Electric Angel uses `overlay/` and completed NORMAL in the simulator (371 COOL, 371 combo, 100.78%); camera/duet visual parity is not fully accepted. X Song's Strangers/Umiyuri completed, with Umiyuri covers and Chinese lyrics verified; **Calc's inverted MV remains unresolved**. The downloaded model produces 16 files identical to the previously validated profile, which remains a default-costume replacement experiment.
+
+下载来源与转换资源只保存在本地；公开仓库仅保留工具、报告和获授权的测试截图。Downloaded/converted assets remain local; the public repository contains tools, reports and authorized test screenshots only.
