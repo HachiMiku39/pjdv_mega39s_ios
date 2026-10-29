@@ -3463,9 +3463,13 @@ static void simulator_border_validate(void){
 static id<MTLTexture> simulator_border_coverage(id<MTLTexture> source){
     simulator_border_validate();
     if(source.textureType!=MTLTextureType2D)MDIE("Border coverage requires a 2D source, got %lu",(unsigned long)source.textureType);
-    static NSMutableDictionary *cache;if(!cache)cache=[NSMutableDictionary dictionary];
-    NSString *key=[NSString stringWithFormat:@"%lu_%lu_%lu",(unsigned long)source.width,(unsigned long)source.height,(unsigned long)source.mipmapLevelCount];
-    id<MTLTexture> have=cache[key];if(have)return have;
+    // Dense charts repeatedly bind the same few texture extents. Keep the
+    // exact width/height/mip key without allocating/formating NSStrings per
+    // draw. The owners array preserves the old process-lifetime ownership.
+    static nvn_hmap cache;static NSMutableArray *owners;
+    if(!owners){nvn_hm_init(&cache,3*sizeof(NSUInteger));owners=[NSMutableArray array];}
+    const NSUInteger key[3]={source.width,source.height,source.mipmapLevelCount};
+    id<MTLTexture> have=(__bridge id<MTLTexture>)nvn_hm_get(&cache,key);if(have)return have;
     MTLTextureDescriptor *d=[MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatR8Unorm width:source.width height:source.height mipmapped:NO];
     d.mipmapLevelCount=source.mipmapLevelCount;d.storageMode=MTLStorageModeShared;d.usage=MTLTextureUsageShaderRead;
     id<MTLTexture> t=[g_dev newTextureWithDescriptor:d];if(!t)MDIE("Border coverage texture allocation failed");
@@ -3474,7 +3478,7 @@ static id<MTLTexture> simulator_border_coverage(id<MTLTexture> source){
         NSUInteger w=MAX(1,source.width>>level),h=MAX(1,source.height>>level);
         [t replaceRegion:MTLRegionMake2D(0,0,w,h) mipmapLevel:level withBytes:ones bytesPerRow:w];
     }
-    free(ones);cache[key]=t;return t;
+    free(ones);[owners addObject:t];nvn_hm_put(&cache,key,(__bridge void *)t);return t;
 }
 // Bounded diagnostics read GPU pool bytes after the captured submission completes.
 // CPU views of simulator pool aliases can still contain pre-copy zeroes.
@@ -7053,7 +7057,10 @@ static void link_sync(void) {
     MLOG("出图节拍模式 %d → %d（帧 %llu）", applied, want, (unsigned long long)atomic_load(&g_cur_frame));
     applied = want;
     pthread_mutex_lock(&g_pq_mu); pthread_cond_broadcast(&g_pq_cv); pthread_mutex_unlock(&g_pq_mu);
-
+    // The fallback below is only for systems without CAMetalDisplayLink.
+    // Clearing the request here leaves the link owning the layer while its
+    // delegate refuses queued frames; the classic presenter cannot take over.
+    return;
     }
     g_dm_present_link = 0;
 }

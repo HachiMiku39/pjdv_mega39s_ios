@@ -661,7 +661,10 @@ final class LabController: UIViewController {
             shadow += hdrStatus() == 1 ? " · HDR" : hdrStatus() == 4 ? L(" · HDR 错误") : L(" · HDR 待3D")
         }
         let fgLabel = gameFGMode() == 2 ? L(" · 60→120 ProMotion（实验）") : gameFGMode() == 1 ? L(" · 30→60 图像插帧") : ""
-        outputToggle.setTitle(L("输出：") + label + shadow + fgLabel, for: .normal)
+        let title = L("输出：") + label + shadow + fgLabel
+        if outputToggle.title(for: .normal) != title {
+            outputToggle.setTitle(title, for: .normal)
+        }
     }
 
     @objc private func toggleFrameRate() {

@@ -1,8 +1,8 @@
 # 源码与构建（2026-10-25）
 
-本仓库包含 Swift/UIKit 宿主、Mac AppKit 辅助组件、NVN → Metal／Horizon 兼容层、逆向工具和测试。公开源码与精简预览包为 **0.1.5 build18**。AutoPlay、调试信息和热切换的实际验证范围及限制见中英文 README。游戏资源、密钥、存档和本机签名数据不发布。
+本仓库包含 Swift/UIKit 宿主、Mac AppKit 辅助组件、NVN → Metal／Horizon 兼容层、逆向工具和测试。公开源码与精简预览包为 **0.1.5 build19**。AutoPlay、调试信息和热切换的实际验证范围及限制见中英文 README。游戏资源、密钥、存档和本机签名数据不发布。
 
-The public source and lightweight preview installers are **0.1.5 build18**. Both READMEs describe measured AutoPlay, diagnostics and hot-switch checks and outstanding limitations. Game payloads, keys, saves and local signing data are excluded.
+The public source and lightweight preview installers are **0.1.5 build19**. Both READMEs describe measured AutoPlay, diagnostics and hot-switch checks and outstanding limitations. Game payloads, keys, saves and local signing data are excluded.
 
 ## 源码目录
 
@@ -131,3 +131,14 @@ bash Scripts/test-mod-packages.sh
 测试输出目录必须尚未存在；ASan 检查 ZIP64、路径与元数据边界、取消、150 次元数据变异、书签登记和源文件保留。没有真实 MOD／游戏资源。Mac UI 已验证，iPad 真机入口尚未验收。
 
 The launcher MOD manager only inspects and registers source bookmarks; loading remains disabled. Run the synthetic ASan package tests above in a fresh output directory. These tests do not qualify real MOD playback.
+
+
+## build19 MOD 下载和流式解压 / Streamed MOD imports
+
+`Sources/ModDownloadBrowser.swift` 使用隔离 WKWebView 和磁盘下载任务；`ModInstaller.swift` 单任务分块解压 ZIP 并校验 CRC，支持取消／空间检查。合成回归：
+
+```sh
+PJDV_TEST_ROOT="/Volumes/ExternalSSD/PJDVTests/mod-install-01" bash Scripts/test-mod-install.sh
+```
+
+The importer uses bounded chunks and does not activate imported packages. Only explicit offline conversion profiles are provided in `Tools/pc_mods`; they require your own extracted game/MOD assets and an isolated test save. No test overlays are bundled. See `Reports/MOD-DOWNLOAD-CONVERSION-20261029.md` for tested scope and unresolved Calc/New Classics issues.

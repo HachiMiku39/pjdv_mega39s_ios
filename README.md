@@ -5,9 +5,9 @@ BETTER THAN MOST OF APPS
 
 **简体中文** | [English](README.en.md)
 
-**2026-10-29 MOD 研究候选（尚未发布新安装包）：** 新增应用内 GameBanana 下载、ZIP 流式解压／CRC 校验与失败重试。两个实际下载包已完成 App 导入；导入后仍保持未启用。离线转换工具已用于单模型及单歌曲测试，《Electric Angel》NORMAL 完整结算；X Song 的 Strangers／海底谭也已完整演奏。**仅测试模型、歌曲两类的少量样本，不代表所有包兼容；Calc 的 MV 倒置尚未修复，X Charts 的 New Classics 玩法尚未接入。** [测试报告与截图](Reports/MOD-DOWNLOAD-CONVERSION-20261029.md) · [本地转换工具](Tools/pc_mods/README.md)
+**build19 精简预览（2026-10-29）：** 新增应用内 GameBanana 下载、ZIP 流式解压／CRC 校验与失败重试。两个实际下载包已完成 App 导入；导入后仍保持未启用。离线转换工具已用于单模型及单歌曲测试，《Electric Angel》NORMAL 完整结算；X Song 的 Strangers／海底谭也已完整演奏。**仅测试模型、歌曲两类的少量样本，不代表所有包兼容；Calc 的 MV 倒置尚未修复，X Charts 的 New Classics 玩法尚未接入。** [测试报告与截图](Reports/MOD-DOWNLOAD-CONVERSION-20261029.md) · [本地转换工具](Tools/pc_mods/README.md)
 
-**build18 验证预览（2026-10-25）：** 启动页新增“MOD 管理（实验）”，可检查和登记 ZIP／ZIP64 或已解压文件夹。7z／RAR 需先解压；当前不复制、不解压、不加载 MOD。Mac 界面流程及三平台构建通过，iPad 真机入口尚未验收。
+**历史 build18 验证（2026-10-25）：** 启动页新增“MOD 管理（实验）”，可检查和登记 ZIP／ZIP64 或已解压文件夹。7z／RAR 需先解压；当前不复制、不解压、不加载 MOD。Mac 界面流程及三平台构建通过，iPad 真机入口尚未验收。
 
 **继承 build17 的改进：** AutoPlay 压力测试、硬件诊断与游戏内热切换改进，具体结果见文末。 保留 build15 的原生 Touch Play 快速重按／乱序快照修复与全部 18 个控件布局编辑。加入 M4 真机 ProMotion 60→120 研究显示链：源游戏保持 60 FPS，真实帧与生成帧分别计数，并统计实际 drawable 呈现率。普通启动仍默认原生 60 FPS；图像插帧的舞台大屏、头发轮廓及打歌时序尚未验收。修复研究模式隐藏高级分辨率、强制普通 1080p 放大的问题，真实帧和生成帧都可使用 MetalFX Spatial。**1440p／匹配屏幕仅 M3 及更新 Mac／iPad（family 9+）开放，iPhone、family 7／8 最高 1080p。** M1《39みゅーじっく！》40–50 FPS 的反馈仍待该设备回测，不承诺插帧降低功耗。
 
@@ -20,7 +20,7 @@ BETTER THAN MOST OF APPS
 运行端仍使用已适配的 JP v1.0.9 程序，不执行新 XCI 中的任意 NSO；因此解除导入版本限制不等于所有资源版本、其他地区代码均已兼容。未知资源版本在启动页明确提示待验证。新导入记录写入 `game-content.json`，已有 v1.0.9 文件夹继续兼容。独立票据／TitleKey 加密仍需后续支持；缺少所需密钥、冲突更新和不完整包会停止导入，不修改原 XCI。
 
 
-[最新 build18 预览版](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b18) · [build17](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b17) · [build14](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b14) · [build10](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b10) · [原 build7](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5) · [安装与测试指南](#安装包怎么选)
+[最新 build19 预览版](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b19) · [build18](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b18) · [build17](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b17) · [build14](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b14) · [build10](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b10) · [原 build7](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5) · [安装与测试指南](#安装包怎么选)
 
 [演示视频（bilibili）](https://www.bilibili.com/video/BV1KGni6YEZd/)
 
@@ -348,3 +348,14 @@ M4 实测场景为《39みゅーじっく！》实时3D **PV模式**与重播菜
 启动页已加入“MOD 管理（实验）”：手动选择 ZIP／ZIP64 或已解压文件夹，识别资源覆盖、插件式包和代码补丁，保存原文件位置书签及检查结果。7z／RAR 请先解压，再添加文件夹。可重新检查、移除登记；不复制、不解压、不加载 MOD，也不修改 XCI、资源或存档。ZIP 当前仅检查目录结构，未验证内容 CRC、TOML 语义或游戏兼容性。
 
 研究基于 MikuMikuSwitchPlugin `13bc9fa`，只读接口和能力／ABI 仍拒绝激活。详见 [入口与测试说明](Reports/MOD-ENTRY-build18.md)、[Switch 安装方式研究](Reports/SWITCH-MOD-IMPORT-20261025.md)及[接口报告](Reports/MOD-INTERFACE-build18.md)。build18 提供精简 IPA／DMG 和对应源码。Mac 实际添加 ZIP／文件夹、书签重检、取消及移除登记通过；iOS／模拟器／Mac 编译通过，iPad 真机入口尚未验证。未进行真实 MOD 游戏内兼容验收。
+
+
+## build19：MOD 下载与导入、帧率热切换（2026-10-29）
+
+启动首页 → MOD 管理（实验）→ 浏览／下载 MOD，默认进入 GameBanana 的 Mega Mix+ 目录。ZIP 下载后自动流式解压并校验 CRC；已下载的包可重新导入，显示当前文件、进度和速度。7z／RAR 需先在外部解压，再添加文件夹。解压单任务、低优先级、64 KiB 分块，支持取消和剩余空间检查；下载上限 16 GiB，展开上限 32 GiB。
+
+**导入后仍显示“未启用”，本版不提供 PC MOD 一键转换或自动加载。** 仅模型和歌曲的少量样本经过离线转换与独立模拟器会话验证；原曲资源、用户存档和下载来源不替换。海底谭封面／中文歌词和 Electric Angel 完整结算等证据见 [MOD 报告](Reports/MOD-DOWNLOAD-CONVERSION-20261029.md)。Calc 部分镜头倒置、X Charts 的 New Classics 玩法仍待处理，测试覆盖层不会随安装包发布。
+
+修复 Mac `CAMetalDisplayLink` 支持路径错误回落到旧呈现重置的问题；此前在 M3 Max 主菜单及《ゴーストルール》PV 完成原生30／60、30→60、60→120往返检查，动画和输入继续、GPU 错误为0。这是功能回归，不能证明全曲稳定帧率或音游判定时序；本版没有新增 iPad 真机验收。
+
+本次 IPA 未签名，需使用自己的有效签名；macOS DMG 为 arm64、ad-hoc 签名、未公证。精简包不含 XCI、GameResources、密钥、个人存档或本机签名配置。下载、解压成功不等于任意 MOD 运行兼容。
