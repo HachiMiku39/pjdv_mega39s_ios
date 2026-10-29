@@ -5,6 +5,8 @@ BETTER THAN MOST OF APPS
 
 **简体中文** | [English](README.en.md)
 
+**组合 MOD 与底座研究（2026-10-29）：** 本地 M4 候选同时加载 X Song＋LeoNeed，星乃一歌名称／预览／实际模型正常，《愛Dee》NORMAL 完成 458 COOL／458 连击；正式存档校验未变。运行抓帧约 42 FPS，未达到稳定60目标。仅验证预先合并组合，尚未提供任意多选管理界面；New Classics 仍未接入。[组合测试与截图](Reports/COMBINED-MOD-TRIAL-20261029.md) · [New Classics／MikuMikuSwitchPlugin 研究](Reports/NEW-CLASSICS-FOUNDATION-20261029.md)
+
 **M4 真机 MOD 抽样（2026-10-29）：** 五个包完成指定模型／整曲验证；F2nd Song 的《SPiCa》启动仍崩溃，已隔离；三个 Charts 包仍需 New Classics 适配。已修复一歌的错误名称及底部角色预览。此轮为本地研究候选，尚未发布新安装包。[中英报告与截图](Reports/MOD-IPAD-VALIDATION-20261029.md)
 
 **build19 精简预览（2026-10-29）：** 新增应用内 GameBanana 下载、ZIP 流式解压／CRC 校验与失败重试。两个实际下载包已完成 App 导入；导入后仍保持未启用。离线转换工具已用于单模型及单歌曲测试，《Electric Angel》NORMAL 完整结算；X Song 的 Strangers／海底谭也已完整演奏。**仅测试模型、歌曲两类的少量样本，不代表所有包兼容；Calc 的 MV 倒置尚未修复，X Charts 的 New Classics 玩法尚未接入。** [测试报告与截图](Reports/MOD-DOWNLOAD-CONVERSION-20261029.md) · [本地转换工具](Tools/pc_mods/README.md)

@@ -2,6 +2,8 @@
 
 [简体中文](README.md) | **English**
 
+**Combined MOD and foundation research, October 29, 2026:** A local M4 candidate loaded X Song + LeoNeed together. Ichika's name, portrait and equipped model worked; Ai Dee NORMAL completed with 458 COOL / 458 combo, and normal save hashes remained unchanged. Gameplay captures showed about 42 FPS, not stable60. Only this prepared combination was tested; arbitrary multi-selection and New Classics gameplay are not integrated. [Combination report/screenshots](Reports/COMBINED-MOD-TRIAL-20261029.md) · [New Classics / MikuMikuSwitchPlugin research](Reports/NEW-CLASSICS-FOUNDATION-20261029.md)
+
 **M4 hardware MOD sampling, October 29, 2026:** Five packages completed their selected model/song tests. F2nd Song still crashes at SPiCa startup and is quarantined; three Charts packages still require New Classics. Ichika's incorrect name and missing bottom portrait were corrected. This is a local research candidate, with no new installer release. [Bilingual report and screenshots](Reports/MOD-IPAD-VALIDATION-20261029.md)
 
 **Build 19 lightweight preview, October 29, 2026:** Adds an in-app GameBanana browser, streamed ZIP extraction/CRC validation and download retry. Two actual downloads were imported by the App and remain inactive. Offline converters were used for isolated model/song trials; Electric Angel NORMAL completed, as did X Song's Strangers and Umiyuri Kaiteitan. **Only selected model/song samples were tested; compatibility is not universal. Calc's inverted MV remains unresolved, and X Charts' New Classics mechanics are not integrated.** [Report and screenshots](Reports/MOD-DOWNLOAD-CONVERSION-20261029.md) · [Local converters](Tools/pc_mods/README.md)
