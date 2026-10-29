@@ -1,12 +1,20 @@
 import UIKit
 import UniformTypeIdentifiers
 
+extension RuntimeModCatalog {
+    static var current: RuntimeModCatalog {
+        RuntimeModCatalog(root: ResourceLibrary.appDataRoot.appendingPathComponent("Mods/Ready", isDirectory: true), defaults: .standard)
+    }
+}
+
 // Launcher-only downloads/imports. Resource installation is separate from
 // runtime compatibility: importing never executes a PC DLL or unknown patch.
 final class ModImportController: UITableViewController, UIDocumentPickerDelegate {
+    var onClose: (() -> Void)?
     private let registry = ModRegistry(root: ResourceLibrary.appDataRoot.appendingPathComponent("Mods/Registrations", isDirectory: true))
     private var records = [ModRegistration]()
     private var downloads = [URL]()
+    private var ready = [RuntimeMod]()
     private var operation: Progress?
     private var selecting = false
     private var fraction:Float=0
@@ -23,6 +31,8 @@ final class ModImportController: UITableViewController, UIDocumentPickerDelegate
     private func reloadRecords() {
         do { records=try registry.records() }
         catch { status=L(error.localizedDescription) }
+        do { ready=try RuntimeModCatalog.current.records() }
+        catch { ready=[];status=L(error.localizedDescription) }
         let root=ResourceLibrary.appDataRoot.appendingPathComponent("Mods/Downloads",isDirectory:true)
         let fm=FileManager.default
         downloads=[]
@@ -38,15 +48,15 @@ final class ModImportController: UITableViewController, UIDocumentPickerDelegate
         downloads.sort{$0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending}
         tableView.reloadData()
     }
-    override func numberOfSections(in tableView:UITableView)->Int { 4 }
+    override func numberOfSections(in tableView:UITableView)->Int { 5 }
     override func tableView(_ tableView:UITableView,numberOfRowsInSection section:Int)->Int {
-        section == 0 ? 4 : section == 1 ? max(1,records.count) : section == 2 ? max(1,downloads.count) : 1
+        section == 0 ? 4 : section == 1 ? ready.count+1 : section == 2 ? max(1,records.count) : section == 3 ? max(1,downloads.count) : 1
     }
     override func tableView(_ tableView:UITableView,titleForHeaderInSection section:Int)->String? {
-        L(section == 0 ? "添加 MOD" : section == 1 ? "已登记（未启用）" : section == 2 ? "已下载的压缩包" : "检查结果")
+        L(section == 0 ? "添加 MOD" : section == 1 ? "已适配包（启动前选择）" : section == 2 ? "已登记（未启用）" : section == 3 ? "已下载的压缩包" : "检查结果")
     }
     override func tableView(_ tableView:UITableView,titleForFooterInSection section:Int)->String? {
-        section == 0 ? L("目前仅测试过模型和歌曲两类 MOD，不保证所有同类包兼容。") : section == 1 ? L("导入与游戏内适配分开处理；含新增数据库或程序插件的包不会自动启用。") : section == 2 ? L("下载文件会保留，轻点可重新导入；7z／RAR 需先解压。") : nil
+        section == 0 ? L("目前仅测试过模型和歌曲两类 MOD，不保证所有同类包兼容。") : section == 1 ? L("启动前选择一个组合，使用独立 MOD 存档；已转换包可直接导入，原始 PC 包仍需适配。") : section == 2 ? L("导入与游戏内适配分开处理；含新增数据库或程序插件的包不会自动启用。") : section == 3 ? L("下载文件会保留，轻点可重新导入；7z／RAR 需先解压。") : nil
     }
     private func kind(_ result:ModInspection)->String {
         switch result.kind {
@@ -80,7 +90,7 @@ final class ModImportController: UITableViewController, UIDocumentPickerDelegate
                 cell.textLabel?.textColor=operation == nil && !selecting ? .systemBlue : .secondaryLabel
                 cell.selectionStyle = .default
             }
-        } else if indexPath.section == 1 {
+        } else if indexPath.section == 2 {
             if records.isEmpty { cell.textLabel?.text=L("尚未登记 MOD。");cell.accessibilityIdentifier="mods.empty" }
             else {
                 let record=records[indexPath.row]
@@ -88,7 +98,7 @@ final class ModImportController: UITableViewController, UIDocumentPickerDelegate
                 cell.accessibilityIdentifier="mods.record."+record.id.uuidString
                 cell.accessoryType = .disclosureIndicator;cell.selectionStyle = .default
             }
-        } else if indexPath.section == 2 {
+        } else if indexPath.section == 3 {
             if downloads.isEmpty {cell.textLabel?.text=L("暂无已下载的 MOD 压缩包。")}
             else {
                 let file=downloads[indexPath.row];cell.textLabel?.text=file.lastPathComponent
@@ -96,6 +106,13 @@ final class ModImportController: UITableViewController, UIDocumentPickerDelegate
                 cell.accessibilityIdentifier="mods.download."+file.deletingLastPathComponent().lastPathComponent
                 cell.accessoryType = .disclosureIndicator;cell.selectionStyle = .default
             }
+        } else if indexPath.section == 1 {
+            let item=indexPath.row == 0 ? nil : ready[indexPath.row-1]
+            cell.textLabel?.text=item?.name ?? L("停用 MOD（原版游戏）")
+            cell.detailTextLabel?.text=item?.notes
+            cell.accessoryType = RuntimeModCatalog.current.selectedID == item?.id ? .checkmark : .none
+            cell.selectionStyle = .default
+            cell.accessibilityIdentifier="mods.ready."+(item?.id.uuidString ?? "off")
         } else {
             cell.textLabel?.text=status;cell.accessibilityIdentifier="mods.status"
             cell.detailTextLabel?.text=L("采用分块解压和独立安装目录，不改动原游戏资源。运行兼容性需另行验证。")
@@ -112,8 +129,12 @@ final class ModImportController: UITableViewController, UIDocumentPickerDelegate
         guard operation == nil && !selecting else { return }
         if indexPath.section == 0 && indexPath.row == 1 {browse()}
         else if indexPath.section == 0 && indexPath.row > 1 { pick(directory:indexPath.row == 3) }
-        else if indexPath.section == 1 && !records.isEmpty { showRecord(records[indexPath.row]) }
-        else if indexPath.section == 2 && !downloads.isEmpty {inspect(ResourceAccess(downloads[indexPath.row]))}
+        else if indexPath.section == 2 && !records.isEmpty { showRecord(records[indexPath.row]) }
+        else if indexPath.section == 3 && !downloads.isEmpty {inspect(ResourceAccess(downloads[indexPath.row]))}
+        else if indexPath.section == 1 {
+            RuntimeModCatalog.current.select(indexPath.row == 0 ? nil : ready[indexPath.row-1].id)
+            tableView.reloadSections(IndexSet(integer:1),with:.none)
+        }
     }
     private func browse() {
         let browser=ModDownloadBrowser()
@@ -128,7 +149,7 @@ final class ModImportController: UITableViewController, UIDocumentPickerDelegate
         isModalInPresentation=busy;navigationController?.isModalInPresentation=busy
         tableView.reloadData()
     }
-    @objc private func closePanel() { guard operation == nil && !selecting else{return};dismiss(animated:true) }
+    @objc private func closePanel() { guard operation == nil && !selecting else{return};dismiss(animated:true,completion:onClose) }
     @objc private func cancelInspection() { operation?.cancel();navigationItem.leftBarButtonItem?.isEnabled=false }
     private func pick(directory:Bool) {
         selecting=true;updateBusyState()
@@ -163,7 +184,7 @@ final class ModImportController: UITableViewController, UIDocumentPickerDelegate
         let registry=self.registry
         let started=Date()
         DispatchQueue.global(qos:.utility).async { [weak self,access] in
-            let result=Result<Void,Error> {
+            let result=Result<Bool,Error> {
                 let coordinator=NSFileCoordinator(filePresenter:nil)
                 var coordinationError:NSError?, installed:Result<InstalledMod,Error>?
                 coordinator.coordinate(readingItemAt:access.root,options:.withoutChanges,error:&coordinationError) { url in
@@ -175,7 +196,7 @@ final class ModImportController: UITableViewController, UIDocumentPickerDelegate
                             let speed=ByteCountFormatter.string(fromByteCount:Int64(Double(update.completed)/max(1,Date().timeIntervalSince(started))),countStyle:.file)
                             self.status=L(update.phase)+"\n"+update.file+"\n"+bytes+" / "+total+" · "+speed+"/s"
                             self.fraction=update.total>0 ? Float(Double(update.completed)/Double(update.total)) : 0
-                            self.tableView.reloadSections(IndexSet(integer:3),with:.none)
+                            self.tableView.reloadSections(IndexSet(integer:4),with:.none)
                         }
                     }}
                 }
@@ -184,14 +205,23 @@ final class ModImportController: UITableViewController, UIDocumentPickerDelegate
                 let package=try installed.get()
                 do {
                     if progress.isCancelled {throw ModPackageError.cancelled}
+                    if try RuntimeModCatalog.current.adoptPrepared(from:package.root,progress:progress,report:{ completed,total in
+                        DispatchQueue.main.async { [weak self] in
+                            guard let self else { return }
+                            self.status=L("正在校验已适配包…")+"\n"+ByteCountFormatter.string(fromByteCount:Int64(completed),countStyle:.file)+" / "+ByteCountFormatter.string(fromByteCount:Int64(total),countStyle:.file)
+                            self.fraction=total>0 ? Float(Double(completed)/Double(total)) : 0
+                            self.tableView.reloadSections(IndexSet(integer:4),with:.none)
+                        }
+                    }) != nil { return true }
                     try registry.register(package.root,inspection:package.inspection,name:package.name)
+                    return false
                 } catch {try? FileManager.default.removeItem(at:package.root);throw error}
             }
             DispatchQueue.main.async { [weak self,access] in
                 guard let self else { return }
                 self.operation=nil
                 switch result {
-                case .success:self.status=L("MOD 已导入独立目录；游戏内适配与启用尚需验证。")
+                case .success(let prepared):self.status=L(prepared ? "已适配包校验完成，可在启动前列表中选择。" : "MOD 已导入独立目录；游戏内适配与启用尚需验证。")
                 case .failure(let error):self.status=L(error.localizedDescription)
                 }
                 self.updateBusyState();self.reloadRecords()

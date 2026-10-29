@@ -1,0 +1,15 @@
+{
+  "sample": "Five packages / Ichika / 39Music EXTREME",
+  "samples": 404,
+  "presented_fps_median": 59.9991889923365,
+  "presented_fps_p10": 59.99917628131357,
+  "app_memory_peak_MiB": 2192.5023345947266,
+  "output": "2420x1361 MetalFX; RT fallback indicated",
+  "metric": "Presentation sampling while AutoPlay hit counter advances; not GPU timing or real-input latency",
+  "cool": 771,
+  "combo": 771,
+  "score": 682930,
+  "achievement": 101.17,
+  "autoplay_temporary_save": true,
+  "normal_save_hashes_unchanged": 2
+}

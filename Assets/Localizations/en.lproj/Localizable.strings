@@ -260,3 +260,17 @@
 "已下载的压缩包" = "Downloaded Archives";
 "下载文件会保留，轻点可重新导入；7z／RAR 需先解压。" = "Downloads are kept. Tap to import again; extract 7z / RAR first.";
 "暂无已下载的 MOD 压缩包。" = "No downloaded MOD archives.";
+
+"已适配包（启动前选择）" = "Converted packs (choose before starting)";
+
+"每次只启用一个已转换的包，使用独立 MOD 存档；原版资源和存档保持不变。原始 PC 包仍需转换。" = "Enable one converted pack at a time. Each pack uses separate MOD saves; original resources and saves remain unchanged. Raw PC packs still require conversion.";
+
+"停用 MOD（原版游戏）" = "Disable MODs (original game)";
+
+"已适配包校验完成，可在启动前列表中选择。" = "Prepared package verified. Select it in the pre-launch list.";
+
+"此已适配包已存在，请在启动前列表中选择；没有覆盖现有包。" = "This prepared package is already installed. Select it before launch; the existing copy was preserved.";
+
+"启动前选择一个组合，使用独立 MOD 存档；已转换包可直接导入，原始 PC 包仍需适配。" = "Choose a combination before launch with a separate MOD save. Prepared packages can be imported directly; raw PC packages still need conversion.";
+
+"正在校验已适配包…" = "Verifying prepared package…";

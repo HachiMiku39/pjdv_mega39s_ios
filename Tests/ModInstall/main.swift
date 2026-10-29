@@ -1,4 +1,5 @@
 import Foundation
+import CryptoKit
 let root=URL(fileURLWithPath:CommandLine.arguments[1],isDirectory:true)
 let installed=root.appendingPathComponent("Installed",isDirectory:true)
 let fm=FileManager.default
@@ -29,3 +30,25 @@ precondition((expandedAttributes[.size] as! NSNumber).uint64Value==256*1024*1024
 precondition(last==large.inspection.expandedBytes)
 try fm.removeItem(at:large.root)
 print("PASS: stored/deflated/ZIP64/folder install; CRC/local-header/size/path/symlink rejection; cancellation cleanup; streamed 256 MiB expansion")
+
+// iPad data URLs can name /var while Foundation enumerates /private/var.
+// An ancestor alias is valid; a symlink selected as the package is not.
+let alias=root.appendingPathComponent("ParentAlias")
+try fm.createSymbolicLink(at:alias,withDestinationURL:root)
+let fixture=root.appendingPathComponent("PreparedFixture")
+let relative="0/rom_switch/rom/pv_db.txt",data=Data("valid".utf8)
+try fm.createDirectory(at:fixture.appendingPathComponent(relative).deletingLastPathComponent(),withIntermediateDirectories:true)
+try data.write(to:fixture.appendingPathComponent(relative))
+let digest=SHA256.hash(data:data).map{String(format:"%02x",$0)}.joined()
+let item=RuntimeMod(format:"pjdv-runtime-mod-v1",id:UUID(),name:"Alias fixture",notes:"",layers:["0"],baseChecks:[.init(path:"rom_switch/rom/pv_db.txt",bytes:5,sha256:digest)],files:[.init(path:relative,bytes:5,sha256:digest)])
+try JSONEncoder().encode(item).write(to:fixture.appendingPathComponent("runtime.json"))
+let copied=try ModInstaller.install(alias.appendingPathComponent("PreparedFixture"),under:alias.appendingPathComponent("AliasInstalled"),progress:Progress()) {_ in}
+let defaults=UserDefaults(suiteName:"PJDV.ImportAlias."+UUID().uuidString)!
+let catalog=RuntimeModCatalog(root:root.appendingPathComponent("AliasReady"),defaults:defaults)
+let adopted=try catalog.adoptPrepared(from:copied.root,progress:Progress())
+precondition(adopted?.id==item.id)
+let link=root.appendingPathComponent("SelectedLink")
+try fm.createSymbolicLink(at:link,withDestinationURL:fixture)
+do {_=try ModInstaller.install(link,under:installed,progress:Progress()){_ in};fatalError("Selected symlink accepted")}catch{}
+try fm.removeItem(at:alias);try fm.removeItem(at:link)
+print("PASS: complete prepared-package installation through an ancestor alias; selected symlink still rejected")

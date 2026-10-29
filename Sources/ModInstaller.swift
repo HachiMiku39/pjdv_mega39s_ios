@@ -49,6 +49,10 @@ enum ModInstaller {
         guard inspected.expandedBytes<=maximumExpanded else {throw ModInstallError.tooLarge}
         guard !inspected.unusualCompression else {throw ModInstallError.unsupportedCompression}
         try fm.createDirectory(at:root,withIntermediateDirectories:true)
+        // Inspection rejects a selected symlink; normalize trusted ancestor
+        // aliases before comparing enumerated paths or returning the copy.
+        let source=source.standardizedFileURL.resolvingSymlinksInPath()
+        let root=root.standardizedFileURL.resolvingSymlinksInPath()
         try checkSpace(root,inspected.expandedBytes)
         let id=UUID().uuidString
         let stage=root.appendingPathComponent(".staging-"+id,isDirectory:true)

@@ -36,3 +36,11 @@ Electric Angel 同样使用 `overlay/`，已在模拟器完成 NORMAL：371 COOL
 Electric Angel uses `overlay/` and completed NORMAL in the simulator (371 COOL, 371 combo, 100.78%); camera/duet visual parity is not fully accepted. X Song's Strangers/Umiyuri completed, with Umiyuri covers and Chinese lyrics verified; **Calc's inverted MV remains unresolved**. The downloaded model produces 16 files identical to the previously validated profile, which remains a default-costume replacement experiment.
 
 下载来源与转换资源只保存在本地；公开仓库仅保留工具、报告和获授权的测试截图。Downloaded/converted assets remain local; the public repository contains tools, reports and authorized test screenshots only.
+
+## Auth3D 曲线研究 / Auth3D curve research (2026-10-30)
+
+`a3dc_to_a3da.py` 是离线研究辅助工具，提供 `convert(bytes)`，将经典 A3DC 的二进制关键帧展开为文本 A3DA。保留未知文本属性、曲线插值／外推、变换与半精度旋转数据；遇到不支持的结构停止，不生成空动画。格式研究参考 [ReDIVA a3da.cpp，固定提交 207c270](https://github.com/korenkonder/ReDIVA/blob/207c270472ba3f0edcda29bae777e5bd4a8952d9/src/KKdLib/a3da.cpp)。合成数据验证：`python3 Tests/Auth3D/test_conversion.py`。
+
+**不是已验收的 F2nd 修复，也没有接入 App 的通用转换器。** 转换后《SPiCa》真机载入仍失败；公共 FARC 的继承条目也必须合并，不能只覆盖整个包。见[复测结果](../../Reports/MULTI-MOD-VALIDATION-20261030.md)。
+
+`a3dc_to_a3da.py` is an offline research helper exposing `convert(bytes)` for classic Auth3D binary curves. It preserves unknown text properties, interpolation/extrapolation, transforms and half-float rotation data, and rejects unsupported structures instead of substituting empty animation. Format reference and synthetic test command are above. **It is neither an accepted F2nd fix nor an in-App general converter**: SPiCa still fails the physical loading test, including after inherited FARC entries were restored.
