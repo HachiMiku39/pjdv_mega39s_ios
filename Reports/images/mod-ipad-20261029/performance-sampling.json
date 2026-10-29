@@ -1,0 +1,27 @@
+{
+  "LeoNeedFullSong": {
+    "advancing_hit_samples": 231,
+    "display_fps_median": 60.0,
+    "display_fps_p10": 60.0,
+    "app_memory_peak_mib": 1776.3
+  },
+  "RacingFullSong": {
+    "advancing_hit_samples": 404,
+    "display_fps_median": 60.0,
+    "display_fps_p10": 60.0,
+    "app_memory_peak_mib": 2663.7
+  },
+  "SekaiMikuFullSong": {
+    "advancing_hit_samples": 403,
+    "display_fps_median": 60.0,
+    "display_fps_p10": 60.0,
+    "app_memory_peak_mib": 2059.6
+  },
+  "SekaiMiniFullSong": {
+    "advancing_hit_samples": 433,
+    "display_fps_median": 60.0,
+    "display_fps_p10": 57.97,
+    "app_memory_peak_mib": 2245.9
+  },
+  "measurement_limit": "Display presentation FPS sampled when AutoPlay hit counter advances; not GPU frame time, not end-to-end input latency, and not a full song-by-song performance guarantee."
+}

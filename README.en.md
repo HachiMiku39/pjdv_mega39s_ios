@@ -2,6 +2,8 @@
 
 [简体中文](README.md) | **English**
 
+**M4 hardware MOD sampling, October 29, 2026:** Five packages completed their selected model/song tests. F2nd Song still crashes at SPiCa startup and is quarantined; three Charts packages still require New Classics. Ichika's incorrect name and missing bottom portrait were corrected. This is a local research candidate, with no new installer release. [Bilingual report and screenshots](Reports/MOD-IPAD-VALIDATION-20261029.md)
+
 **Build 19 lightweight preview, October 29, 2026:** Adds an in-app GameBanana browser, streamed ZIP extraction/CRC validation and download retry. Two actual downloads were imported by the App and remain inactive. Offline converters were used for isolated model/song trials; Electric Angel NORMAL completed, as did X Song's Strangers and Umiyuri Kaiteitan. **Only selected model/song samples were tested; compatibility is not universal. Calc's inverted MV remains unresolved, and X Charts' New Classics mechanics are not integrated.** [Report and screenshots](Reports/MOD-DOWNLOAD-CONVERSION-20261029.md) · [Local converters](Tools/pc_mods/README.md)
 
 **Historical Build 18 verification, October 25, 2026:** The launcher now offers MOD Manager (Experimental) for structural inspection and source registration of ZIP/ZIP64 or extracted folders. Extract 7z/RAR first. MODs are not copied, extracted or loaded. Mac UI flows and all three platform builds passed; the iPad device entry remains untested.

@@ -5,6 +5,8 @@ BETTER THAN MOST OF APPS
 
 **简体中文** | [English](README.en.md)
 
+**M4 真机 MOD 抽样（2026-10-29）：** 五个包完成指定模型／整曲验证；F2nd Song 的《SPiCa》启动仍崩溃，已隔离；三个 Charts 包仍需 New Classics 适配。已修复一歌的错误名称及底部角色预览。此轮为本地研究候选，尚未发布新安装包。[中英报告与截图](Reports/MOD-IPAD-VALIDATION-20261029.md)
+
 **build19 精简预览（2026-10-29）：** 新增应用内 GameBanana 下载、ZIP 流式解压／CRC 校验与失败重试。两个实际下载包已完成 App 导入；导入后仍保持未启用。离线转换工具已用于单模型及单歌曲测试，《Electric Angel》NORMAL 完整结算；X Song 的 Strangers／海底谭也已完整演奏。**仅测试模型、歌曲两类的少量样本，不代表所有包兼容；Calc 的 MV 倒置尚未修复，X Charts 的 New Classics 玩法尚未接入。** [测试报告与截图](Reports/MOD-DOWNLOAD-CONVERSION-20261029.md) · [本地转换工具](Tools/pc_mods/README.md)
 
 **历史 build18 验证（2026-10-25）：** 启动页新增“MOD 管理（实验）”，可检查和登记 ZIP／ZIP64 或已解压文件夹。7z／RAR 需先解压；当前不复制、不解压、不加载 MOD。Mac 界面流程及三平台构建通过，iPad 真机入口尚未验收。
