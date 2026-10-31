@@ -90,6 +90,13 @@ struct ResourceLayout {
 enum ResourceLibrary {
     private static let selection="pjdv.resourceRootBookmark.v1"
     static var appDataRoot:URL {
+        #if targetEnvironment(simulator)
+        // Explicit isolated simulator workspace; production devices always use
+        // their normal container. Keeps compatibility trials on external SSD.
+        if let path=ProcessInfo.processInfo.environment["PJDV_APP_DATA_TEST_ROOT"],path.hasPrefix("/") {
+            return URL(fileURLWithPath:path,isDirectory:true)
+        }
+        #endif
         #if targetEnvironment(macCatalyst)
         return FileManager.default.urls(for:.applicationSupportDirectory,in:.userDomainMask)[0].appendingPathComponent("PJDVM39",isDirectory:true)
         #else

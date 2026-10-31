@@ -914,6 +914,9 @@ final class HostLaunchController: UIViewController {
             updateLanguageMenu()
             let version=layout.content?.display_version ?? (layout.content==nil ? "1.0.9" : L("包内版本未标注"))
             resourceStatus.text = LF("资源就绪 · %@ · %d DLC",version,layout.dlcContents.count)
+            let mods=try RuntimeModCatalog.current.selectedMods()
+            if mods.count==1 {resourceStatus.text! += "\nMOD: "+mods[0].name}
+            else if !mods.isEmpty {resourceStatus.text! += "\n"+LF("已启用 %d 个 MOD",mods.count)}
             if !layout.resourceVersionVerified {resourceStatus.text! += "\n"+L("资源版本待验证，使用已适配的运行程序")}
             start.isEnabled = true
         } catch {resourceStatus.text = error.localizedDescription;start.isEnabled = false}
@@ -928,7 +931,9 @@ final class HostLaunchController: UIViewController {
     }
     @objc private func manageMods() {
         guard guestSessionPhase() == 0 else{return}
-        let panel=UINavigationController(rootViewController:ModImportController(style:.insetGrouped))
+        let controller=ModImportController(style:.insetGrouped)
+        controller.onClose={ [weak self] in self?.refreshResources() }
+        let panel=UINavigationController(rootViewController:controller)
         panel.modalPresentationStyle = .formSheet;present(panel,animated:true)
     }
     @objc private func manageResources() {

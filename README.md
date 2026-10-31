@@ -5,9 +5,11 @@ BETTER THAN MOST OF APPS
 
 **简体中文** | [English](README.en.md)
 
+**App 内多包加载与恢复（2026-10-31，本地候选）：** 已适配包可独立多选，点击“加载”由程序合并；成功后才切换配置，失败或取消保留上一套。坏清单单独标红，不清空其他包；新增“重新完整校验”，可发现大文件的同大小损坏。本机模拟器完成五包组合、四包各一个模型抽样及《愛Dee》NORMAL 整曲结算（458 COOL／458 连击，AutoPlay 临时档）。**原始 PC 包转换、清单 v2、升级存档迁移与 New Classics 仍待完成；公开安装包仍是 build19。** 后续优先完善玩家安装／恢复流程，画质实验后排。[中英报告、截图与下一轮验收](Reports/MOD-NATIVE-MULTISELECT-20261031.md)
+
 **App 内已适配包导入（2026-10-30，本地候选）：** 已在 M4 通过 ZIP 解压→完整清单／哈希校验→加入可选列表，并验证重复导入不覆盖、源 ZIP 和当前组合保留。修复系统目录别名导致的“路径不安全”误报。此入口供已转换包使用，原始 PC 包仍需适配；本轮尚未发布新安装包。[流程与验收](Reports/MOD-APP-WORKFLOW-20261029.md)
 
-**五包联合验证（2026-10-30，本地候选）：** X Song＋四个模型包同时运行，17 个服装条目统一编号；四包各抽一个模型，名称、预览与装备正常。星乃一歌完成《39みゅーじっく！》EXTREME：771 COOL／771 连击；普通存档校验未变。F2nd 的《SPiCa》仍崩溃，三个 Charts 包仍缺 New Classics 玩法。**任意 PC 包的 App 内转换／多选合并尚未完成，不能将预先合并的五包测试当成通用兼容。** [中英报告与截图](Reports/MULTI-MOD-VALIDATION-20261030.md) · [无需 Xcode 的导入与冲突处理设计](Reports/MOD-APP-WORKFLOW-20261029.md)
+**历史五包联合验证（2026-10-30，本地候选）：** X Song＋四个模型包同时运行，17 个服装条目统一编号；四包各抽一个模型，名称、预览与装备正常。星乃一歌完成《39みゅーじっく！》EXTREME：771 COOL／771 连击；普通存档校验未变。F2nd 的《SPiCa》仍崩溃，三个 Charts 包仍缺 New Classics 玩法。**任意 PC 包的 App 内转换／多选合并尚未完成，不能将预先合并的五包测试当成通用兼容。** [中英报告与截图](Reports/MULTI-MOD-VALIDATION-20261030.md) · [无需 Xcode 的导入与冲突处理设计](Reports/MOD-APP-WORKFLOW-20261029.md)
 
 **组合 MOD 与底座研究（2026-10-29）：** 本地 M4 候选同时加载 X Song＋LeoNeed，星乃一歌名称／预览／实际模型正常，《愛Dee》NORMAL 完成 458 COOL／458 连击；正式存档校验未变。运行抓帧约 42 FPS，未达到稳定60目标。仅验证预先合并组合，尚未提供任意多选管理界面；New Classics 仍未接入。[组合测试与截图](Reports/COMBINED-MOD-TRIAL-20261029.md) · [New Classics／MikuMikuSwitchPlugin 研究](Reports/NEW-CLASSICS-FOUNDATION-20261029.md)
 

@@ -124,3 +124,33 @@ let raw=root.appendingPathComponent("RawMod")
 try put(raw.appendingPathComponent("rom/pv_db.txt"),Data("valid".utf8))
 require(try catalog.adoptPrepared(from:raw,progress:Progress()) == nil)
 print("PASS: native prepared-package adoption; wrapped ZIP layout; full payload hashes; extra/missing/corrupt payload rejection; duplicate protection; cancellation; raw packages stay inactive")
+
+let damagedID=UUID(),damaged=catalog.root.appendingPathComponent(damagedID.uuidString)
+try put(damaged.appendingPathComponent("runtime.json"),Data("{\"name\":\"Broken named pack\"}".utf8))
+let inventory=try catalog.inventory()
+require(inventory.ready.contains{$0.id==directItem.id})
+require(inventory.unavailable.contains{$0.id==damagedID && $0.name=="Broken named pack"})
+catalog.select(damagedID);fails{_=try catalog.selectedMods()}
+catalog.select(directItem.id);require(try catalog.selectedMods().first?.id==directItem.id)
+let linkedID=UUID(),linked=catalog.root.appendingPathComponent(linkedID.uuidString)
+try fm.createSymbolicLink(at:linked,withDestinationURL:catalog.directory(directItem))
+require(try catalog.inventory().unavailable.contains{$0.id==linkedID})
+require(try catalog.records().contains{$0.id==directItem.id})
+let largeID=UUID(),largeData=Data(repeating:65,count:3*1024*1024)
+let largeCheck=RuntimeMod.Check(path:"0/rom/large.bin",bytes:UInt64(largeData.count),sha256:SHA256.hash(data:largeData).map{String(format:"%02x",$0)}.joined())
+let largeItem=RuntimeMod(format:"pjdv-runtime-mod-v1",id:largeID,name:"Large payload",notes:"",layers:["0"],baseChecks:[check],files:[largeCheck])
+let largeURL=catalog.directory(largeItem).appendingPathComponent(largeCheck.path)
+try put(largeURL,largeData);try put(catalog.directory(largeItem).appendingPathComponent("runtime.json"),JSONEncoder().encode(largeItem))
+let handle=try FileHandle(forWritingTo:largeURL);try handle.seek(toOffset:UInt64(largeData.count-1));try handle.write(contentsOf:Data([66]));try handle.close()
+require(try catalog.overlayPaths(largeItem,base:base).count==1) // Fast launch intentionally stats large media.
+fails{try catalog.verifyFully(largeItem,progress:Progress())}
+require(try catalog.inventory().unavailable.contains{$0.id==largeID && $0.item != nil})
+fails{_=try catalog.overlayPaths(largeItem,base:base)}
+require(try catalog.records().contains{$0.id==directItem.id})
+try put(largeURL,largeData);try catalog.verifyFully(largeItem,progress:Progress())
+require(try catalog.records().contains{$0.id==largeID})
+require(try catalog.resolve([largeID,directItem.id]).count==2)
+require(catalog.selectedIDs==[directItem.id]) // Resolving a draft never commits it.
+let cancelledCheck=Progress();cancelledCheck.cancel();fails{try catalog.verifyFully(largeItem,progress:cancelledCheck)}
+require(try catalog.records().contains{$0.id==largeID})
+print("PASS: malformed manifests and symlink packages isolated; healthy selection survives; same-size large-media corruption found by full hash; bad payload blocked until successful recheck; cancellation preserves availability")

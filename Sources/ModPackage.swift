@@ -311,7 +311,8 @@ struct ModRegistry {
 }
 
 // Prepared resource overlays are separate from raw DML/Switch registrations.
-// A converter must merge databases first; this catalog never runs plugin code.
+// The native composition step merges selected databases; this catalog never
+// runs plugin code.
 struct RuntimeMod: Codable {
     struct Check: Codable { let path: String; let bytes: UInt64; let sha256: String }
     let format: String
@@ -326,10 +327,31 @@ struct RuntimeModCatalog {
     let root: URL
     let defaults: UserDefaults
     private let selectionKey = "pjdv.runtimeMod.v1"
-    var selectedID: UUID? { defaults.string(forKey: selectionKey).flatMap(UUID.init(uuidString:)) }
+    private let multipleKey = "pjdv.runtimeMods.v2"
+    var selectedIDs:[UUID] {
+        if let values=defaults.stringArray(forKey:multipleKey) {return Array(Set(values.compactMap(UUID.init(uuidString:)))).sorted{$0.uuidString<$1.uuidString}}
+        return defaults.string(forKey:selectionKey).flatMap(UUID.init(uuidString:)).map{[$0]} ?? []
+    }
+    var selectedID: UUID? {selectedIDs.first}
     func select(_ value: UUID?) {
-        if let value { defaults.set(value.uuidString, forKey: selectionKey) }
-        else { defaults.removeObject(forKey: selectionKey) }
+        select(values:value.map{[$0]} ?? [])
+    }
+    func select(values:[UUID]) {
+        defaults.set(Array(Set(values.map(\.uuidString))).sorted(),forKey:multipleKey)
+        defaults.removeObject(forKey:selectionKey)
+    }
+    func toggle(_ value:UUID)throws {
+        var ids=selectedIDs
+        if let i=ids.firstIndex(of:value){ids.remove(at:i)}else{guard ids.count<16 else {throw ModPackageError.limitExceeded};ids.append(value)}
+        select(values:ids)
+    }
+    func selectedMods()throws->[RuntimeMod] {
+        try resolve(selectedIDs)
+    }
+    func resolve(_ ids:[UUID])throws->[RuntimeMod] {
+        if ids.isEmpty{return []}
+        guard ids.count<=16,Set(ids).count==ids.count else {throw ModPackageError.limitExceeded}
+        let all=try records();return try ids.map{id in guard let value=all.first(where:{$0.id==id}) else {throw ModPackageError.invalidRecord};return value}
     }
     private func child(_ path: String, under folder: URL) throws -> URL {
         let parts = path.split(separator: "/", omittingEmptySubsequences: false)
@@ -361,23 +383,84 @@ struct RuntimeModCatalog {
             guard item.files.contains(where: {$0.path.hasPrefix(layer + "/")}) else { throw ModPackageError.invalidRecord }
         }
     }
-    func records() throws -> [RuntimeMod] {
+    struct Unavailable {
+        let id:UUID
+        let name:String
+        let item:RuntimeMod?
+    }
+    struct Inventory {
+        let ready:[RuntimeMod]
+        let unavailable:[Unavailable]
+    }
+    private func invalidMarker(_ id:UUID)->URL {root.appendingPathComponent(".invalid",isDirectory:true).appendingPathComponent(id.uuidString)}
+    func inventory() throws -> Inventory {
         let fm = FileManager.default
-        guard fm.fileExists(atPath: root.path) else { return [] }
+        guard fm.fileExists(atPath: root.path) else { return Inventory(ready:[],unavailable:[]) }
+        guard try fm.attributesOfItem(atPath:root.path)[.type] as? FileAttributeType == .typeDirectory else {throw ModPackageError.unsafePath}
         let dirs = try fm.contentsOfDirectory(at: root, includingPropertiesForKeys: nil, options: .skipsHiddenFiles)
         guard dirs.count <= 100 else { throw ModPackageError.limitExceeded }
-        return try dirs.compactMap { folder in
-            guard let id = UUID(uuidString: folder.lastPathComponent) else { return nil }
-            guard folder.resolvingSymlinksInPath().path == root.resolvingSymlinksInPath().appendingPathComponent(folder.lastPathComponent).path else { throw ModPackageError.unsafePath }
-            let url = try child("runtime.json", under: folder)
-            let attr = try fm.attributesOfItem(atPath: url.path)
-            guard attr[.type] as? FileAttributeType == .typeRegular,
-                  (attr[.size] as? NSNumber)?.intValue ?? Int.max <= 16*1024*1024 else { throw ModPackageError.invalidRecord }
-            let item = try JSONDecoder().decode(RuntimeMod.self, from: Data(contentsOf: url))
-            guard item.id == id else { throw ModPackageError.invalidRecord }
+        var ready=[RuntimeMod](),unavailable=[Unavailable]()
+        for folder in dirs {
+            guard let id=UUID(uuidString:folder.lastPathComponent) else {continue}
+            var name="MOD "+String(id.uuidString.prefix(8)),candidate:RuntimeMod?
+            do {
+                guard folder.resolvingSymlinksInPath().path == root.resolvingSymlinksInPath().appendingPathComponent(folder.lastPathComponent).path,
+                      try fm.attributesOfItem(atPath:folder.path)[.type] as? FileAttributeType == .typeDirectory else {throw ModPackageError.unsafePath}
+                let url=try child("runtime.json",under:folder),attr=try fm.attributesOfItem(atPath:url.path)
+                guard attr[.type] as? FileAttributeType == .typeRegular,(attr[.size] as? NSNumber)?.intValue ?? Int.max <= 16*1024*1024 else {throw ModPackageError.invalidRecord}
+                let raw=try Data(contentsOf:url)
+                if let object=(try? JSONSerialization.jsonObject(with:raw)) as? [String:Any],let value=object["name"] as? String,!value.isEmpty,value.utf8.count<=256 {name=value}
+                let item=try JSONDecoder().decode(RuntimeMod.self,from:raw)
+                guard item.id==id else {throw ModPackageError.invalidRecord}
+                try validate(item);candidate=item
+                guard !fm.fileExists(atPath:invalidMarker(id).path) else {throw ModPackageError.changedSource}
+                ready.append(item)
+            } catch {unavailable.append(Unavailable(id:id,name:name,item:candidate))}
+        }
+        return Inventory(ready:ready.sorted{$0.name.localizedStandardCompare($1.name) == .orderedAscending},
+                         unavailable:unavailable.sorted{$0.name.localizedStandardCompare($1.name) == .orderedAscending})
+    }
+    func records() throws -> [RuntimeMod] {try inventory().ready}
+    // Explicit full verification complements the fast launch check. A failed
+    // package stays unavailable across relaunches until a complete check passes.
+    // Only our own marker is changed; payloads and saves are never rewritten.
+    func verifyFully(_ item:RuntimeMod,progress:Progress,report:((UInt64,UInt64)->Void)?=nil)throws {
+        let fm=FileManager.default
+        if progress.isCancelled {throw ModPackageError.cancelled}
+        do {
             try validate(item)
-            return item
-        }.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+            let total=item.files.reduce(UInt64(0)){$0+$1.bytes};progress.totalUnitCount=Int64(max(1,total));progress.completedUnitCount=0
+            var last=Date.distantPast;report?(0,total)
+            for row in item.files {
+                try autoreleasepool {
+                    if progress.isCancelled {throw ModPackageError.cancelled}
+                    let url=try child(row.path,under:directory(item)),before=try fm.attributesOfItem(atPath:url.path)
+                    guard before[.type] as? FileAttributeType == .typeRegular,(before[.size] as? NSNumber)?.uint64Value==row.bytes else {throw ModPackageError.changedSource}
+                    let input=try FileHandle(forReadingFrom:url);defer{try? input.close()};var digest=SHA256()
+                    while true {
+                        if progress.isCancelled {throw ModPackageError.cancelled}
+                        let count=try autoreleasepool{()->Int in
+                            let bytes=try input.read(upToCount:1024*1024) ?? Data();digest.update(data:bytes);return bytes.count
+                        }
+                        if count==0{break};progress.completedUnitCount+=Int64(count)
+                        if Date().timeIntervalSince(last)>=0.2 {last=Date();report?(UInt64(progress.completedUnitCount),total)}
+                    }
+                    let after=try fm.attributesOfItem(atPath:url.path)
+                    guard digest.finalize().map({String(format:"%02x",$0)}).joined()==row.sha256,
+                          (before[.size] as? NSNumber)==(after[.size] as? NSNumber),
+                          (before[.modificationDate] as? Date)==(after[.modificationDate] as? Date) else {throw ModPackageError.changedSource}
+                }
+            }
+            if progress.isCancelled {throw ModPackageError.cancelled}
+            let marker=invalidMarker(item.id);if fm.fileExists(atPath:marker.path){try fm.removeItem(at:marker)}
+            report?(total,total)
+        } catch {
+            if !progress.isCancelled {
+                let marker=invalidMarker(item.id);try fm.createDirectory(at:marker.deletingLastPathComponent(),withIntermediateDirectories:true)
+                try Data("payload verification failed".utf8).write(to:marker,options:.atomic)
+            }
+            throw error
+        }
     }
     // Adopt only an installer-owned directory after checking its complete
     // manifest and inventory. This is not a converter for raw PC databases.
@@ -459,14 +542,13 @@ struct RuntimeModCatalog {
         return item
     }
     func selected() throws -> RuntimeMod? {
-        guard let id = selectedID else { return nil }
-        guard let item = try records().first(where: {$0.id == id}) else { throw ModPackageError.invalidRecord }
-        return item
+        try selectedMods().first
     }
     // Stream metadata checks and stat payloads. Never read a song/movie into RAM.
     func overlayPaths(_ item: RuntimeMod, base: URL) throws -> [String] {
         try validate(item)
         let fm = FileManager.default
+        guard !fm.fileExists(atPath:invalidMarker(item.id).path) else {throw ModPackageError.changedSource}
         func check(_ row: RuntimeMod.Check, under folder: URL, hash: Bool) throws {
             let url = try child(row.path, under: folder)
             let attr = try fm.attributesOfItem(atPath: url.path)

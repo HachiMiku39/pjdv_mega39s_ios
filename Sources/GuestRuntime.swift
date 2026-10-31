@@ -47,7 +47,13 @@ private func readGuestState(_ out: UnsafeMutablePointer<CChar>, _ capacity: UInt
 
 enum GuestRuntime {
     private static var resources: ResourceAccess?
-    static func releaseResourceAccess() { resources = nil; AutoPlaySession.end() }
+    private static let initialOverlay = ProcessInfo.processInfo.environment["DM_ROMFS_OVERLAY"]
+    private static var modMenuRoot: URL?
+    static func releaseResourceAccess() {
+        resources = nil; AutoPlaySession.end()
+        if let root = modMenuRoot { try? FileManager.default.removeItem(at:root) }
+        modMenuRoot = nil
+    }
     static func currentStatus() -> String {
         var value = [CChar](repeating: 0, count: 256)
         value.withUnsafeMutableBufferPointer { readGuestState($0.baseAddress!, UInt($0.count)) }
@@ -55,6 +61,8 @@ enum GuestRuntime {
     }
     static func validateMapping(completion: @escaping (String) -> Void) {
         let autoplay = AutoPlaySession.enabled
+        let selectedMods = Result { try RuntimeModCatalog.current.selectedMods() }
+        let launchOverlay = initialOverlay
         DispatchQueue.global(qos: .userInitiated).async {
             var error = [CChar](repeating: 0, count: 256)
             let loaded = error.withUnsafeMutableBufferPointer {
@@ -80,17 +88,40 @@ enum GuestRuntime {
                 #if targetEnvironment(macCatalyst)
                 // An explicit isolated profile is useful for first-boot regression.
                 // Ordinary launches always keep the existing Documents profile.
-                let normalSave = ProcessInfo.processInfo.environment["PJDV_SAVE_TEST_ROOT"].map { URL(fileURLWithPath: $0, isDirectory: true) }
+                let originalSave = ProcessInfo.processInfo.environment["PJDV_SAVE_TEST_ROOT"].map { URL(fileURLWithPath: $0, isDirectory: true) }
                     ?? documents.appendingPathComponent("GuestSave", isDirectory: true)
                 #else
-                let normalSave = documents.appendingPathComponent("GuestSave", isDirectory: true)
+                let originalSave = documents.appendingPathComponent("GuestSave", isDirectory: true)
                 #endif
                 let temp = documents.appendingPathComponent("GuestTemp", isDirectory: true)
+                let access = try ResourceLibrary.open()
+                let layout = try ResourceLayout.locate(access.root)
+                let normalSave: URL
+                var modLayers = [String]()
+                let mods=try selectedMods.get()
+                if !mods.isEmpty {
+                    let session=try ModComposition.prepare(mods,catalog:RuntimeModCatalog.current,base:layout.rom,dlc:layout.dlc,
+                        root:documents.appendingPathComponent("Mods/Compositions",isDirectory:true))
+                    let paths = session.paths
+                    modLayers = paths
+                    setenv("DM_ROMFS_OVERLAY", paths.joined(separator:":"), 1)
+                    setenv("PJDV_SESSION_OVERLAY", paths.joined(separator:":"), 1)
+                    normalSave = documents.appendingPathComponent("Mods/Profiles/"+session.profileID!+"/GuestSave", isDirectory: true)
+                    if !FileManager.default.fileExists(atPath: normalSave.path), FileManager.default.fileExists(atPath: originalSave.path) {
+                        try FileManager.default.createDirectory(at: normalSave.deletingLastPathComponent(), withIntermediateDirectories: true)
+                        try FileManager.default.copyItem(at: originalSave, to: normalSave)
+                    }
+                } else {
+                    // Explicit developer trial overlays remain possible, but a
+                    // previous in-app selection must not leak into vanilla boot.
+                    if let explicit = launchOverlay { setenv("DM_ROMFS_OVERLAY", explicit, 1) }
+                    else { unsetenv("DM_ROMFS_OVERLAY") }
+                    setenv("PJDV_SESSION_OVERLAY", launchOverlay ?? "", 1)
+                    normalSave = originalSave
+                }
                 try FileManager.default.createDirectory(at: normalSave, withIntermediateDirectories: true)
                 try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
                 let save = try AutoPlaySession.saveDirectory(normal: normalSave, temp: temp, enabled: autoplay)
-                let access = try ResourceLibrary.open()
-                let layout = try ResourceLayout.locate(access.root)
                 AppLanguage.configure(available: layout.languages)
                 AppLanguage.prepareSession()
                 // Declare only this import's validated, physically complete
@@ -106,13 +137,17 @@ enum GuestRuntime {
                       FileManager.default.fileExists(atPath: menuRoot.appendingPathComponent("manifest.json").path) else {
                     DispatchQueue.main.async { completion("Exit menu resources unavailable") };return
                 }
-                setenv("PJDV_EXIT_MENU_ROOT", menuRoot.path, 1)
+                let sessionMenu = try ModSessionUI.prepare(bundle:menuRoot,layers:modLayers,temp:temp,language:AppLanguage.current)
+                if sessionMenu != menuRoot { modMenuRoot = sessionMenu }
+                setenv("PJDV_EXIT_MENU_ROOT", sessionMenu.path, 1)
                 rom.withCString { r in dlc.withCString { d in save.path.withCString { s in temp.path.withCString { t in
                     documents.appendingPathComponent("PJDV-runtime.log").path.withCString { log in bootGuest(r, d, s, t, log) }
                 } } } }
             } catch {
                 AutoPlaySession.end()
-                DispatchQueue.main.async { completion("Guest storage: " + error.localizedDescription) }
+                if let root = modMenuRoot { try? FileManager.default.removeItem(at:root) }
+                modMenuRoot = nil
+                DispatchQueue.main.async { completion(ModImportController.userMessage(error)) }
             }
         }
     }

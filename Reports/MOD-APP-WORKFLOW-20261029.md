@@ -2,7 +2,11 @@
 
 2026-10-29，更新于 2026-10-30。用户要求：普通用户应能在 App 中导入几个 MOD 并组合使用，不需要编译 App、执行转换脚本或手工改编号。此文区分当前候选与后续验收要求。
 
-## 当前候选
+**2026-10-31 更新：** App 内已适配包多选合并、失败保留活动配置、坏包隔离和完整重检已加入本地候选，见[新报告与模拟器验收](MOD-NATIVE-MULTISELECT-20261031.md)。下文保留 10 月 30 日历史验收，原始 PC 转换与清单 v2 仍待实现。
+
+**October 31 update:** Native composition of prepared packages, transactional selection, per-package damage isolation and full re-verification are now in the local candidate. See the [new bilingual Simulator report](MOD-NATIVE-MULTISELECT-20261031.md). The October 30 record below is historical; raw-PC conversion and manifest v2 remain pending.
+
+## 10 月 30 日候选（历史）
 
 - 已有 ZIP／文件夹的分块安装、ZIP CRC、取消和独立目录；PC DLL 不执行。
 - 本轮增加 `RuntimeModCatalog.adoptPrepared`：导入根目录含 `runtime.json` 的已转换包，也接受 ZIP 的单层外目录。核对完整清单，所有媒体分块 SHA-256 校验通过后，才将安装副本原子移入 Ready。漏文件、额外文件、损坏内容、符号链接和重复包不会覆盖既有组合。导入不自动切换当前组合。原始 ZIP 保留。
