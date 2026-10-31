@@ -1,5 +1,22 @@
 # 本地 PC MOD 转换试验 / Local PC MOD conversion trials
 
+## 视频曲包研究 / Video-song research (2026-10-31)
+
+`usm_video.py` 为 **macOS 离线工具**，从已解压的单个、未加密 IVF/VP9 USM 提取视频，经本机 FFmpeg / VideoToolbox 转为 H.264 MP4。不捆绑 FFmpeg、游戏、密钥或 MOD。需要支持 `h264_videotoolbox` 的 FFmpeg，输出必须选择新路径；保留原分辨率和时间戳，不插帧。音频仍需单独保留原曲包的 OGG。
+
+```sh
+python3 Tools/pc_mods/usm_video.py /path/to/video.usm /Volumes/ExternalSSD/Trials/video.mp4
+python3 -m unittest discover -s Tests/USMVideo -v
+```
+
+按 1 MiB 分块输送，单帧最多 16 MiB、最多一百万帧；多视频通道、透明视频、分段帧和未知编码会停止。只有完整结束标记和匹配时间戳时才接受已观察到的毫秒时基头。失败不发布完整结果，不覆盖已有输出；exFAT 不支持排他重命名时使用排他创建和分块复制，完成记录最后写入。调用者必须等转换返回成功，不能加载正在复制的文件。实际首个样本进程树测量的子进程峰值常驻内存约 130 MiB；不是所有包的上限承诺。H.264 输出可能比 VP9 原文件更大。
+
+**转码成功仍不等于曲包可玩。** 还需转换/登记谱面、资源路径、字体和 PV 数据；纯视频 MV 的 PC 角色/动作依赖需适配为原版视频 PV 的运行方式，不得将这种替代应用于 3D PV。此工具没有接入 App 的原始 PC 包自动转换流程。实际抽测范围见[本地全部 MOD 清单与载入研究](../../Reports/LOCAL-MOD-MATRIX-20261031.md)。
+
+`usm_video.py` is a **macOS offline helper**, requiring locally installed FFmpeg with `h264_videotoolbox`. It extracts one supported unencrypted IVF/VP9 stream and produces a fresh H.264 MP4, preserving resolution and timestamps, with no frame generation. It bundles no executable, game, key or MOD. Keep song OGG audio separately. Data is piped in 1 MiB blocks, with 16 MiB/frame and one-million-frame limits; unsupported channels, alpha, split frames and codecs are rejected. The observed millisecond-timebase variant additionally requires a final content marker and matching timestamp. Existing outputs are never overwritten. On exFAT, exclusive creation and bounded copying replace unsupported exclusive rename; callers must wait for successful completion and its receipt. The first actual sample's child-process peak RSS was about 130 MiB, not a universal memory ceiling. MP4 may be larger than the source VP9.
+
+**Conversion is not gameplay acceptance:** charts, paths, fonts and PV registries need separate adaptation. A native pure-video dummy actor setup applies only to video-only PVs, never 3D scenes. This helper is not an in-App raw-PC importer. See the linked bilingual report for exact sample results and remaining failures. USM offsets were cross-checked against [usm-toolkit, pinned MIT source](https://github.com/darkruss48/usm-toolkit/blob/21d43276afc2edb627af9bab3486093c5c69d9b8/src/usm_stream.cpp).
+
 这些工具复用本项目已验证的转换代码，读取**已解压**的单个 PC MOD，生成独立 RomFS 覆盖目录。不会修改原游戏、XCI、MOD 来源或存档，不执行 DLL。它不是通用 PC MOD 转换器，也不会自动启用 App 的 MOD ABI。
 
 These tools reuse this project's conversion paths to turn **one extracted package** into an isolated RomFS overlay. Sources, base assets, XCI files and saves remain unchanged. No DLL is executed. This is not a universal converter and does not activate the App MOD ABI.

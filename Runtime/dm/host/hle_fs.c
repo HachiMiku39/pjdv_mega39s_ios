@@ -504,8 +504,20 @@ static int set_guest_name(const char *hp, const char *path) {
     if (!removexattr(hp, FS_GUEST_NAME, XATTR_NOFOLLOW) || errno == ENOATTR) return 0;
     return -1;
 }
+// Opt-in, bounded missing-resource trace for loading investigations. Normal
+// play does not log optional probes or change path resolution/error semantics.
+static pthread_once_t g_missing_once=PTHREAD_ONCE_INIT;
+static const char *g_missing_filter;
+static _Atomic unsigned g_missing_count;
+static void missing_diag_init(void){g_missing_filter=getenv("PJDV_FS_MISS_DIAG");}
 static Result err_res(const char *op, const char *path) {
-    if (errno == ENOENT || errno == ENOTDIR) return RES_PATH_NOT_FOUND;
+    if (errno == ENOENT || errno == ENOTDIR) {
+        int saved_errno=errno;pthread_once(&g_missing_once,missing_diag_init);
+        if(g_missing_filter && (!strcmp(g_missing_filter,"1") || strstr(path,g_missing_filter)) &&
+           atomic_fetch_add(&g_missing_count,1)<2048)
+            LOG("PJDV missing resource [%.3fs] %s %s",(now_ns()-g_t0_ns)/1e9,op,path);
+        errno=saved_errno;return RES_PATH_NOT_FOUND;
+    }
     if (errno == EEXIST) return RES_PATH_EXISTS;
     LOG("fs %s %s 失败 errno=%d", op, path, errno); return RES_FAIL;
 }
@@ -1049,3 +1061,4 @@ void pjdv_fs_session_end(void) {
     LOG("PJDV session filesystem released: files=0 directories=0 mounts=0");
 }
 #endif
+

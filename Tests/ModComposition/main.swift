@@ -61,6 +61,17 @@ require(catalog.selectedIDs==[a.id]);try catalog.toggle(b.id)
 require(Set(catalog.selectedIDs)==Set([a.id,b.id]));require(try catalog.selectedMods().count==2)
 require(defaults.object(forKey:"pjdv.runtimeMod.v1")==nil)
 let dlc=root.appendingPathComponent("DLC");try fm.createDirectory(at:dlc,withIntermediateDirectories:true)
+// The single-package fast path must still reject changed payloads/baselines.
+let single=try ModComposition.prepare([a],catalog:catalog,base:base,dlc:dlc,root:cache)
+require(single.paths==[catalog.directory(a).appendingPathComponent("0").path] && single.profileID==a.id.uuidString)
+let singlePayload=catalog.directory(a).appendingPathComponent("0/rom/data.txt")
+let singleOriginal=try Data(contentsOf:singlePayload)
+var singleCorrupt=singleOriginal;singleCorrupt[0]^=1;try singleCorrupt.write(to:singlePayload)
+reject{_=try ModComposition.prepare([a],catalog:catalog,base:base,dlc:dlc,root:cache)}
+try singleOriginal.write(to:singlePayload)
+try Data("modified".utf8).write(to:base.appendingPathComponent(baseCheck.path))
+reject{_=try ModComposition.prepare([a],catalog:catalog,base:base,dlc:dlc,root:cache)}
+try marker.write(to:base.appendingPathComponent(baseCheck.path))
 let first=try ModComposition.prepare([a,b],catalog:catalog,base:base,dlc:dlc,root:cache)
 require(first.profileID==ModComposition.identity([b,a]))
 let output=URL(fileURLWithPath:first.paths[0]).appendingPathComponent("rom/data.txt")
