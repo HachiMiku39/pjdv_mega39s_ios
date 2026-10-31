@@ -43,7 +43,7 @@ enum ModComposition {
         guard items.count<=16,Set(items.map(\.id)).count==items.count else {throw ModLoadError.limit}
         // Reuse this invocation's validated paths. A single-package launch
         // previously repeated every baseline hash and payload check here.
-        let validatedPaths=try items.map{try catalog.overlayPaths($0,base:base)}
+        let validatedPaths=try items.map{try catalog.overlayPaths($0,base:base,dlc:dlc)}
         if items.count==1 {return Session(paths:validatedPaths[0],profileID:items[0].id.uuidString)}
         let fm=FileManager.default
         var key=Data((revision+"\n"+base.resolvingSymlinksInPath().path).utf8)

@@ -304,3 +304,8 @@
 "文件校验通过。" = "File verification passed.";
 "这些 MOD 无法加载：%@" = "These MODs cannot load: %@";
 "已选择 %d 个 MOD" = "Selected %d MODs";
+
+// Native model import
+"正在识别 MOD…" = "Identifying MOD…";
+"正在转换 MOD…" = "Converting MOD…";
+"原始 PC 包目前支持 Leo/need 1.0.2；其他包请使用已适配版本。" = "Raw PC import currently supports Leo/need 1.0.2. Use prepared versions for other packages.";

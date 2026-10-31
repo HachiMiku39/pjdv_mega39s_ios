@@ -1,0 +1,221 @@
+{
+  "format": "pjdv-pc-model-profiles-v1",
+  "profiles": [
+    {
+      "id": "leoneed-1.0.2",
+      "name": "Leo/need Module Pack",
+      "files": [
+        {
+          "path": "rom/2d/mod_spr_db.bin",
+          "bytes": 576,
+          "sha256": "58768cf7a9c48794c0bbac54efaee202407e445986d8a240e9bb506d2756a25f"
+        },
+        {
+          "path": "rom/2d/spr_sel_md936cmn.farc",
+          "bytes": 23456,
+          "sha256": "bca212abc0f122798926d1699d0f5842bfcd9c5a2568a71365e42e3f73be01a7"
+        },
+        {
+          "path": "rom/2d/spr_sel_md937cmn.farc",
+          "bytes": 26496,
+          "sha256": "5486c5518ba42d59b73b2dcad9658a9a8aef003c77fb97f198abdef4fa7ee2fa"
+        },
+        {
+          "path": "rom/2d/spr_sel_md938cmn.farc",
+          "bytes": 21472,
+          "sha256": "ff1383d67c21e5f66ca9eaceeb1d60ca6b9ca74bb7d10a7fbaea7bb514797277"
+        },
+        {
+          "path": "rom/2d/spr_sel_md939cmn.farc",
+          "bytes": 18640,
+          "sha256": "f9bf257f253fc7a01d1d39dd231cfddffb3ec390940b0f60f71053ce7616c5ea"
+        },
+        {
+          "path": "rom/lang2/mod_str_array.toml",
+          "bytes": 417,
+          "sha256": "b1ae979cb9d6335ad658cda88f76ae2c0654a79f5ec7e5549760a4cd7c203b8e"
+        },
+        {
+          "path": "rom/mod_chritm_prop.farc",
+          "bytes": 2236,
+          "sha256": "bc74aa9668c1d594da4f9044ad5cc0e652aa4fea28cf1c94fdea08312a65c295"
+        },
+        {
+          "path": "rom/mod_gm_module_tbl.farc",
+          "bytes": 520,
+          "sha256": "554b7de8ef7cb6e0821044a939df399d8bcc418db7edf0da90015d0db8103022"
+        },
+        {
+          "path": "rom/objset/honitm000.farc",
+          "bytes": 159157,
+          "sha256": "6b309818271365fd481405f6e236dc6e2739ba5d41ec9c70e153f48d904e4b01"
+        },
+        {
+          "path": "rom/objset/honitm001.farc",
+          "bytes": 2071364,
+          "sha256": "94c448fe12d961602eb3f07e50a173f9ff897ef0104b054dc883e40a129b8a86"
+        },
+        {
+          "path": "rom/objset/honitm300.farc",
+          "bytes": 327225,
+          "sha256": "16f5d0cb1a3d15d88f6d416c1010336f602f21f8eb37da257e67e017a6f37203"
+        },
+        {
+          "path": "rom/objset/honitm500.farc",
+          "bytes": 302098,
+          "sha256": "82ec6398458a6984bbd568a730c63075399ec3b458d1b30b35c2e911393e732e"
+        },
+        {
+          "path": "rom/objset/ichitm000.farc",
+          "bytes": 152944,
+          "sha256": "a2f6949cb9500c24d6091bdbce4ec624e29fc62368d3cabcafbdf0ceaa1d7bd6"
+        },
+        {
+          "path": "rom/objset/ichitm001.farc",
+          "bytes": 1656112,
+          "sha256": "d80e6d381e09df00f943d4db4c1ec1e0d5c01d0dd073f765e829913256b28a3d"
+        },
+        {
+          "path": "rom/objset/ichitm300.farc",
+          "bytes": 1421088,
+          "sha256": "3d1347fcec6fe1570652a564c0262607b33fcf5e7ff6ef87bb56cbfc53d55c81"
+        },
+        {
+          "path": "rom/objset/ichitm500.farc",
+          "bytes": 197937,
+          "sha256": "2870ef3a7502d996f804b26fa75502bf677810d0b88a8d6ee3b75bf808c442c8"
+        },
+        {
+          "path": "rom/objset/mod_obj_db.bin",
+          "bytes": 2224,
+          "sha256": "96c081eb12d0d31250d12570f0032deb57c22b7342eae390be50908750b49365"
+        },
+        {
+          "path": "rom/objset/mod_tex_db.bin",
+          "bytes": 1408,
+          "sha256": "6f4a91fffd39a961e03fc6932f5ffa9f975cd4efc9d0dc84c257ebfb2071a0ed"
+        },
+        {
+          "path": "rom/objset/shnitm000.farc",
+          "bytes": 166753,
+          "sha256": "d6c1af6dd3b5e0f60f5634035d88c3d5006da52a5a615686727079993ffa0624"
+        },
+        {
+          "path": "rom/objset/shnitm001.farc",
+          "bytes": 1632157,
+          "sha256": "a7e378669fcaefd79af4dd577b59018a65a4fd83c34fbba4817bdd0fe4fdb21c"
+        },
+        {
+          "path": "rom/objset/shnitm300.farc",
+          "bytes": 1219068,
+          "sha256": "b482acb8a6a5129cf203fef876101d89d0d2505da259190cabdec5c5d7b9322e"
+        },
+        {
+          "path": "rom/objset/shnitm500.farc",
+          "bytes": 187198,
+          "sha256": "b70d60dcbe6acc9c9cd108c915ba2cbc6d4bf6cd16db6c632e74be06185689d2"
+        },
+        {
+          "path": "rom/objset/tenitm000.farc",
+          "bytes": 47721,
+          "sha256": "8f549fe21e234d5e47ad201800dbe90e162dd7cff7391579df1af926a3c6fc03"
+        },
+        {
+          "path": "rom/objset/tenitm001.farc",
+          "bytes": 3828184,
+          "sha256": "93b616440972c9bdf132cf66e2bbbcf62f80b17f80295697d5c44048df4b21d1"
+        },
+        {
+          "path": "rom/objset/tenitm300.farc",
+          "bytes": 134416,
+          "sha256": "ef0936c06b2c19320b8520bee44eebe3b54327a57ff7c5232d34d09edc5db070"
+        },
+        {
+          "path": "rom/objset/tenitm500.farc",
+          "bytes": 2278822,
+          "sha256": "0be1f8e34e8a085c26d0bf997e5b1026098acba32b4c645a23986e9d768675cf"
+        },
+        {
+          "path": "rom/osage_play_data/honitm001_joha_outer_01__divskn.farc",
+          "bytes": 5166169,
+          "sha256": "7aa138b63ce176a786cde8c8bb36fe751eabdcb9b87191152529502a79939e70"
+        },
+        {
+          "path": "rom/osage_play_data/honitm500_atam_atama_00__divskn.farc",
+          "bytes": 11794404,
+          "sha256": "f524e4144fdd1f240ef8356d3101096b952ffa469055d9169bd85d8328c3984f"
+        },
+        {
+          "path": "rom/osage_play_data/ichitm001_joha_outer_01__divskn.farc",
+          "bytes": 54944599,
+          "sha256": "8f2703e5ecdf4836addb0c1a3eed10d1b601f78ca497a8f7462261106ced26ae"
+        },
+        {
+          "path": "rom/osage_play_data/ichitm500_atam_atama_00__divskn.farc",
+          "bytes": 16165887,
+          "sha256": "e356ee9663d4e3672ec3349451c2072b4d0ab96f6afcf6e1d2b3fb02713bd6e1"
+        },
+        {
+          "path": "rom/osage_play_data/shnitm001_joha_outer_01__divskn.farc",
+          "bytes": 5129773,
+          "sha256": "311460c93fd3555ceed53252b223d16cd945aa799ecbdde7f9919a55c66792e0"
+        },
+        {
+          "path": "rom/osage_play_data/shnitm500_atam_atama_00__divskn.farc",
+          "bytes": 1360659,
+          "sha256": "3733f01a87154e0d8ce13372daf90852939d519d0261c6a082a64e8523095ecf"
+        },
+        {
+          "path": "rom/osage_play_data/tenitm001_joha_outer_01__divskn.farc",
+          "bytes": 7848380,
+          "sha256": "3355893c4d0d1efcf1c9b3303ebb89b96cac500b56fff88f38d0dc118852edd6"
+        },
+        {
+          "path": "rom/osage_play_data/tenitm500_atam_atama_00__divskn.farc",
+          "bytes": 9434258,
+          "sha256": "9464476f29bcc478f25cabfecee8edf24eddf3c8eef63f99174790f9e4dc5b89"
+        },
+        {
+          "path": "rom/skin_param/ext_skp_honitm001_joha_outer_01__divskn.txt",
+          "bytes": 116086,
+          "sha256": "4b82473935d5cf70a4a4d7ed010f8e5c6b8edbecc9089746de51dd85f38ebcca"
+        },
+        {
+          "path": "rom/skin_param/ext_skp_honitm500_atam_atama_00__divskn.txt",
+          "bytes": 136239,
+          "sha256": "cf514e8faec619c4dfa147a8e92f9b570445d580f8e2d18cf50a1d30612edd78"
+        },
+        {
+          "path": "rom/skin_param/ext_skp_ichitm001_joha_outer_01__divskn.txt",
+          "bytes": 434726,
+          "sha256": "fcafada3fad7756112d7d45fa115c6cb20e6f32520e580951aad7096172a0532"
+        },
+        {
+          "path": "rom/skin_param/ext_skp_ichitm500_atam_atama_00__divskn.txt",
+          "bytes": 191522,
+          "sha256": "3e002560cb24a334b3c34b091bc5d1929c0a94691b42d21912bc5720e70d9405"
+        },
+        {
+          "path": "rom/skin_param/ext_skp_shnitm001_joha_outer_01__divskn.txt",
+          "bytes": 103487,
+          "sha256": "b897c9630cde8d86a1a3feaa0ffa73aefbe77d451073b3df179c84f2617a4a59"
+        },
+        {
+          "path": "rom/skin_param/ext_skp_shnitm500_atam_atama_00__divskn.txt",
+          "bytes": 46165,
+          "sha256": "36e416010b6532b051e9cebe269501a148bff7da9c3da14f13255832c25f5341"
+        },
+        {
+          "path": "rom/skin_param/ext_skp_tenitm001_joha_outer_01__divskn.txt",
+          "bytes": 180596,
+          "sha256": "ac682d3a9be479f1101eba8dc3b0d356e6350b55b5ddc67bad049cc62d07b5f1"
+        },
+        {
+          "path": "rom/skin_param/ext_skp_tenitm500_atam_atama_00__divskn.txt",
+          "bytes": 55803,
+          "sha256": "70b698d2184d8a89f96fdda20f65feeefece1d9eba05a81e4f7d0df8ca1c9d10"
+        }
+      ]
+    }
+  ]
+}

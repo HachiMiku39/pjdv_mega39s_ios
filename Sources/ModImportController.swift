@@ -60,7 +60,7 @@ final class ModImportController: UITableViewController, UIDocumentPickerDelegate
         L(section == 0 ? "添加 MOD" : section == 1 ? "启用 MOD" : section == 2 ? "暂不能加载" : section == 3 ? "已下载的压缩包" : "状态")
     }
     override func tableView(_ tableView:UITableView,titleForFooterInSection section:Int)->String? {
-        section == 0 ? L("支持模型和歌曲 MOD。") : section == 1 ? L("可同时启用多个 MOD，加载时自动处理组合。") : section == 3 ? L("下载文件会保留，轻点可重新导入；7z／RAR 需先解压。") : nil
+        section == 0 ? L("原始 PC 包目前支持 Leo/need 1.0.2；其他包请使用已适配版本。") : section == 1 ? L("可同时启用多个 MOD，加载时自动处理组合。") : section == 3 ? L("下载文件会保留，轻点可重新导入；7z／RAR 需先解压。") : nil
     }
     override func tableView(_ tableView:UITableView,cellForRowAt indexPath:IndexPath)->UITableViewCell {
         let cell=UITableViewCell(style:.subtitle,reuseIdentifier:nil)
@@ -285,6 +285,28 @@ final class ModImportController: UITableViewController, UIDocumentPickerDelegate
                             self.tableView.reloadSections(IndexSet(integer:4),with:.none)
                         }
                     }) != nil { return true }
+                    let profileURL=Bundle.main.url(forResource:"PCModelProfiles",withExtension:"json")
+                    if let profileURL,let candidate=try PCModelConverter.recognize(package.root,profiles:PCModelConverter.profiles(profileURL),progress:progress,report:{update in
+                        DispatchQueue.main.async { [weak self] in
+                            guard let self else{return};self.status=L(update.phase)
+                            self.fraction=update.total>0 ? Float(Double(update.completed)/Double(update.total)):0
+                            self.tableView.reloadSections(IndexSet(integer:4),with:.none)
+                        }
+                    }) {
+                        let resources=try ResourceLibrary.open(),layout=try ResourceLayout.locate(resources.root)
+                        _=try PCModelConverter.convert(candidate,base:layout.rom,dlc:layout.dlc,catalog:RuntimeModCatalog.current,progress:progress) {update in
+                            DispatchQueue.main.async { [weak self] in
+                                guard let self else{return};self.status=L(update.phase)
+                                self.fraction=update.total>0 ? Float(Double(update.completed)/Double(update.total)):0
+                                self.tableView.reloadSections(IndexSet(integer:4),with:.none)
+                            }
+                        }
+                        withExtendedLifetime(resources){}
+                        // Only this importer's private copy is removed. The
+                        // selected ZIP/folder, installed MODs and saves survive.
+                        try? FileManager.default.removeItem(at:package.root)
+                        return true
+                    }
                     try registry.register(package.root,inspection:package.inspection,name:package.name)
                     return false
                 } catch {try? FileManager.default.removeItem(at:package.root);throw error}

@@ -1,5 +1,11 @@
 # 本地 PC MOD 转换试验 / Local PC MOD conversion trials
 
+## App 原生模型导入 / Native model import (2026-10-31)
+
+本地源码候选已内置 **Leo/need Module Pack 1.0.2** 的原生 ZIP／文件夹转换路径，导入后自行勾选加载；这一包不需要玩家运行下述离线工具。支持范围按完整载荷哈希识别，其他原始模型和歌曲包仍需适配。配置仅含哈希，不含 MOD；新结果格式为 `pjdv-runtime-model-v1`。公开安装包仍为 build19。[中英验证报告](../../Reports/NATIVE-PC-MODEL-IMPORT-20261031.md)
+
+The local source candidate converts the exact **Leo/need Module Pack 1.0.2** ZIP/folder inside the App, then lets the player select and load it. That profile needs no offline Python command. Recognition uses full payload hashes; other raw models/songs need separate adaptation. Bundled profiles contain hashes only; converted results use `pjdv-runtime-model-v1`. The public installer is still build19. See the linked bilingual report.
+
 ## 视频曲包研究 / Video-song research (2026-10-31)
 
 `usm_video.py` 为 **macOS 离线工具**，从已解压的单个、未加密 IVF/VP9 USM 提取视频，经本机 FFmpeg / VideoToolbox 转为 H.264 MP4。不捆绑 FFmpeg、游戏、密钥或 MOD。需要支持 `h264_videotoolbox` 的 FFmpeg，输出必须选择新路径；保留原分辨率和时间戳，不插帧。音频仍需单独保留原曲包的 OGG。

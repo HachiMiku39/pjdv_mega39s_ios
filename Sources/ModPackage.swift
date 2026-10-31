@@ -315,6 +315,16 @@ struct ModRegistry {
 // runs plugin code.
 struct RuntimeMod: Codable {
     struct Check: Codable { let path: String; let bytes: UInt64; let sha256: String }
+    // A separate model-conversion contract: older clients must reject this
+    // format rather than silently ignore its DLC baseline requirements.
+    struct Conversion: Codable {
+        let converter:String
+        let profile:String
+        let sourceSHA256:String
+        let base:[Check]
+        let dlc:[Check]
+        let dlcFolders:[String]
+    }
     let format: String
     let id: UUID
     let name: String
@@ -322,6 +332,11 @@ struct RuntimeMod: Codable {
     let layers: [String]
     let baseChecks: [Check]
     let files: [Check]
+    let conversion:Conversion?
+    init(format:String,id:UUID,name:String,notes:String,layers:[String],baseChecks:[Check],files:[Check],conversion:Conversion?=nil) {
+        self.format=format;self.id=id;self.name=name;self.notes=notes;self.layers=layers
+        self.baseChecks=baseChecks;self.files=files;self.conversion=conversion
+    }
 }
 struct RuntimeModCatalog {
     let root: URL
@@ -364,7 +379,9 @@ struct RuntimeModCatalog {
     }
     func directory(_ item: RuntimeMod) -> URL { root.appendingPathComponent(item.id.uuidString, isDirectory: true) }
     private func validate(_ item: RuntimeMod) throws {
-        guard item.format == "pjdv-runtime-mod-v1", !item.name.isEmpty, item.name.utf8.count <= 256,
+        guard (item.format == "pjdv-runtime-mod-v1" && item.conversion==nil) ||
+              (item.format == "pjdv-runtime-model-v1" && item.conversion != nil) else {throw ModPackageError.invalidRecord}
+        guard !item.name.isEmpty, item.name.utf8.count <= 256,
               item.notes.utf8.count <= 4096, (1...4).contains(item.layers.count), Set(item.layers).count == item.layers.count,
               (1...32).contains(item.baseChecks.count), (1...50000).contains(item.files.count) else { throw ModPackageError.invalidRecord }
         var names = Set<String>(), total: UInt64 = 0
@@ -378,6 +395,24 @@ struct RuntimeModCatalog {
             total += c.bytes
         }
         guard item.baseChecks.allSatisfy({$0.bytes <= 8*1024*1024}), Set(item.baseChecks.map(\.path)).count == item.baseChecks.count else { throw ModPackageError.limitExceeded }
+        if let c=item.conversion {
+            guard c.converter.utf8.count<=128,!c.converter.isEmpty,c.profile.utf8.count<=128,!c.profile.isEmpty,
+                  c.sourceSHA256.count==64,c.sourceSHA256.utf8.allSatisfy({(48...57).contains($0)||(97...102).contains($0)}),
+                  !c.base.isEmpty,c.base.count<=2048,c.dlc.count<=2048,c.dlcFolders.count<=256,
+                  Set(c.dlcFolders).count==c.dlcFolders.count else {throw ModPackageError.invalidRecord}
+            for rows in [c.base,c.dlc] {
+                guard Set(rows.map(\.path)).count==rows.count else {throw ModPackageError.invalidRecord}
+                for row in rows {
+                    guard row.bytes<=8*1024*1024,row.sha256.count==64,
+                          row.sha256.utf8.allSatisfy({(48...57).contains($0)||(97...102).contains($0)}) else {throw ModPackageError.invalidRecord}
+                    _=try child(row.path,under:directory(item))
+                }
+            }
+            for folder in c.dlcFolders {
+                guard !folder.isEmpty,!folder.contains("/"),!folder.contains("\\"),!folder.hasPrefix(".") else {throw ModPackageError.unsafePath}
+                _=try child(folder,under:directory(item))
+            }
+        }
         for layer in item.layers {
             _ = try child(layer, under: directory(item))
             guard item.files.contains(where: {$0.path.hasPrefix(layer + "/")}) else { throw ModPackageError.invalidRecord }
@@ -545,7 +580,7 @@ struct RuntimeModCatalog {
         try selectedMods().first
     }
     // Stream metadata checks and stat payloads. Never read a song/movie into RAM.
-    func overlayPaths(_ item: RuntimeMod, base: URL) throws -> [String] {
+    func overlayPaths(_ item: RuntimeMod, base: URL, dlc:URL?=nil) throws -> [String] {
         try validate(item)
         let fm = FileManager.default
         guard !fm.fileExists(atPath:invalidMarker(item.id).path) else {throw ModPackageError.changedSource}
@@ -561,7 +596,14 @@ struct RuntimeModCatalog {
                 guard digest.finalize().map({String(format:"%02x",$0)}).joined() == row.sha256 else { throw ModPackageError.changedSource }
             }
         }
-        for row in item.baseChecks { try check(row, under: base, hash: true) }
+        if let c=item.conversion {
+            guard let dlc else {throw ModPackageError.changedSource}
+            let folders=((try? fm.contentsOfDirectory(at:dlc,includingPropertiesForKeys:nil,options:.skipsHiddenFiles)) ?? [])
+                .filter{(try? fm.attributesOfItem(atPath:$0.path)[.type]) as? FileAttributeType == .typeDirectory}.map(\.lastPathComponent).sorted()
+            guard folders==c.dlcFolders.sorted() else {throw ModPackageError.changedSource}
+            for row in c.base {try check(row,under:base,hash:true)}
+            for row in c.dlc {try check(row,under:dlc,hash:true)}
+        } else {for row in item.baseChecks { try check(row, under: base, hash: true) }}
         for row in item.files { try check(row, under: directory(item), hash: row.bytes <= 2*1024*1024) }
         let paths = try item.layers.map { try child($0, under: directory(item)).path }
         guard paths.joined(separator:":").utf8.count <= 3000 else { throw ModPackageError.limitExceeded }

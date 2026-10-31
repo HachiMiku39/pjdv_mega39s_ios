@@ -22,3 +22,6 @@ done
 
 mkdir -p "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/ControllerGlyphs"
 cp "$SRCROOT/Assets/ControllerGlyphs/recipes.json" "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/ControllerGlyphs/"
+
+# Hash-only native PC model profiles; no third-party payloads.
+cp "$SRCROOT/Assets/PCModelProfiles.json" "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/PCModelProfiles.json"
