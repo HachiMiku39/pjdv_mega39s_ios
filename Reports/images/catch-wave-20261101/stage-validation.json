@@ -1,0 +1,116 @@
+[
+  {
+    "label": "PausedSDR",
+    "frame": 14498,
+    "spatial": 0,
+    "hdr": 0,
+    "stages": [
+      {
+        "name": "input",
+        "width": 1280,
+        "height": 720,
+        "format": 70
+      },
+      {
+        "name": "present",
+        "width": 1920,
+        "height": 1080,
+        "format": 80
+      }
+    ]
+  },
+  {
+    "label": "PausedFX",
+    "frame": 17863,
+    "spatial": 1,
+    "hdr": 0,
+    "stages": [
+      {
+        "name": "input",
+        "width": 1280,
+        "height": 720,
+        "format": 70
+      },
+      {
+        "name": "output",
+        "width": 1920,
+        "height": 1080,
+        "format": 80
+      },
+      {
+        "name": "present",
+        "width": 1920,
+        "height": 1080,
+        "format": 80
+      }
+    ]
+  },
+  {
+    "label": "LiveHDR",
+    "frame": 27548,
+    "spatial": 0,
+    "hdr": 1,
+    "stages": [
+      {
+        "name": "input",
+        "width": 1280,
+        "height": 720,
+        "format": 70
+      },
+      {
+        "name": "hdr",
+        "width": 1280,
+        "height": 720,
+        "format": 115,
+        "nonfinite_components": 0,
+        "maximum_linear": 2.123046875
+      },
+      {
+        "name": "present",
+        "width": 1920,
+        "height": 1080,
+        "format": 115,
+        "nonfinite_components": 0,
+        "maximum_linear": 1.943359375
+      }
+    ]
+  },
+  {
+    "label": "LiveFXHDR",
+    "frame": 31443,
+    "spatial": 1,
+    "hdr": 1,
+    "stages": [
+      {
+        "name": "input",
+        "width": 1280,
+        "height": 720,
+        "format": 70
+      },
+      {
+        "name": "output",
+        "width": 1920,
+        "height": 1080,
+        "format": 115,
+        "nonfinite_components": 0,
+        "maximum_linear": 0.97998046875
+      },
+      {
+        "name": "hdr",
+        "width": 1920,
+        "height": 1080,
+        "format": 115,
+        "nonfinite_components": 0,
+        "maximum_linear": 2.078125
+      },
+      {
+        "name": "present",
+        "width": 1920,
+        "height": 1080,
+        "format": 115,
+        "nonfinite_components": 0,
+        "maximum_linear": 2.078125
+      }
+    ]
+  }
+]

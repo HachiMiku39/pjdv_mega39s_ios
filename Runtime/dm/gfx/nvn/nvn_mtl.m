@@ -2454,6 +2454,7 @@ static NSString *pjdv_postprocess_origin(NSString *source,NSString *path) {
 
 #if defined(DM_GAME_M39)
 #include "pjdv_clip_depth.inc"
+#include "pjdv_movie_origin.inc"
 #endif
 static NSString *pjdv_clip_depth(NSString *source) {
 #if defined(DM_GAME_M39)
@@ -2495,6 +2496,9 @@ static id<MTLLibrary> lib_from_file(NSString *path, NSError **err) {
             options.fastMathEnabled=NO;
         }
         src=pjdv_vertex_output_defaults(src);
+#if defined(DM_GAME_M39)
+        src=pjdv_movie_origin_source(src,path);
+#endif
         src=pjdv_postprocess_origin(src,path);
         src=pjdv_clip_depth(src);
         id<MTLLibrary> l = [g_dev newLibraryWithSource:src options:options error:err]; long long dt = (long long)((CFAbsoluteTimeGetCurrent() - t0) * 1e6);
@@ -6864,7 +6868,7 @@ static int present_now(const tex_t *t, double period, uint64_t frame, uint64_t t
     id<MTLTexture> upscaled=pjdv_spatial_encode(cb,src,dr.texture,crop,alloc_i);
     id<MTLTexture> mapped=pjdv_hdr_encode(cb,upscaled ?: src,dr.texture,upscaled?NULL:crop,alloc_i,hdrFrame);
     if (!present_encode_m4(cb, mapped ?: upscaled ?: src, dr.texture, mapped || upscaled ? NULL : crop, alloc_i)) return 0;
-    NSDictionary *fxCapture=pjdv_fx_capture_encode(cb,src,upscaled,frame,alloc_i);
+    NSDictionary *fxCapture=pjdv_fx_capture_encode(cb,src,upscaled,mapped,dr.texture,crop,frame,alloc_i);
 #else
     [g_present_alloc4[alloc_i] reset];
     [g_q4 waitForDrawable:dr];
@@ -6873,7 +6877,7 @@ static int present_now(const tex_t *t, double period, uint64_t frame, uint64_t t
     id<MTLTexture> upscaled=pjdv_spatial_encode(cb,src,dr.texture,crop,alloc_i);
     id<MTLTexture> mapped=pjdv_hdr_encode(cb,upscaled ?: src,dr.texture,upscaled?NULL:crop,alloc_i,hdrFrame);
     if (!present_encode_m4(cb, mapped ?: upscaled ?: src, dr.texture, mapped || upscaled ? NULL : crop, alloc_i)) { [cb endCommandBuffer]; [g_q4 signalDrawable:dr]; return 0; }
-    NSDictionary *fxCapture=pjdv_fx_capture_encode(cb,src,upscaled,frame,alloc_i);
+    NSDictionary *fxCapture=pjdv_fx_capture_encode(cb,src,upscaled,mapped,dr.texture,crop,frame,alloc_i);
     [cb endCommandBuffer];
 #endif
 #if !DM_NVN_M3

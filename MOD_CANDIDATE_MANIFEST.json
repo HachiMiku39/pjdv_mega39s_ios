@@ -254,5 +254,7 @@
     "electric_angel_normal": "371 COOL / 371 combo / 100.78%",
     "calc_mv": "some shots inverted, unresolved",
     "physical_device": "not tested"
-  }
+  },
+  "historical_snapshot": true,
+  "superseded_by_release": "v0.1.5b20"
 }

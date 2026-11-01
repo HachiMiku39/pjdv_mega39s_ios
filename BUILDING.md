@@ -142,3 +142,10 @@ PJDV_TEST_ROOT="/Volumes/ExternalSSD/PJDVTests/mod-install-01" bash Scripts/test
 ```
 
 The importer uses bounded chunks and does not activate imported packages. Only explicit offline conversion profiles are provided in `Tools/pc_mods`; they require your own extracted game/MOD assets and an isolated test save. No test overlays are bundled. See `Reports/MOD-DOWNLOAD-CONVERSION-20261029.md` for tested scope and unresolved Calc/New Classics issues.
+
+
+## build20（2026-11-01） / Build 20
+
+发布基线为当前已公开源码，加上共用视频背景原点修正。版本号为 0.1.5 / 20；构建及测试输出放外置 SSD。公开源码不含 `PrivateBuild`、生成的游戏程序段或游戏载荷，须按本文件已有步骤自行准备输入。独立合成检查可运行 `Scripts/test-movie-origin.sh` 和 `Scripts/test-present-capture.sh`，设置 `PJDV_RUNTIME_SOURCE` 为 `Runtime/dm` 目录、`PJDV_TEST_ROOT` 为新的外置 SSD 目录；需要可用 Metal GPU。`test-movie-origin.sh` 可选接收本地视频顶点缓存文件，校验真实生成接口；不提交该文件。
+
+The release uses the public source baseline plus the shared movie-origin fix, version 0.1.5 / 20. Build/test outputs belong on external storage. Original guest segments, generated game inputs and payloads are excluded; prepare them using the existing instructions. The two GPU test runners above use synthetic data and optionally validate a locally generated movie shader interface. Do not publish private capture dumps, keys, profiles, save data or game/MOD archives. See the bilingual build20 release report for actual validation limits.

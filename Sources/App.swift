@@ -545,6 +545,8 @@ final class LabController: UIViewController {
     private func applyOutputMode() {
         guard let canvas = metalView else { return }
         canvas.autoResizeDrawable = false
+        // Explicit developer readback only; normal drawable stays framebuffer-only.
+        canvas.framebufferOnly = ProcessInfo.processInfo.environment["PJDV_PRESENT_CAPTURE"] != "1"
         if !DeviceGraphicsProfile.policy.allowsRayTracing { setRTStageMode(0) }
         let edr = hdrEnabled && supportsHDR
         canvas.colorPixelFormat = edr ? .rgba16Float : .bgra8Unorm

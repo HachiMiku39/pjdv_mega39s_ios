@@ -1,11 +1,16 @@
 {
   "format": "pjdv-public-source-v1",
-  "date": "2026-10-29",
-  "source_build": "0.1.5 build19",
-  "public_release": "v0.1.5b19",
-  "mod_loader_enabled": false,
+  "date": "2026-11-01",
+  "source_build": "0.1.5 build20",
+  "public_release": "v0.1.5b20",
+  "source_parent_commit": "c2a56f43e71972643217bd32cc119b44d351cf72",
+  "mod_loader_enabled": true,
+  "mod_prepared_multi_selection": true,
+  "mod_native_raw_model_profile": "Leo/need1.0.2 exact version only",
   "mod_download_and_stream_import": true,
+  "general_manifest_v2_and_upgrade_save_migration": false,
   "excluded_production_keys_game_payloads_saves_profiles": true,
+  "historical_release_archives_not_nested": true,
   "files": [
     {
       "path": ".gitignore",
@@ -58,37 +63,44 @@
     },
     {
       "path": "Assets/Localizations/en.lproj/Localizable.strings",
-      "bytes": 19230,
-      "sha256": "66a5c0d490ea8039c19fed208e17a358e50a521b2307d9611dd25fdcea7a1cb7",
-      "git_blob_sha": "65637a8630a5687c28294565f6b0aba473f90643",
+      "bytes": 22281,
+      "sha256": "ce3e2f6143a4aee41750af4d0bc96ba87d0c4f4c55ba838e24fbf6db0252ebca",
+      "git_blob_sha": "29bb55d6ea87b4f813db3103cd3b631112daa405",
       "mode": "100644"
     },
     {
       "path": "Assets/Localizations/ja.lproj/Localizable.strings",
-      "bytes": 22455,
-      "sha256": "6bca28ef686a3b321cf43c75ee02b8f8b3999dcb077d06faf95b7cc18b57dad8",
-      "git_blob_sha": "f3293e6f0790c2be2b044e34af04ac21956638b4",
+      "bytes": 26132,
+      "sha256": "ee5abcd25322aea5f9900e0b30ebfd86c8acc9b2c0dbc243f429c143f8d72192",
+      "git_blob_sha": "507482a9231d4d15384f3af86ccb34d857649873",
       "mode": "100644"
     },
     {
       "path": "Assets/Localizations/ko.lproj/Localizable.strings",
-      "bytes": 20926,
-      "sha256": "7287e3e26959ebfde9883b3e8b7fa2f6cda55b39d6959bdc38233229d60a2d0f",
-      "git_blob_sha": "a7676cde28dec2327cd3179653045fcfea5a1a74",
+      "bytes": 24337,
+      "sha256": "6acb311408a936a5a4e1ef5b8cae75ee30718824aa83ad770595f63ee6974b60",
+      "git_blob_sha": "bd4ba48f52e463e50704e2d3fc316b12d896f766",
       "mode": "100644"
     },
     {
       "path": "Assets/Localizations/zh-Hans.lproj/Localizable.strings",
-      "bytes": 18624,
-      "sha256": "5946326b3510e69074850cebaea9bd818dc9f39ace36b718def4bf564f622ba1",
-      "git_blob_sha": "b01320da41abd69359c1d5f5ddfac0399974db54",
+      "bytes": 21144,
+      "sha256": "aa36a25069abd66eb40c1333c1812138c233d79388823988f8baebccf700b1c4",
+      "git_blob_sha": "763e9589cf54b65abf5c319fb4cef04a6b1157fc",
       "mode": "100644"
     },
     {
       "path": "Assets/Localizations/zh-Hant.lproj/Localizable.strings",
-      "bytes": 18734,
-      "sha256": "627592da0d27f15c55dc6b8c0ac679891cfbd0d31efed2b3730e1c2c85022b50",
-      "git_blob_sha": "89822e77ca855a2b1fa27c4db84f5e48f16e815e",
+      "bytes": 21677,
+      "sha256": "b8897b8a3c10831583909769a92db7c8e2e2df0a22befa4e2bf112b0e295d614",
+      "git_blob_sha": "e6cc28fac27650a8342b08c6a6b4790f74489fc1",
+      "mode": "100644"
+    },
+    {
+      "path": "Assets/PCModelProfiles.json",
+      "bytes": 8331,
+      "sha256": "ac0e5738597782ef3439e8cfa4134af42090a1d646de983b1d06eaab2db98367",
+      "git_blob_sha": "22e3b13dd62272fad323d59ba0eeeb2f95212472",
       "mode": "100644"
     },
     {
@@ -100,37 +112,79 @@
     },
     {
       "path": "BUILDING.md",
-      "bytes": 15177,
-      "sha256": "3fcd881181c19b6776c537d415d84387fabdedfb910d9ef374899c477ea629b4",
-      "git_blob_sha": "17ce838791176f19d94aa187c96631423d333c04",
+      "bytes": 16368,
+      "sha256": "bbb8b80b89110804c5763e61fd9add2db9c82b6aa1230cba8345c235b053c88a",
+      "git_blob_sha": "75778f1384f97621f995afaba6bb8e655f19851c",
       "mode": "100644"
     },
     {
       "path": "Info.plist",
       "bytes": 2882,
-      "sha256": "216ce9df30b961fa2f0344e7061bcccbd7ed83189d6e443920183b572513032f",
-      "git_blob_sha": "7afa8cc00d5d9634179fc016feb6afd3d3682570",
+      "sha256": "05213988b718313989f2dd10c5e4715b94c7d874dc46a041b581ee8184c072e4",
+      "git_blob_sha": "f7733a9f3208262e8eb7c8def7e42147054cae6c",
       "mode": "100644"
     },
     {
       "path": "MOD_CANDIDATE_MANIFEST.json",
-      "bytes": 8547,
-      "sha256": "bec2ca0140c6e2251d87ec5c0faa85e89c597e1dc0696441503193fe3bd679df",
-      "git_blob_sha": "e3bd5bfa47abdfbd2727aa60e20949699d31fb6f",
+      "bytes": 8618,
+      "sha256": "025425d17df7e33a79dd9ab5692367256d2fce2fbb433745b779c6a5c5aba3ec",
+      "git_blob_sha": "da9793ec9504b1945f611ad3b01699da8f601a2b",
       "mode": "100644"
     },
     {
       "path": "README.en.md",
-      "bytes": 50588,
-      "sha256": "c9791b1fc38f4a5dc0cbbe48ff83749b0fc01e97384fa1fddd9a0a3c892ef168",
-      "git_blob_sha": "e7b7c84b235f9faed99c16f9a94a8550a9bf809b",
+      "bytes": 57569,
+      "sha256": "6ced0f614e8224bda7b2d5474953f5448c42cca82734bc1cec17f90e17478579",
+      "git_blob_sha": "555c2b2635b66c68c7ca91db6056a50cc5c89360",
       "mode": "100644"
     },
     {
       "path": "README.md",
-      "bytes": 44052,
-      "sha256": "d9395dbdaf77aff36498b93eedd22d55da9b75a9fb8a7e06bcf57fa0948dd4c2",
-      "git_blob_sha": "a7b5c191fc92488d88501b175799066ee44f571f",
+      "bytes": 50153,
+      "sha256": "81d25301c88eea23133a08622b67846d1529633ea74c9da93419d1b162b592d0",
+      "git_blob_sha": "9f71a1b6ff89bf2c9d2e444571b06e9c1885540e",
+      "mode": "100644"
+    },
+    {
+      "path": "RESEARCH-20261015.md",
+      "bytes": 48822,
+      "sha256": "62648fcea3be7a42b5450aefdabb9529e840d147a888511a8db32a9ca7f422b2",
+      "git_blob_sha": "d78f0219ee93220761f1f3985c8ffd6a4b56fc44",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/CATCH-WAVE-VIDEO-ORIGIN-20261101.md",
+      "bytes": 7861,
+      "sha256": "ea3dc28ed444f37a97c58ce822510abd7af965b262e832e7bcd6aeab76db35b0",
+      "git_blob_sha": "07d049d719625aa24fcc9963d15da8aa369bc02d",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/COMBINED-MOD-TRIAL-20261029.md",
+      "bytes": 4235,
+      "sha256": "af1de5ad06b709def3f6c2f4e4997587e4adee7ce0627233d144c7ec8bc706f1",
+      "git_blob_sha": "1f86e0bf95db2c1b1b5189398eddcf98c28dc0df",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/LOADING-OPTIMIZATION-20261031.md",
+      "bytes": 6365,
+      "sha256": "5e275b4698097ff7f57378805a8a7a887d30f16ca9ed64b6c41dbee9008209fa",
+      "git_blob_sha": "6f6bdab19b4509d02b7d648a9692b3f2555bff8b",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/LOCAL-MOD-MATRIX-20261031.md",
+      "bytes": 21002,
+      "sha256": "d2618857f46698ed78d0028241f8b09ef369d3d976a44bbdabb624d6df4c5e29",
+      "git_blob_sha": "7ae8f80d150cae911424b8082f5e80b4d0821b53",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/MOD-APP-WORKFLOW-20261029.md",
+      "bytes": 8161,
+      "sha256": "2d1583d3cbdff604dc3d7bf4ce4166c347e5eeff93f897dd6ac0b7322a7710ce",
+      "git_blob_sha": "0503f8e084314d06f6b09ac91a761e8f40fd8fc8",
       "mode": "100644"
     },
     {
@@ -155,6 +209,20 @@
       "mode": "100644"
     },
     {
+      "path": "Reports/MOD-IPAD-VALIDATION-20261029.md",
+      "bytes": 12311,
+      "sha256": "606281efecf690edc1db8fa4aa1402021c13f296008b76a2d6c75e7a4cbed40d",
+      "git_blob_sha": "3818a216ceb8fe34663e69eb745abbc10d850e78",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/MOD-NATIVE-MULTISELECT-20261031.md",
+      "bytes": 11568,
+      "sha256": "2c362dd236bcf6e6697acbf6ff4f4cd36ad9ecd53013285cab1c609098435303",
+      "git_blob_sha": "f53289d7e513e9b6353a916b041581e3117d27aa",
+      "mode": "100644"
+    },
+    {
       "path": "Reports/MOD-RAGE-WINTER-20261028.md",
       "bytes": 7449,
       "sha256": "b341fea99acbcdcb9eac047851d11010cbb62364163734119d65bd23912f541c",
@@ -162,10 +230,199 @@
       "mode": "100644"
     },
     {
+      "path": "Reports/MULTI-MOD-VALIDATION-20261030.md",
+      "bytes": 7033,
+      "sha256": "f6f5c7afe12faa6c3a85d3725c817579e6e68f769a7aeb124eab61408dbbc3ff",
+      "git_blob_sha": "9e8723ab12e6b1f356af45a6daf53fc6da8e4faa",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/NATIVE-PC-MODEL-IMPORT-20261031.md",
+      "bytes": 8135,
+      "sha256": "53b1b6dd4ee14db92303949c003cc24a94ee24afe8b2e2eed959284eda5f8a42",
+      "git_blob_sha": "eae2b3bda7f63f93beb78678cf15d739518acf5f",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/NEW-CLASSICS-FOUNDATION-20261029.md",
+      "bytes": 11333,
+      "sha256": "c238af6944628f1eebe8b46f35cc88f89bd0f596a970bd21b490107d922ddb18",
+      "git_blob_sha": "0dc96cec32b3d958366dc0aaa60e73ebc34651ad",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/RELEASE-build20-20261101.md",
+      "bytes": 6005,
+      "sha256": "5074a0b74ca62154340ac403f32e34732a8fbf38b6e782484df68bcbda47d5b1",
+      "git_blob_sha": "972c244e0beb7b17dd9ecedd10fdcff77fd7c4b2",
+      "mode": "100644"
+    },
+    {
       "path": "Reports/SWITCH-MOD-IMPORT-20261025.md",
       "bytes": 14115,
       "sha256": "c142d7852a4a1d15d085677e10064f35e33dd82936cbf3316fe82daf859bae07",
       "git_blob_sha": "3b99b4dec07111705338e9855d68d3ee95ad25a3",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/catch-wave-20261101/after-sdr.jpg",
+      "bytes": 77680,
+      "sha256": "e6aa6ba7b515f2ba3078f992b88649e19b4e56701ebde7051684e7a510d5727d",
+      "git_blob_sha": "ed04185b2b961a30cd27b9163bc4599db4b621ac",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/catch-wave-20261101/before-sdr.jpg",
+      "bytes": 85487,
+      "sha256": "aa5c4023e89c7f90cc6de6fa1ddbbc86fafd5d8a1759e3e1f2d84c8ede015321",
+      "git_blob_sha": "fe3a7ac148466db67deb29933fbd01047e6447d7",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/catch-wave-20261101/four-modes.jpg",
+      "bytes": 158241,
+      "sha256": "27d32ee4779eae1ca3ba6ab3b91211aa3da093bece7a60573381327f0ae452d7",
+      "git_blob_sha": "f007905108dea3fdcb39392f1451e111e9acffdf",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/catch-wave-20261101/repeat-fx.jpg",
+      "bytes": 160418,
+      "sha256": "1d8a59c8fecfc218ac33f3a9caddb0e1d87c173857c233acd58222787ea75e6e",
+      "git_blob_sha": "cb827f0c06b6c918fc01d9ab22ca7c12cd7f4afc",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/catch-wave-20261101/stage-validation.json",
+      "bytes": 2123,
+      "sha256": "9d01a69e7b340fa09c520f96d35400e8e5f6717a6b50a99758903a85b6cfa339",
+      "git_blob_sha": "21699a108210a7e317a7a449a33941ad34b1fbc2",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/local-mod-20261031/MMJ-Hanasato-Minori-02-small.jpg",
+      "bytes": 197179,
+      "sha256": "15d0c8315c2321c60a8ae0f6f8dd5fba036dde91cc5a046e123a389118c29d07",
+      "git_blob_sha": "83442c0c424a2ec52aa154fa12c5783d27e3acfc",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/local-mod-20261031/Matrix-Beginner-actual-small.jpg",
+      "bytes": 182505,
+      "sha256": "f9ff9d722fd1861031f3367c7759461d3561898179fec56d66684f07f473433b",
+      "git_blob_sha": "420ec0fd4cb799ce2a668c87a3e865ae2c55cb47",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/local-mod-20261031/Matrix-Catchy-play-small.jpg",
+      "bytes": 143725,
+      "sha256": "acd0c95222c0f5fae47dea35a3312550768c4e08f35bb4881e578468b6755f1c",
+      "git_blob_sha": "fb80f6ed134179241de89a1c0bf3c683b1994da5",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/local-mod-20261031/Matrix-Chinese-DLC-lyrics-small.jpg",
+      "bytes": 183843,
+      "sha256": "5dece0c3b06bc68626cd011eb2715072f02ba3eedf4a26520ac0ce414702a98b",
+      "git_blob_sha": "61850ae9f0288fbfe5da56973bf20ac3c05971fb",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/local-mod-20261031/Matrix-Club-play-small.jpg",
+      "bytes": 162659,
+      "sha256": "7e586e1382f85db67c8253a028478acf1cc8536e43fdff2d9ae4503bb04b2c9f",
+      "git_blob_sha": "49bf028f9d8c20e67f3ba9fbd9445d081a3c3742",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/local-mod-20261031/Matrix-Dark-play-small.jpg",
+      "bytes": 136100,
+      "sha256": "e51f996e821301ba2daf5714aab17347d7527972f0373484014f05bbddb3ee0a",
+      "git_blob_sha": "de01aa87895b42e27ff0648d7b7a2e543f75a7e8",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/local-mod-20261031/Matrix-Heavy-play-small.jpg",
+      "bytes": 190959,
+      "sha256": "d329202716846c8d0b1ebe454d05050d2321e8a5f163e76126f6e12aa8a54c3b",
+      "git_blob_sha": "944da11c0b640a9e93da7f9e752670b9bc635820",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/local-mod-20261031/Matrix-HighOctane-play-small.jpg",
+      "bytes": 191513,
+      "sha256": "8857a1e3283cacbfcbcf7655caaaaade7528a437b0ba94c1e1090d173c046286",
+      "git_blob_sha": "7f59a8b661d79489769d486c9f7c023e6981f20a",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/local-mod-20261031/Matrix-Masochist-play-small.jpg",
+      "bytes": 155088,
+      "sha256": "9f73c9fe6c9325981630b31035f1549a40f8b9194e2e11b0d287abb272b553b1",
+      "git_blob_sha": "04d53a8fa15ed9287e30acb3f7d7612d99930555",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/local-mod-20261031/Matrix-Proseka-play-small.jpg",
+      "bytes": 194441,
+      "sha256": "e5bff9a900e79720d148f36401ceafe02804f3544d6ecc9c8e126502a0fb4f09",
+      "git_blob_sha": "7fe56dd73bb731b6c3f03031f2c571341a73f007",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/local-mod-20261031/Matrix-Rock-actual-small.jpg",
+      "bytes": 221962,
+      "sha256": "ef42f068ad480410e573601cca8a06ec28d486be2d0816d7979cf32901bd9ae8",
+      "git_blob_sha": "d5edf6f36096ecbedf9186f57bb32ce0832c50a6",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/local-mod-20261031/Matrix-Vibes-play-small.jpg",
+      "bytes": 134658,
+      "sha256": "8428772711032c5187a42c698bca5fc49f741f0e7e6eaa56c22f134c30c279ec",
+      "git_blob_sha": "81c3d1e7259a0005e31adf0cabb75716f4eedfb3",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/local-mod-20261031/Matrix-alocin-play-small.jpg",
+      "bytes": 186520,
+      "sha256": "18466659e9ee536b24bf67956f61f372d34e49b3dc900996bea62f4fb49bf9e9",
+      "git_blob_sha": "1a9f52a62d4a82b4418e8e5d0c1783d2a37f73fe",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/local-mod-20261031/Matrix-base-lyrics-small.jpg",
+      "bytes": 176062,
+      "sha256": "6f7b532e644d9a70768d08a7ed7d5a10fa5a929c0a310c575df6d53c7629d115",
+      "git_blob_sha": "6e512b7d5a9a9fdc5cbf08aad6ff6c3722c0a328",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/local-mod-20261031/Nightcord-Kanade-01-small.jpg",
+      "bytes": 183888,
+      "sha256": "08cd72948e24e91d031954a5dea2025d0136bc9a6e3c7d3bf3ad86308810537d",
+      "git_blob_sha": "e7a2a194b77ee955cfbdedcbb8d52af114c43fab",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/local-mod-20261031/Rage-Winter-01-small.jpg",
+      "bytes": 184963,
+      "sha256": "ff92e55a353fac50af42ea7fcb68b7b97e7f95d626fb96d18dd9bcde031ce18d",
+      "git_blob_sha": "65b7dad6a205052431749dca918f048c837f39aa",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/local-mod-20261031/VBS-Kohane-01-small.jpg",
+      "bytes": 202409,
+      "sha256": "a7e9827c16451b8091bed12ea5a64fdcdb98150ea7a745eac57d45cff544ff9e",
+      "git_blob_sha": "861c3116f993dbb29c0a207efeecdd0b4c3d2730",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/local-mod-20261031/VanillaAfter-menu.jpg",
+      "bytes": 238776,
+      "sha256": "f14ada5b3f1564dfae8a127b30a0655ce2c74fdf68853cc6707fcb8d48314dd2",
+      "git_blob_sha": "d1bee87dd8e2d5505d78bdc98f15f87f5ee5ce24",
       "mode": "100644"
     },
     {
@@ -243,6 +500,272 @@
       "bytes": 789228,
       "sha256": "c4bb448c5bdf534d739c5bd1ca7c86c76b7bb625adc07f3226235123580eac6b",
       "git_blob_sha": "d7a298d4c8a4083f52c9bcd0de0723a57fe69343",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/mod-all-20261029/Five-39music-gameplay.png",
+      "bytes": 896971,
+      "sha256": "d1bf06a8536511a0f8d029fcca226ec5afd94e9e2fea76d077abe8c6879defd1",
+      "git_blob_sha": "1c22b0f61b7a01351de83e5a0f03d0186cf3b8a0",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/mod-all-20261029/Five-39music-result.png",
+      "bytes": 983991,
+      "sha256": "327790aec54230457f004aec0cc30cdcba1e6ac604ff568b7fbef7022c6720e1",
+      "git_blob_sha": "2ac5aa8492cffeb89954113551b3cc6fa2d47867",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/mod-all-20261029/Five-Ichika-equipped.png",
+      "bytes": 925401,
+      "sha256": "751089080bc9d6e3654f2960f6a4884565f2e8ff8aca90d07177aab11e3debe0",
+      "git_blob_sha": "8dade64bf53c234066af467440b9a7355f4708bf",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/mod-all-20261029/Five-Racing-equipped.png",
+      "bytes": 965785,
+      "sha256": "13a853ccfe2f54b7fb45bc01531e339a7775936d58cb3cdfc27229f1ecc16837",
+      "git_blob_sha": "c6f7281be6748255f04673f72d10b257aad856ca",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/mod-all-20261029/Five-SekaiMiku-equipped.png",
+      "bytes": 963588,
+      "sha256": "1d521f8105fcbf1048e55ea3857971f66bc2babcc4d31fb63ba3cafe040457f9",
+      "git_blob_sha": "b1b82970801d88203825e8ba978df244c180bb3f",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/mod-all-20261029/Five-SekaiMini-equipped.png",
+      "bytes": 942668,
+      "sha256": "2cc736b064e2ef3869865ecae5edda096fc1a66c8fc177ca0e175bb4292738f1",
+      "git_blob_sha": "aa512703864f907668de8f92bb85b96ab721b57f",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/mod-all-20261029/NativeImport-duplicate.png",
+      "bytes": 165872,
+      "sha256": "e75b00b26dd9bc70ae5452e769973e5e2c4538b3de571e516c14add0afdf37d8",
+      "git_blob_sha": "2035e43822dfc87f8be8c2086e9ce5b4eab6459e",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/mod-all-20261029/NativeImport-ready.png",
+      "bytes": 165074,
+      "sha256": "d15115b822ad20b9b652e034cdcb63575a7ec15fb71fbfb0b13fcbac527febc2",
+      "git_blob_sha": "52c1c3d1197468cdec03835118f8ebcf7bda84ff",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/mod-all-20261029/NativeImport-success.png",
+      "bytes": 163237,
+      "sha256": "b31eabfd4cc139c0f6ba4b65efb6b5540ffedc2ff63d498dcd4d6f86c32b00ab",
+      "git_blob_sha": "d1b0751e78cc735e5a0b3e9b7668105ce7e66006",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/mod-all-20261029/validation.json",
+      "bytes": 522,
+      "sha256": "3fdb77570f3e9debf58d648da849edbbf321679697bc92a609169d1fdb181bab",
+      "git_blob_sha": "2a33e8414250e93c8fc19e7ccea81b8923c3a6fb",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/mod-combined-20261029/Combined-AiDee-gameplay.png",
+      "bytes": 938356,
+      "sha256": "3506acd648d18ff5982292ee19930fc5b496444fb5e322d7c7d0477407edb543",
+      "git_blob_sha": "c63ff9caa2a219068444f7185f199e9bbab9e628",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/mod-combined-20261029/Combined-AiDee-result.png",
+      "bytes": 921303,
+      "sha256": "967e6eb7e7e7c264c911292e45dbb9442cbc9ac102cf50aaa040ac8f9f903c36",
+      "git_blob_sha": "00b3670b13e931a6e10cc53fc4df97fc1c544363",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/mod-combined-20261029/Combined-Ichika-equipped.png",
+      "bytes": 924217,
+      "sha256": "2260e708f25ecda847614d6e1226d910347286cf881c230126fce96faae4c4ac",
+      "git_blob_sha": "67b9118d210e111a124f78f7d939737d6b823e98",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/mod-ipad-20261029/F2nd-SPiCa-retest-list.png",
+      "bytes": 1003372,
+      "sha256": "4cb1e35eee9b88623fac711047ff15313468a797860060971b5d0001146f2b44",
+      "git_blob_sha": "144ccfad5c82e72a3276f24eea4f4f442333b2bd",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/mod-ipad-20261029/LeoNeed-Ichika-full-song-result.png",
+      "bytes": 845291,
+      "sha256": "48919103168a3c815e029cc14341f8cac99cf2ac3d7f15708b32c047bd87058a",
+      "git_blob_sha": "9314440c13723a7178daf0df68a4e60715d8d1e2",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/mod-ipad-20261029/LeoNeed-Ichika-model-name-fixed.png",
+      "bytes": 848170,
+      "sha256": "1d22141c1dcc51f801a7a0b53dba34cfed71068da0ce48f40cbef3200ac24b17",
+      "git_blob_sha": "78539a8e89dd219b574b2778032519b7576cad21",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/mod-ipad-20261029/LeoNeed-Ichika-song-preview-fixed.png",
+      "bytes": 843499,
+      "sha256": "f79e2ebe91bb4f203cae4384855a0518374cc07b09a18c9650d433e685e3bb3a",
+      "git_blob_sha": "91dc617653bb1e0dee24b06b8af93fd967a3ea75",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/mod-ipad-20261029/LeoNeed-name-and-thumbnails-fixed.png",
+      "bytes": 927360,
+      "sha256": "69fd6389162eb998d2340aae3ecb99bab11fb11138a572e7bd149db5e44355f4",
+      "git_blob_sha": "a4ec2306a8d11341b485da99f2f2c29d57dc9edf",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/mod-ipad-20261029/Racing-39music-mid.png",
+      "bytes": 991870,
+      "sha256": "bf631466aff88638cf45ce4d5fa88b26370a06604054092b63c825f6f79d663b",
+      "git_blob_sha": "c99d88391170f43f071eca08e94aad3a9ea1a064",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/mod-ipad-20261029/Racing-39music-result.png",
+      "bytes": 1000901,
+      "sha256": "5bd1c4ed8afba56ab77f7651c596eeb34a8d92ee96d2de5da322bec3984228d0",
+      "git_blob_sha": "2d7aab0aebaeb7518d0dce62884d5d34fc913f24",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/mod-ipad-20261029/Racing-model-equipped.png",
+      "bytes": 968618,
+      "sha256": "7012d8f791aeb295d43d81e40683c99760d8cf4583c19b0a3d62f69f9263c733",
+      "git_blob_sha": "ae9f1dc211f411a0b9e9d3dad700e3ffc9d97139",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/mod-ipad-20261029/SekaiMiku-39music-gameplay.png",
+      "bytes": 977988,
+      "sha256": "83d40b6fecf70cfe390a826e9ffbe206db862517464cae21fa56687f1d11eba9",
+      "git_blob_sha": "bcd6911745d394a9ce26a5485fae3cda3c15677c",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/mod-ipad-20261029/SekaiMiku-39music-result.png",
+      "bytes": 982372,
+      "sha256": "f4d5d977625b088f3203c753065cc932f4b39b87014b53f8c446077f6bdb4602",
+      "git_blob_sha": "be474434d897a2a1f5bff9893f62fc7f95121688",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/mod-ipad-20261029/SekaiMiku-model-equipped.png",
+      "bytes": 963710,
+      "sha256": "f8369ffb297a00597172a5039222c74fab9edbe96f3e75876e4287e65cf0d628",
+      "git_blob_sha": "e8f87e0fda6d7cdde887455004ce49e5f6be3f8e",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/mod-ipad-20261029/SekaiMini-TimeMachine-result.png",
+      "bytes": 864385,
+      "sha256": "b4e5aa56b502ade76e96218f7dac4117b64c0541fd450a4b3fd816601b4da4d6",
+      "git_blob_sha": "1a6b6934410ddbfd69e022b4a69762e01fa16d24",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/mod-ipad-20261029/SekaiMini-model-equipped.png",
+      "bytes": 938072,
+      "sha256": "4d8d4509f867eb74118dab33475687dd1ca97c5c43e3eee42553152781555bd9",
+      "git_blob_sha": "33506accae94718cabaa3190d86ab54d54c885c2",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/mod-ipad-20261029/XSong-aidee-gameplay-verified.png",
+      "bytes": 841586,
+      "sha256": "ea618074dbba4948c0eb5a6c82979879bc1b67b814f69c9925d8b7fa9df44674",
+      "git_blob_sha": "5d9b150efe0d570914e669d5a22c63cf758afbc2",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/mod-ipad-20261029/XSong-aidee-result.png",
+      "bytes": 921296,
+      "sha256": "ac8ba6f23746fc03ef0962de2f1e7fca919be3f25d2f7992a1c821d4d06a2aca",
+      "git_blob_sha": "f1774967ea7b5bf28e52e902751720953d4f8f0c",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/mod-ipad-20261029/performance-sampling.json",
+      "bytes": 830,
+      "sha256": "dd74ffe7ab1d6521c879d18d97055ed716b5064b08020a18bcb3f0d4db9e6ccd",
+      "git_blob_sha": "a0c0bb664595f304b8c8227f604743d52cd332b1",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/mod-native-20261031/ai-dee-results.png",
+      "bytes": 1132359,
+      "sha256": "aede564df50a69f1670e1f10cf32a2c84680d6d2d07d4a2abdcb1aa45e7c9505",
+      "git_blob_sha": "742a9288a491f771931d5a35e865e085a85d06f7",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/mod-native-20261031/five-selected.png",
+      "bytes": 129944,
+      "sha256": "9b3958ee8b025a33fab30207a00b58843a8a80f9d44dbb03ec09fb0daa0dbf20",
+      "git_blob_sha": "0254fb0013a3b9ef406aa6ee6479cacef71ce5b8",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/mod-native-20261031/isolated-damaged-packages.png",
+      "bytes": 124767,
+      "sha256": "52415161a3f3be16991352fc1760b16ad2910ce2f86a9e83c2bc026fcd4a9655",
+      "git_blob_sha": "f4f020ec59166816524750f9cb8c49d126d0d09a",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/mod-native-20261031/leoneed-equipped.png",
+      "bytes": 1211502,
+      "sha256": "275e60956a841b18543e5dcdf118410d1108ef37809ff66908231fc47fd4d8ff",
+      "git_blob_sha": "03b12a58856bcaf872713847f5dae17d62b83d1d",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/mod-native-20261031/racing-equipped.png",
+      "bytes": 1311785,
+      "sha256": "2b343597aefbe682d312aaf5e3468efc951bfa9fc52897e4377f9f214f9b8868",
+      "git_blob_sha": "2b1b20c887df81acd9e23abd184a6035226bb189",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/mod-native-20261031/sekai-miku-equipped.png",
+      "bytes": 1303916,
+      "sha256": "8fc9dd3398b8b6829638dc5c81808764b72aefbdcc763bd92fb07c981b89fe17",
+      "git_blob_sha": "1ac408b5fe897c14644903c0edd87775256e2489",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/mod-native-20261031/sekai-mini-equipped.png",
+      "bytes": 1224756,
+      "sha256": "9c6bc2af64fa4e50334aff8af3070d7f6a3af31e27785db04e4d267e69491407",
+      "git_blob_sha": "8151a4b2f9660d0d5e8166ab880158e2aa4f9681",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/native-pc-model-20261031/ichika-equipped.jpg",
+      "bytes": 214432,
+      "sha256": "db62f244c0431fa7584c40a740c79748425a31adb90f53b8907e66bb3c46640f",
+      "git_blob_sha": "1387bb3381812caf00f3abfab71f2017e85bc454",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/native-pc-model-20261031/ichika-gameplay.jpg",
+      "bytes": 179119,
+      "sha256": "f9d705408deb4b0406f8b651a6dfb82bc6776a8b0a7afc36b4523d3df8f2a2c4",
+      "git_blob_sha": "017e1e13ab7c929c8629c15d1161b761055053de",
       "mode": "100644"
     },
     {
@@ -429,9 +952,9 @@
     },
     {
       "path": "Runtime/dm/gfx/nvn/nvn_mtl.m",
-      "bytes": 702111,
-      "sha256": "ea4aa37893511776bf761397ef9b8f78bab83b33116c4e125150570ea2f02b84",
-      "git_blob_sha": "c57f3da82a3569ca5e6e403d84e11f87112ea9b1",
+      "bytes": 702270,
+      "sha256": "591637df727b29d183371a4b40b910bd44e38a18a0cc433964c9a06a9501c9e3",
+      "git_blob_sha": "54f7702925b72b84cf3dc6d73d44edd5f51e01cb",
       "mode": "100644"
     },
     {
@@ -604,9 +1127,16 @@
     },
     {
       "path": "Runtime/dm/gfx/nvn/pjdv_metalfx_capture.inc",
-      "bytes": 4265,
-      "sha256": "2b5177995151a11c96a3c0564bb399fa1f1fcd05ce77266d9139fbff30e9774b",
-      "git_blob_sha": "971dc20915384b5f8ac7534bebecdf410d61b7e9",
+      "bytes": 6411,
+      "sha256": "97d25c33793122d9f6340199131491b9bca9e6a1a4e1fd88b3de19fa21523ecb",
+      "git_blob_sha": "ecf9afaee6f4a92908cebc7a379b581991a564df",
+      "mode": "100644"
+    },
+    {
+      "path": "Runtime/dm/gfx/nvn/pjdv_movie_origin.inc",
+      "bytes": 2635,
+      "sha256": "81e6f21d45cdc09b1d5c41ed359ad081319c41b19273b5a35952a0c3a42ed78f",
+      "git_blob_sha": "f1b5dda009c27a83fbe0b4401353b765ccead3bc",
       "mode": "100644"
     },
     {
@@ -1626,9 +2156,9 @@
     },
     {
       "path": "Runtime/dm/host/hle_fs.c",
-      "bytes": 86173,
-      "sha256": "5f9371f72337925012219a3d47f9a0b5675702b7cc7c8f24eed3eba6cd28a2b9",
-      "git_blob_sha": "ee980802d49d23e84e751c9798690ce77047db9a",
+      "bytes": 86901,
+      "sha256": "b8d6f306bb0e1b02c3a09cd56224c1eaa021aeffa273a21eba54ff3e6cb03c15",
+      "git_blob_sha": "7f68c98e9059e181eab8e8700640650926aaf1f7",
       "mode": "100644"
     },
     {
@@ -1822,9 +2352,9 @@
     },
     {
       "path": "Runtime/dm/host/pjdv_boot.c",
-      "bytes": 8522,
-      "sha256": "d5655ba7a9e5fc976cfaf767a3418ccf17a57a38f98eb6db33ab19e094a1baed",
-      "git_blob_sha": "4ea41d3c2948487c4d966e390a352ec265416977",
+      "bytes": 8801,
+      "sha256": "0c3085fef77ecf7f1f0131042d1e54bc16dda15c9bb78589b995e63b91ad98c5",
+      "git_blob_sha": "4f210a3891006de416551be4133de5dd7893d824",
       "mode": "100644"
     },
     {
@@ -4825,9 +5355,9 @@
     },
     {
       "path": "Scripts/package-render-assets.sh",
-      "bytes": 1330,
-      "sha256": "866139c714a195e1195506769a8b9b823cd4f4d4971ca7e39da041cf1aa333ab",
-      "git_blob_sha": "139e5489064bec452ce352e112ec68a203de1919",
+      "bytes": 1512,
+      "sha256": "3d70226f9b927043b461ae03589f3458d9ac7e1eb9fac9b1cd32c897a736c68c",
+      "git_blob_sha": "10a21ace6b57f6c2599456cd68157a57f62dde05",
       "mode": "100755"
     },
     {
@@ -4859,10 +5389,31 @@
       "mode": "100755"
     },
     {
+      "path": "Scripts/test-movie-origin.sh",
+      "bytes": 765,
+      "sha256": "edb901216c1565ac5bf1a9c5ad72c80c84cb90edcab802fc80ff3994c0a14e35",
+      "git_blob_sha": "177b39db8248d466172186efc25ae7e3306b17f0",
+      "mode": "100755"
+    },
+    {
+      "path": "Scripts/test-pc-model-import.sh",
+      "bytes": 730,
+      "sha256": "f47c9466f6bf31f2ee8ab9f3ad8ef973847c74574a7ba1896a92d794f63f80cf",
+      "git_blob_sha": "3601f29fae574e9f10e0eee1a6f0c63913fb2cba",
+      "mode": "100755"
+    },
+    {
+      "path": "Scripts/test-present-capture.sh",
+      "bytes": 682,
+      "sha256": "ea88d5fdd3fa55519e20077557bfd7efbcff57934ff983d9cb2bbbc1e7fc4357",
+      "git_blob_sha": "15a3e2b7de70336a934a779c0a8c9de24152bb8b",
+      "mode": "100755"
+    },
+    {
       "path": "Sources/App.swift",
-      "bytes": 60611,
-      "sha256": "9bed50e8cc746cfa7d4972a0afe195ba2625c3da49fb44b10c23be8a901caff1",
-      "git_blob_sha": "5584c97ee6a94d029dbe3c51408edd83842c3214",
+      "bytes": 61148,
+      "sha256": "23df1482377dc986b642c89e01ba4f24e9b68192035da14bb0cbda383f0a621b",
+      "git_blob_sha": "0ff9a0dfa1e8ca36baba510db80a1bcc92df4306",
       "mode": "100644"
     },
     {
@@ -4909,9 +5460,9 @@
     },
     {
       "path": "Sources/GuestRuntime.swift",
-      "bytes": 7821,
-      "sha256": "b708ed58819bce52495cd4bf3e8d96b87ae36a9a2ef325340d3bf03ac87d5909",
-      "git_blob_sha": "5858ff82183c242eb24464b01114ae61a9a5dc4f",
+      "bytes": 10185,
+      "sha256": "afac4219374e38b18d13b42da0f3a3de80924101a2b888849fc35eb8219c0f66",
+      "git_blob_sha": "5ecc74ba559275ffe3e0ea8a4deeebf5830fd7ab",
       "mode": "100644"
     },
     {
@@ -4943,6 +5494,13 @@
       "mode": "100755"
     },
     {
+      "path": "Sources/ModComposition.swift",
+      "bytes": 45639,
+      "sha256": "681a2e62f1dcb4be32316dab0d80585d17cca1fc782a3ca67cf8ff748ec23dd2",
+      "git_blob_sha": "4a003f6a678582ec2f3c16d6b537299e7e524928",
+      "mode": "100644"
+    },
+    {
       "path": "Sources/ModDownloadBrowser.swift",
       "bytes": 7620,
       "sha256": "fbfd51ed0ddbd707d16073f9e728c1853256723b412c589ebfb3cf60e3d10957",
@@ -4950,24 +5508,38 @@
       "mode": "100644"
     },
     {
+      "path": "Sources/ModFormats.swift",
+      "bytes": 17378,
+      "sha256": "057f0f35c4ee0cd9d784bbb202f66620bfba3fc157f4033f082f1262d77cdf50",
+      "git_blob_sha": "d6be3351a4d068b6036e753937532a7f1b6ad2f9",
+      "mode": "100644"
+    },
+    {
       "path": "Sources/ModImportController.swift",
-      "bytes": 14526,
-      "sha256": "647d4f596d1c61a805fad69a155bb2dec31b5839c3352c22ad4244a40fe8c563",
-      "git_blob_sha": "10eadc1a968abb4a2eeab8a97432ba10c940568c",
+      "bytes": 22490,
+      "sha256": "5d4457f44154003f0e078b31ffc4712621a7b6cec769945759551f3e00a97e45",
+      "git_blob_sha": "7265e1e671d9f33fa7f84c3726e8846bb4e78e08",
       "mode": "100644"
     },
     {
       "path": "Sources/ModInstaller.swift",
-      "bytes": 13574,
-      "sha256": "209e3d57e014fb82665bb071ab392c845ca0ab2bdf622505ca16b7927a365494",
-      "git_blob_sha": "726024ea86b17cecd7929e4b35303b69a6009c06",
+      "bytes": 13867,
+      "sha256": "bc0247c0967ede30cd2143643d9dee52cad6771e96c8459a38b70c393ad0fd6b",
+      "git_blob_sha": "1d5667c2409de77977d4eec42b9a94cebbcc9257",
       "mode": "100644"
     },
     {
       "path": "Sources/ModPackage.swift",
-      "bytes": 19580,
-      "sha256": "83ef5c977fcef6b4a8bb66b8a2dd0536d0c49759c688ef92e26848d29f9c6236",
-      "git_blob_sha": "b184f1fabcf03afdb8b8299c9e4f6f4c95ae64b6",
+      "bytes": 42105,
+      "sha256": "3d26ce106c627a000f95d4d944f742fc1c585c700fdebad348cbb1d19397b641",
+      "git_blob_sha": "2e98c8730c709a8fa9b2a2cd6f170ed45c25157e",
+      "mode": "100644"
+    },
+    {
+      "path": "Sources/PCModelConverter.swift",
+      "bytes": 27300,
+      "sha256": "a67164eb9237b44f889850bcaabb5d32eda1c6f20bb6caf7f06464062b26475a",
+      "git_blob_sha": "e5385e0106c2dc2f366d7b73c63d63273031c1a2",
       "mode": "100644"
     },
     {
@@ -4993,9 +5565,9 @@
     },
     {
       "path": "Sources/ResourceLibrary.swift",
-      "bytes": 12887,
-      "sha256": "e62ea4367d0b18b351102975fd12dfce366462b931871ef2ccd2e3b129f03537",
-      "git_blob_sha": "31330018b6d2d85e6c6de27abfe268f939170ffe",
+      "bytes": 13279,
+      "sha256": "9349030e956c59ae9040c6d1526ab8f6e508392b821ef913dcc6ef3f1e61ab18",
+      "git_blob_sha": "dc581f3abb1f705c00de29f574793c3022ebaf61",
       "mode": "100644"
     },
     {
@@ -5049,9 +5621,9 @@
     },
     {
       "path": "SwitchIOSLab.xcodeproj/project.pbxproj",
-      "bytes": 26866,
-      "sha256": "17111837b562ce6b045d2e24a6fdded8e4ecf1e353ba16dd10b975708272455f",
-      "git_blob_sha": "9edb5b5670e2df6197d4e13ab59a49691e5c2a47",
+      "bytes": 27725,
+      "sha256": "c90ca70e1269d0fe3c3beb6190d2c0322879f231c106a6dc89682f4d88d31b6f",
+      "git_blob_sha": "0e8369db8424829d0c61df34349c1a1d869310a1",
       "mode": "100644"
     },
     {
@@ -5066,6 +5638,13 @@
       "bytes": 651,
       "sha256": "72ac497ec98574fe45d781b71cb2b2315d9e600132fa68cbc7c7203b62d1a792",
       "git_blob_sha": "39bf23a14a7188e9b4eacb5663cf64dbcedfa866",
+      "mode": "100644"
+    },
+    {
+      "path": "Tests/Auth3D/test_conversion.py",
+      "bytes": 3016,
+      "sha256": "5bb84a18df4b58f7f47c16b78572163456e115fcfc673f58dea8e305be7c0fc0",
+      "git_blob_sha": "f4e1023b1bd2dc4868cdefbc3b17daebad457218",
       "mode": "100644"
     },
     {
@@ -5146,6 +5725,20 @@
       "mode": "100644"
     },
     {
+      "path": "Tests/ModComposition/build_fixtures.py",
+      "bytes": 1019,
+      "sha256": "0fded030afdb2bdbb3d3765dc02426e3dce0d7ebf82d979b576090bf8f9939ba",
+      "git_blob_sha": "9c1fa7cb1cdf96a86fc8c77ebc2117634290809f",
+      "mode": "100644"
+    },
+    {
+      "path": "Tests/ModComposition/main.swift",
+      "bytes": 9642,
+      "sha256": "8d6e1f84aad265608ce0585a84d04fd20dafe2efb80d5e0c7dad7bf43dfabe17",
+      "git_blob_sha": "1fb212ea05fbd8a5b0bf083bfbe1babb7a11c2ca",
+      "mode": "100644"
+    },
+    {
       "path": "Tests/ModInstall/build_fixtures.py",
       "bytes": 2533,
       "sha256": "78c6a732e57d99cf41ce7153126a18f37ba9c4b34ea2496493f9ee868804688a",
@@ -5154,9 +5747,9 @@
     },
     {
       "path": "Tests/ModInstall/main.swift",
-      "bytes": 2071,
-      "sha256": "aee93d9c9660aef63fbd42b9839eaa24f6de49a7288f13556bdf8370bf2a73cd",
-      "git_blob_sha": "679dae0d1a7da29656606c319a4f7b0530adbeeb",
+      "bytes": 3910,
+      "sha256": "5e632b21e34a25ba4617b9ff8752ad959b277e57c5bea32f18710fe790774ef9",
+      "git_blob_sha": "1287ae11a601eb56003089f468bfc1b45a53b6c8",
       "mode": "100644"
     },
     {
@@ -5181,10 +5774,31 @@
       "mode": "100644"
     },
     {
+      "path": "Tests/MovieOrigin/main.m",
+      "bytes": 5643,
+      "sha256": "4218b01afabccec327421b5569a59028a3893b481f5a0887000da9bb9d786766",
+      "git_blob_sha": "ed4fe5a340e89b55345f55c58ba466e9bb8356c7",
+      "mode": "100644"
+    },
+    {
       "path": "Tests/NativeTouchTests.c",
       "bytes": 2850,
       "sha256": "b2978849322d7215945d18559e6f9bc6d1a4a80842d025ff2eddf09524d0c6b6",
       "git_blob_sha": "38c2d3d4f61e0fcdcb0bc24b45de67c4fff9087b",
+      "mode": "100644"
+    },
+    {
+      "path": "Tests/PCModelImport/main.swift",
+      "bytes": 9782,
+      "sha256": "15b0019e65e6f46de969283fc653d5508a51c085ceb633d69fccfa01a4f71a4d",
+      "git_blob_sha": "97a3b78865e20c3ee1a73a2946264714abac94c6",
+      "mode": "100644"
+    },
+    {
+      "path": "Tests/PresentCapture/main.m",
+      "bytes": 5021,
+      "sha256": "01cf0f8cb456b60d445ed53f8e542dd1da8e0cc81b9d0e49af7d467338a4b10e",
+      "git_blob_sha": "21767f1bb510f816ad3c0a0c0421b75c41c40b59",
       "mode": "100644"
     },
     {
@@ -5195,10 +5809,24 @@
       "mode": "100644"
     },
     {
+      "path": "Tests/RuntimeMods/main.swift",
+      "bytes": 10695,
+      "sha256": "3b1a8079f9de56a45f85b6548d98ca5cbd98bd794ab340ff60cb886dd790793c",
+      "git_blob_sha": "71221356569713cc07ad68952de6bfa9e7ae99e0",
+      "mode": "100644"
+    },
+    {
       "path": "Tests/ShaderAssets/main.swift",
       "bytes": 1629,
       "sha256": "dc8d102d9e8c1ec824d5fd58fb756319f15bebf1ff8e8b8921029e2213c70e9d",
       "git_blob_sha": "68635cefbd22ef6272b2d45ad36242f6a56eee44",
+      "mode": "100644"
+    },
+    {
+      "path": "Tests/USMVideo/test_stream.py",
+      "bytes": 2817,
+      "sha256": "344d560417317267e33054249a66367917dfcf2af7fabe7e6251b120748f7483",
+      "git_blob_sha": "a74ac59a286072765eeddc2c28d7377bdcb19e1e",
       "mode": "100644"
     },
     {
@@ -5342,6 +5970,20 @@
       "mode": "100644"
     },
     {
+      "path": "Tools/pc_mods/README.md",
+      "bytes": 9752,
+      "sha256": "47d487ce7a6650f2de245ca7985bf7f8a3f5bdf2bf96b634930352626b39e3f2",
+      "git_blob_sha": "31480947db5de04b6756105b8a433ca0c4f6c3d4",
+      "mode": "100644"
+    },
+    {
+      "path": "Tools/pc_mods/a3dc_to_a3da.py",
+      "bytes": 4886,
+      "sha256": "60d362104ae514056688dc45455fb1c7c79859068a44ca02dd8fcf6285e30d78",
+      "git_blob_sha": "e66d1c8bb775da1c74597e70e29867c843b670b0",
+      "mode": "100644"
+    },
+    {
       "path": "Tools/pc_mods/archive_reader.py",
       "bytes": 2688,
       "sha256": "c06844865ddd6163ef467b12fa04156b0cae6969c161c71667c7245cd85e8beb",
@@ -5402,6 +6044,13 @@
       "bytes": 3308,
       "sha256": "3de5ac97c801499e643c977ee73b69a304cdc6002235042e09fa9ce0523d5ad4",
       "git_blob_sha": "a54cfb23624b27114e8922428c738cc8ca97f6c3",
+      "mode": "100644"
+    },
+    {
+      "path": "Tools/pc_mods/usm_video.py",
+      "bytes": 7520,
+      "sha256": "25791ed1a614e89fd0dfeb89c4c6486266e184834848d57919b22bf2e71723f3",
+      "git_blob_sha": "e5c099e37d79093a65f1165fc9fc3595b3944a6f",
       "mode": "100644"
     },
     {

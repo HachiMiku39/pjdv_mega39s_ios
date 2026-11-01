@@ -2,6 +2,24 @@
 
 [简体中文](README.md) | **English**
 
+**0.1.5 build20 lightweight preview — November 1, 2026**
+
+This version fixes large Catch the Wave video-background gaps and adds native multi-selection/composition of prepared MOD packages, configuration saves, failure rollback, damaged-package isolation and full re-verification. It also converts the **exact Leo/need Module Pack 1.0.2** raw ZIP/folder inside the App. Unknown PC packages/versions, raw song packages, Windows DLLs and New Classics are not automatically compatible.
+
+MOD Manager → Add package → select one or more prepared packages → Load. Failures retain the previous configuration; load with every package deselected to restore the original game. Players need neither Xcode nor Python. Lightweight IPA/DMG only: no game/MOD payloads, XCI, keys or saves. Import your own assets; back up saves before an in-place update.
+
+The iPhone Air completed two background-fix PV runs, retry and sampled Spatial/HDR paths. MOD composition and Leo/need rely mainly on separately documented M4/Simulator evidence; **the complete new native-import → composition → manual gameplay → normal-score save → restart sequence has not passed physical-device acceptance**. Calc's inverted shots, SPiCa's crash, New Classics mechanics, a general manifest v2 and upgrade/save migration remain unfinished. [Release scope](Reports/RELEASE-build20-20261101.md) · [Background evidence](Reports/CATCH-WAVE-VIDEO-ORIGIN-20261101.md)
+
+[Download build20 preview](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b20)
+
+## Development validation history
+
+The following entries retain their original dated version status. “Local candidate / public installer remains build19” describes that historical stage; the build20 summary above defines this release.
+
+
+
+**Catch the Wave background fix, November 1, 2026 — local candidate:** Reproduced on iPhone Air at 1080p with HDR off and no MODs. The movie producer and postprocess chain used different active-region origins. The shared NVN→Metal path is corrected; device PV backgrounds display again, including playback/retry and sampled Spatial/HDR output. The Simulator has not been redeployed; this does not establish all-song compatibility or sustained performance. The public installer remains build19. [Bilingual evidence, validation limits and screenshots](Reports/CATCH-WAVE-VIDEO-ORIGIN-20261101.md)
+
 **Native raw-PC model import, October 31, 2026 — local candidate:** The App can recognize, convert and cache the exact Leo/need Module Pack 1.0.2 ZIP/folder, then let the player select and load it without Python or Xcode. DLC registry overrides causing missing portraits were corrected; Ichika was equipped and played Ai Kotoba in the Simulator. Other raw models/versions/songs still need adaptation; this is not universal PC-MOD support. The public installer remains build19. [Bilingual implementation, measurements and screenshots](Reports/NATIVE-PC-MODEL-IMPORT-20261031.md)
 
 **Local MOD inventory and loading work, October 31, 2026 — local candidate:** All 50 local folders are classified separately as gameplay samples, offline checks, conversion conflicts or unported Windows/New Classics dependencies. New gameplay samples cover four models and ten video-song packages, plus lyrics/alternate vocals. Single-package preparation no longer repeats its resource checks: median **118.45→60.52 ms for this phase**, not a 49% whole-song loading improvement. A bounded offline USM/VP9→MP4 helper is included; automatic in-App conversion of raw PC packages remains unfinished. Developer results stay in reports, outside the player manager. The public installer is still build19. [Bilingual package matrix/screenshots](Reports/LOCAL-MOD-MATRIX-20261031.md) · [Loading measurements, changes and next steps](Reports/LOADING-OPTIMIZATION-20261031.md)
@@ -30,7 +48,7 @@ An Apple Silicon compatibility-port research project for the **Japanese Switch v
 
 The runtime still uses the adapted JP v1.0.9 program; it does not execute arbitrary NSOs from a newly imported XCI. Removing import version restrictions does **not** establish runtime compatibility with every resource version or other regional executables. The launcher flags unknown resource versions as unverified. New imports record their contents in `game-content.json`; existing v1.0.9 folders remain supported. Separate ticket/TitleKey encryption needs further work. Missing required keys, conflicting updates and incomplete packages stop the import without modifying the source XCI.
 
-[Latest build 19 preview](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b19) · [Build 18](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b18) · [Build 17](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b17) · [Build 14](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b14) · [Build 10](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b10) · [Original build 7](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5) · [Installation guide](#choosing-an-installer)
+[Historical build 19 preview](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b19) · [Build 18](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b18) · [Build 17](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b17) · [Build 14](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b14) · [Build 10](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b10) · [Original build 7](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5) · [Installation guide](#choosing-an-installer)
 
 [Demo video on bilibili](https://www.bilibili.com/video/BV1KGni6YEZd/)
 

@@ -78,7 +78,10 @@ static void guest_boot_run(const char *rom,const char *dlc,const char *save,cons
     // variants again on a second boot, or shadow unrelated resource overrides.
     static char *base_overlay;static int base_overlay_captured;
     if(!base_overlay_captured){const char *v=getenv("DM_ROMFS_OVERLAY");base_overlay=v?strdup(v):NULL;base_overlay_captured=1;}
-    if(menu_root){char overlay[4096];const char *prior=base_overlay;
+    // The launcher now selects one prepared MOD per session. An empty value
+    // explicitly disables it; never resurrect the first session's MOD on reboot.
+    const char *session_overlay=getenv("PJDV_SESSION_OVERLAY");
+    if(menu_root){char overlay[4096];const char *prior=session_overlay?(*session_overlay?session_overlay:NULL):base_overlay;
         snprintf(overlay,sizeof overlay,"%s/%s%s%s",menu_root,tag,prior?":":"",prior?:"");setenv("DM_ROMFS_OVERLAY",overlay,1);
         LOG("PJDV exit menu: language=%s, original-font sprite override",tag);
     }

@@ -5,6 +5,24 @@ BETTER THAN MOST OF APPS
 
 **简体中文** | [English](README.en.md)
 
+**0.1.5 build20 精简预览｜2026-11-01**
+
+本版修复《Catch the Wave》视频背景大片黑区，加入已适配 MOD 的 App 内多选合并、组合存档、失败回滚、坏包隔离和完整重新校验，并支持 **Leo/need Module Pack 1.0.2 精确版本**原始 ZIP／文件夹的原生转换。未知 PC 包、其他版本、原始歌曲包、Windows DLL 和 New Classics 不会自动兼容。
+
+MOD 管理 → 添加包 → 勾选一个或多个已适配包 → 加载。失败保留上一套配置；取消全部勾选后加载可恢复原版。普通玩家无需 Xcode 或 Python。只提供不含游戏／MOD 资源、XCI、密钥或存档的精简 IPA／DMG，导入自己的资源。升级前备份存档并覆盖安装。
+
+iPhone Air 已完成背景修复的两轮 PV、重试及 MetalFX／HDR 抽样；MOD 多选和 Leo/need 流程主要沿用 M4／模拟器的分项证据，**尚未完成新版原始导入→组合→真人打歌→正常成绩保存→重启的整套真机验收**。Calc 部分镜头倒置、SPiCa 崩溃、New Classics 玩法、通用清单 v2 和升级存档迁移仍待完成。[本版说明](Reports/RELEASE-build20-20261101.md) · [背景修复证据](Reports/CATCH-WAVE-VIDEO-ORIGIN-20261101.md)
+
+[下载 build20 预览版](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b20)
+
+## 开发验证记录
+
+以下记录保留验证当日的版本状态；“本地候选／公开包仍为 build19”等表述是历史状态。本次发布范围以上方 build20 说明为准。
+
+
+
+**Catch the Wave 背景黑块（2026-11-01，本地候选）：** 在 iPhone Air、1080p、HDR 关闭且未启用 MOD 时复现，定位为视频背景与后期合成的有效区域坐标不一致。已修正共用 NVN→Metal 路径；真机 PV 背景恢复，并完成播放／重试及 MetalFX、HDR 输出抽样。模拟器尚未重新部署，不代表全曲帧率或其他歌曲已验收；公开安装包仍为 build19。[中英证据、检查边界与截图](Reports/CATCH-WAVE-VIDEO-ORIGIN-20261101.md)
+
 **原始 PC 模型包原生导入（2026-10-31，本地候选）：** Leo/need Module Pack 1.0.2 的 ZIP／文件夹可由 App 识别、转换、缓存，再自行勾选加载；玩家无需 Python 或 Xcode。修复 DLC 覆盖导致的底部头像缺失，已在模拟器实际装备星乃一歌并进入《愛言葉》打歌。只开放这一个精确版本，其他原始模型／歌曲包仍需适配；不是通用 PC MOD 兼容。公开安装包仍是 build19。[中英实现、测量与截图](Reports/NATIVE-PC-MODEL-IMPORT-20261031.md)
 
 **本地 MOD 全清单与载入优化（2026-10-31，本地候选）：** 已检查手头 50 个文件夹，逐项区分实际游玩抽样、离线检查、格式冲突和未移植的 Windows／New Classics 依赖；新增四个模型与十个视频曲包的演奏样本，并检查歌词／替换人声。修复单包启动的重复资源校验，准备阶段中位数由 118.45 ms 降为 60.52 ms，**不是整曲载入提速 49%**。新增流式 USM/VP9→MP4 离线辅助工具；原始 PC 包的 App 内自动转换仍未完成。开发测试结果只保存在报告，不放入玩家管理界面。公开安装包仍是 build19。[中英逐包清单与截图](Reports/LOCAL-MOD-MATRIX-20261031.md) · [载入测量、改进及下一步](Reports/LOADING-OPTIMIZATION-20261031.md)
@@ -27,14 +45,14 @@ BETTER THAN MOST OF APPS
 
 《初音未来 Project DIVA MEGA39’s》Switch JP v1.0.9 的 Apple Silicon 兼容移植研究。原游戏 ARM64 程序经 Horizon 服务兼容层运行，图形通过 **NVN → Metal** 输出。
 
-**0.1.5（build 18）验证预览｜2026-10-25。** 只发布不含游戏资源、密钥及个人存档的精简安装包，不再自动制作全量包。
+**0.1.5（build20）精简预览｜2026-11-01。** 只发布不含游戏资源、密钥及个人存档的精简安装包，不再自动制作全量包。
 
 **build10 更新（2026-10-22）**：导入端改为识别同一 MEGA39’s Title ID（0100F3100DA46000）的包内内容，不再要求固定 NCA 文件名、v1.0.9 资源指纹或恰好 27 DLC。按 CNMT 选择更新、实际 DLC 数量和完整语言资源；包内已有内容默认开放现存难度与服装。不支持的语言回落日语。
 
 运行端仍使用已适配的 JP v1.0.9 程序，不执行新 XCI 中的任意 NSO；因此解除导入版本限制不等于所有资源版本、其他地区代码均已兼容。未知资源版本在启动页明确提示待验证。新导入记录写入 `game-content.json`，已有 v1.0.9 文件夹继续兼容。独立票据／TitleKey 加密仍需后续支持；缺少所需密钥、冲突更新和不完整包会停止导入，不修改原 XCI。
 
 
-[最新 build19 预览版](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b19) · [build18](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b18) · [build17](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b17) · [build14](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b14) · [build10](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b10) · [原 build7](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5) · [安装与测试指南](#安装包怎么选)
+[历史 build19 预览版](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b19) · [build18](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b18) · [build17](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b17) · [build14](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b14) · [build10](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b10) · [原 build7](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5) · [安装与测试指南](#安装包怎么选)
 
 [演示视频（bilibili）](https://www.bilibili.com/video/BV1KGni6YEZd/)
 
