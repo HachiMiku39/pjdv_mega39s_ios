@@ -45,19 +45,22 @@ static int pjdv_profile_file(const char *dir,const char *backup_root){
     if(!result)LOG("PJDV unlock profile: songs=%u difficulty-flags=%u modules=%u items=%u (scores preserved)",changes.songs,changes.difficulties,changes.modules,changes.items);
     errno=saved;return result;
 }
-static void pjdv_profile_live(void){
+static void pjdv_profile_live_apply(int log_unchanged){
     if(!pjdv_unlock_enabled())return;
     for(int i=0;i<g_nmod;i++){
         module_t *m=&g_mod[i];if(strcmp(m->name,"main"))continue;
         // Fingerprints from the analyzed JP v1.0.9 image. A different binary
         // must not turn these BSS offsets into arbitrary writes.
+        if(m->size<0x4d0f18c8ull+PJDV_PROFILE_BYTES)return;
         uint32_t flag,module;memcpy(&flag,m->base+0xca300,4);memcpy(&module,m->base+0xc8850,4);
-        if(flag!=0x39447400 || module!=0x8b21c408 || m->size<0x4d0f18c8ull+PJDV_PROFILE_BYTES){
-            LOG("PJDV unlock: unsupported main layout, live profile unchanged");return;
+        if(flag!=0x39447400 || module!=0x8b21c408){
+            if(log_unchanged)LOG("PJDV unlock: unsupported main layout, live profile unchanged");return;
         }
         PjdvUnlockChanges changes;
-        if(pjdv_profile_unlock(m->base+0x4d0f18c8,PJDV_PROFILE_BYTES,&changes))
+        if(pjdv_profile_unlock(m->base+0x4d0f18c8,PJDV_PROFILE_BYTES,&changes) &&
+           (log_unchanged || changes.difficulties || changes.modules || changes.items))
             LOG("PJDV unlock live: songs=%u difficulty-flags=%u modules=%u items=%u",changes.songs,changes.difficulties,changes.modules,changes.items);
         return;
     }
 }
+static void pjdv_profile_live(void){pjdv_profile_live_apply(1);}

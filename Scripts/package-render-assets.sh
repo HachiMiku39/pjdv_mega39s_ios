@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 # The cache is a small, versioned host dependency; no ROM/DLC/key data.
-render_source="${PJDV_RENDER_SOURCE_DIR:-$SRCROOT/PrivateBuild/RendererAssets}"
+render_source="$SRCROOT/PrivateBuild/RendererAssets"
 render_chain=b-pjdv-842acf8d7583
 render_dest="$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/RendererAssets"
 test -s "$render_source/Shaders/shader_map.tsv"
@@ -25,3 +25,8 @@ cp "$SRCROOT/Assets/ControllerGlyphs/recipes.json" "$TARGET_BUILD_DIR/$UNLOCALIZ
 
 # Hash-only native PC model profiles; no third-party payloads.
 cp "$SRCROOT/Assets/PCModelProfiles.json" "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/PCModelProfiles.json"
+
+# BSD-licensed decoder fallback, independent of all game and MOD assets.
+mkdir -p "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/ThirdPartyNotices"
+cp "$SRCROOT/ThirdParty/libvpx-1.17.0/LICENSE" "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/ThirdPartyNotices/libvpx-LICENSE.txt"
+cp "$SRCROOT/ThirdParty/libvpx-1.17.0/PATENTS" "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/ThirdPartyNotices/libvpx-PATENTS.txt"

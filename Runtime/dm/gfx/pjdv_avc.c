@@ -50,10 +50,12 @@ static void avc_client_nv12(void *self,void *buffer,int color,int stride,int sli
     int w=*(const int *)(impl+0x38),h=*(const int *)(impl+0x3c);
     if(color==21)return; // OMX_COLOR_FormatYUV420SemiPlanar is already NV12.
     // SoftAVC copies the visible picture into a packed output range, while its
-    // port metadata can retain the coded macroblock height (1088 for 1080p).
+    // port metadata can retain coded macroblock dimensions (1920x1088 for
+    // a visible 1916x1080 picture). Neither stride nor slice describes padding
+    // in this packed client payload; its exact byte count is checked below.
     // Validate the actual range below; do not mistake that metadata for padding
     // in the returned payload or move the chroma planes by eight extra rows.
-    if(color!=19 || w<=0 || h<=0 || w>4096 || h>4096 || (w&1) || (h&1) || stride!=w || slice<h || slice>4096 || (slice&1) ||
+    if(color!=19 || w<=0 || h<=0 || w>4096 || h>4096 || (w&1) || (h&1) || stride<w || stride>4096 || (stride&1) || slice<h || slice>4096 || (slice&1) ||
        offset<0 || (uint64_t)offset>capacity || !base ||
        (uint64_t)bytes>capacity-(uint64_t)offset || (uint64_t)bytes!=(uint64_t)w*h*3/2)
         die("PJDV unsupported movie client layout: format=%d dimensions=%dx%d stride=%d slice=%d bytes=%d offset=%d capacity=%llu",color,w,h,stride,slice,bytes,offset,capacity);

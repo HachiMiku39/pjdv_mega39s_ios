@@ -3,7 +3,19 @@ import UniformTypeIdentifiers
 
 extension RuntimeModCatalog {
     static var current: RuntimeModCatalog {
-        RuntimeModCatalog(root: ResourceLibrary.appDataRoot.appendingPathComponent("Mods/Ready", isDirectory: true), defaults: .standard)
+        let root=ResourceLibrary.appDataRoot.appendingPathComponent("Mods/Ready",isDirectory:true)
+        #if targetEnvironment(macCatalyst)
+        if ProcessInfo.processInfo.environment["PJDV_APP_DATA_TEST_ROOT"] != nil {
+            // Developer trials may keep large packages on another volume while
+            // transactional saves remain on APFS. Anchor validation at the
+            // resolved catalog root; links inside individual packages stay rejected.
+            let resolved=root.resolvingSymlinksInPath()
+            if let defaults=UserDefaults(suiteName:"PJDV.ModTrial."+ModFormats.sha(Data(resolved.path.utf8))) {
+                return RuntimeModCatalog(root:resolved,defaults:defaults)
+            }
+        }
+        #endif
+        return RuntimeModCatalog(root:root,defaults:.standard)
     }
 }
 
@@ -60,7 +72,7 @@ final class ModImportController: UITableViewController, UIDocumentPickerDelegate
         L(section == 0 ? "添加 MOD" : section == 1 ? "启用 MOD" : section == 2 ? "暂不能加载" : section == 3 ? "已下载的压缩包" : "状态")
     }
     override func tableView(_ tableView:UITableView,titleForFooterInSection section:Int)->String? {
-        section == 0 ? L("原始 PC 包目前支持 Leo/need 1.0.2；其他包请使用已适配版本。") : section == 1 ? L("可同时启用多个 MOD，加载时自动处理组合。") : section == 3 ? L("下载文件会保留，轻点可重新导入；7z／RAR 需先解压。") : nil
+        section == 0 ? L("支持资源型模型包和常规视频歌曲包；特殊玩法及插件需适配。") : section == 1 ? L("可同时启用多个 MOD，加载时自动处理组合。") : section == 3 ? L("下载文件会保留，轻点可重新导入；7z／RAR 需先解压。") : nil
     }
     override func tableView(_ tableView:UITableView,cellForRowAt indexPath:IndexPath)->UITableViewCell {
         let cell=UITableViewCell(style:.subtitle,reuseIdentifier:nil)
@@ -286,13 +298,16 @@ final class ModImportController: UITableViewController, UIDocumentPickerDelegate
                         }
                     }) != nil { return true }
                     let profileURL=Bundle.main.url(forResource:"PCModelProfiles",withExtension:"json")
-                    if let profileURL,let candidate=try PCModelConverter.recognize(package.root,profiles:PCModelConverter.profiles(profileURL),progress:progress,report:{update in
+                    let knownProfiles=try profileURL.map{try PCModelConverter.profiles($0)} ?? []
+                    let recognizeReport:(ModInstallUpdate)->Void={update in
                         DispatchQueue.main.async { [weak self] in
                             guard let self else{return};self.status=L(update.phase)
                             self.fraction=update.total>0 ? Float(Double(update.completed)/Double(update.total)):0
                             self.tableView.reloadSections(IndexSet(integer:4),with:.none)
                         }
-                    }) {
+                    }
+                    if let candidate=try PCModelConverter.recognize(package.root,profiles:knownProfiles,progress:progress,report:recognizeReport)
+                        ?? PCModelConverter.recognizeResourceModel(package.root,progress:progress,report:recognizeReport) {
                         let resources=try ResourceLibrary.open(),layout=try ResourceLayout.locate(resources.root)
                         _=try PCModelConverter.convert(candidate,base:layout.rom,dlc:layout.dlc,catalog:RuntimeModCatalog.current,progress:progress) {update in
                             DispatchQueue.main.async { [weak self] in
@@ -306,6 +321,17 @@ final class ModImportController: UITableViewController, UIDocumentPickerDelegate
                         // selected ZIP/folder, installed MODs and saves survive.
                         try? FileManager.default.removeItem(at:package.root)
                         return true
+                    }
+                    if let candidate=try PCSongConverter.recognize(package.root,progress:progress,report:recognizeReport) {
+                        let resources=try ResourceLibrary.open(),layout=try ResourceLayout.locate(resources.root)
+                        _=try PCSongConverter.convert(candidate,base:layout.rom,dlc:layout.dlc,catalog:RuntimeModCatalog.current,progress:progress) {update in
+                            DispatchQueue.main.async { [weak self] in
+                                guard let self else{return};self.status=L(update.phase)
+                                self.fraction=update.total>0 ? Float(Double(update.completed)/Double(update.total)):0
+                                self.tableView.reloadSections(IndexSet(integer:4),with:.none)
+                            }
+                        }
+                        withExtendedLifetime(resources){};try? FileManager.default.removeItem(at:package.root);return true
                     }
                     try registry.register(package.root,inspection:package.inspection,name:package.name)
                     return false

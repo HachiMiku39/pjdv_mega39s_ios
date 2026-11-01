@@ -12,7 +12,7 @@ enum ModComposition {
     final class Pack {
         let item:RuntimeMod;let files:[String:File]
         var objects=[F.ObjectSet](),textures=[F.Named](),modules=[Props]()
-        var objectMap=[Int:Int](),textureMap=[Int:Int](),moduleMap=[Int:Int]()
+        var objectMap=[Int:Int](),textureMap=[Int:Int](),moduleMap=[Int:Int](),accessoryMap=[Int:Int]()
         var itemMaps=[String:[Int:Int]](),costumeMaps=[String:[Int:Int]]()
         var objectNames=[String:String](),archiveNames=[String:String](),textureNames=[String:String]()
         var objectHashes=[String:String](),textureHashes=[Int:String]()
@@ -21,7 +21,7 @@ enum ModComposition {
         init(_ item:RuntimeMod,_ files:[String:File]){self.item=item;self.files=files}
     }
     struct Receipt:Codable {let key:String;let files:[RuntimeMod.Check];let generated:[String]}
-    static let revision="native-composition-3"
+    static let revision="native-composition-8"
     static func identity(_ items:[RuntimeMod])->String {
         let raw=items.map{$0.id.uuidString}.sorted().joined(separator:"\n")
         let h=F.sha(Data(raw.utf8));return String(h.prefix(32))
@@ -120,7 +120,7 @@ enum ModComposition {
                 for rom in roms {
                     var paths=(try? fm.contentsOfDirectory(at:rom,includingPropertiesForKeys:nil,options:.skipsHiddenFiles)) ?? []
                     paths += ((try? fm.contentsOfDirectory(at:rom.appendingPathComponent("objset"),includingPropertiesForKeys:nil,options:.skipsHiddenFiles)) ?? [])
-                    for p in paths where p.lastPathComponent.hasSuffix("chritm_prop.farc") || p.lastPathComponent.hasSuffix("module_tbl.farc") || p.lastPathComponent.hasSuffix("obj_db.bin") || p.lastPathComponent.hasSuffix("tex_db.bin") {
+                    for p in paths where p.lastPathComponent.hasSuffix("chritm_prop.farc") || p.lastPathComponent.hasSuffix("module_tbl.farc") || p.lastPathComponent=="gm_customize_item_tbl.farc" || p.lastPathComponent.hasSuffix("obj_db.bin") || p.lastPathComponent.hasSuffix("tex_db.bin") {
                         let rel=String(p.path.dropFirst(root.path.count+1));if let previous=originals[rel],previous != p {throw ModLoadError.invalid};originals[rel]=p
                     }
                 }
@@ -167,9 +167,9 @@ enum ModComposition {
             try objectPayloads();progress.completedUnitCount=2
             try costumes();progress.completedUnitCount=3
             try modules();progress.completedUnitCount=4
-            try stringTables();progress.completedUnitCount=5
+            try accessories();try stringTables();progress.completedUnitCount=5
             try sprites();progress.completedUnitCount=6
-            try settings();progress.completedUnitCount=7
+            try settings();try moviePlaylists();progress.completedUnitCount=7
             try remainder();progress.completedUnitCount=8
         }
         func fingerprint(_ pack:Pack,_ file:File)throws->String {
@@ -424,11 +424,53 @@ enum ModComposition {
                 try write(rel,F.archiveData(blocks));handled.insert(rel)
             }
         }
+        func accessories()throws {
+            let paths=originals.keys.filter{$0.hasSuffix("gm_customize_item_tbl.farc")}.sorted()
+            var used=Set<Int>(),prior=[Int:[Props]](),added=[Props]()
+            for rel in paths {for block in try readArchive(rel){for row in F.group(try F.properties(block.data),"cstm_item"){let id=try number(row,"id");used.insert(id);prior[id,default:[]].append(row)}}}
+            // Module and accessory thumbnails share the CMNITM namespace.
+            for pack in packs{used.formUnion(pack.moduleMap.values)}
+            var free=(0...1200).filter{!used.contains($0)}
+            let character=["MIKU":"mikitm","RIN":"rinitm","LEN":"lenitm","LUKA":"lukitm","MEIKO":"meiitm","KAITO":"kaiitm"]
+            for pack in packs {
+                var delta=[Int:Props]()
+                for rel in pack.files.keys.sorted() where rel.hasSuffix("gm_customize_item_tbl.farc") {
+                    for block in try F.archive(F.read(pack.files[rel]!.url)){for row in F.group(try F.properties(block.data),"cstm_item") {
+                        let old=try number(row,"id");if (prior[old] ?? []).contains(row){continue}
+                        guard prior[old]==nil else{throw ModLoadError.unsupported}
+                        if let previous=delta[old],previous != row{throw ModLoadError.invalid};delta[old]=row
+                    }}
+                }
+                for old in delta.keys.sorted() {
+                    guard !free.isEmpty else{throw ModLoadError.limit};let id=free.removeFirst();var row=delta[old]!
+                    let obj=try number(row,"obj_id");guard let char=row["chara"],let stem=character[char] else{throw ModLoadError.unsupported}
+                    row["id"]=String(id);row["obj_id"]=String(pack.itemMaps[stem+"_tbl.txt"]?[obj] ?? obj)
+                    if let bind=Int(row["bind_module"] ?? "-1"),bind>=0{row["bind_module"]=String(pack.moduleMap[bind] ?? bind)}
+                    pack.accessoryMap[old]=id;added.append(row)
+                }
+            }
+            for rel in paths {
+                var blocks=try readArchive(rel)
+                for i in blocks.indices {
+                    let d=try F.properties(blocks[i].data),rows=F.group(d,"cstm_item")
+                    if !rows.isEmpty{blocks[i].data=try F.propertyData(F.setGroup(d,"cstm_item",rows+added,countKey:"cstm_item.data_list.length"))}
+                }
+                try write(rel,F.archiveData(blocks));handled.insert(rel)
+            }
+        }
         func stringTables()throws {
             let paths=Set(packs.flatMap{$0.files.keys.filter{$0.hasSuffix("/str_array.bin")}})
             for rel in paths.sorted() {
                 guard let p=try original(rel) else {throw ModLoadError.unsupported};let raw=try F.read(p),before=try F.strings(raw)
-                var changes=[Int:String](),owners=[Int:String]()
+                var changes=[Int:String](),owners=[Int:String](),accessoryOffset:Int?
+                if packs.contains(where:{!$0.accessoryMap.isEmpty}) {
+                    let jp=p.deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("jp/str_array.bin")
+                    let labels=try F.strings(F.read(jp))
+                    let rows=try originals.keys.filter{$0.hasSuffix("gm_customize_item_tbl.farc")}.flatMap{try readArchive($0)}.flatMap{try F.group(F.properties($0.data),"cstm_item")}
+                    let offsets=Set(rows.compactMap{r -> Int? in guard let id=Int(r["id"] ?? ""),let name=r["name"],let pos=labels.firstIndex(of:name) else{return nil};return pos-id})
+                    accessoryOffset=offsets.sorted().first{offset in rows.filter{r in guard let id=Int(r["id"] ?? ""),let name=r["name"],(0..<labels.count).contains(id+offset) else{return false};return labels[id+offset]==name}.count>=min(3,rows.count)}
+                    guard accessoryOffset != nil else{throw ModLoadError.unsupported}
+                }
                 func set(_ slot:Int,_ value:String,_ pack:Pack)throws {
                     if let old=changes[slot],old != value {try fail(owners[slot] ?? "MOD",pack.item.name)}
                     changes[slot]=value;owners[slot]=pack.item.name
@@ -436,9 +478,10 @@ enum ModComposition {
                 for pack in packs {if let file=pack.files[rel] {
                     let values=try F.strings(F.read(file.url));guard values.count==before.count else {throw ModLoadError.unsupported}
                     for (i,value) in values.enumerated() where value != before[i] {
-                        if pack.moduleMap[i-220] != nil {continue};try set(i,value,pack)
+                        if pack.moduleMap[i-220] != nil || accessoryOffset.map({pack.accessoryMap[i-$0] != nil})==true {continue};try set(i,value,pack)
                     }
                     for (old,new) in pack.moduleMap {guard old+220<values.count else {throw ModLoadError.invalid};try set(new+220,values[old+220],pack)}
+                    if let offset=accessoryOffset {for (old,new) in pack.accessoryMap {guard old+offset<values.count else{throw ModLoadError.invalid};try set(new+offset,values[old+offset],pack)}}
                 }}
                 try write(rel,F.changeStrings(raw,changes));handled.insert(rel)
             }
@@ -455,7 +498,7 @@ enum ModComposition {
             }}}
             var usedSets=Set(known.values.map(\.id)),usedMembers=Set(memberNamesByID.keys)
             var nextSet=(usedSets.max() ?? 0)+1,nextMember=(usedMembers.max() ?? 0)+1
-            var additions=[String:F.SpriteSet](),additionOwner=[String:String]()
+            var additions=[String:F.SpriteSet](),additionOwner=[String:String](),videoThumbnails=[String:[(Pack,F.SpriteSet)]]()
             func add(_ row:F.SpriteSet,_ pack:Pack)throws {
                 if let old=additions[row.name],old != row {try fail(additionOwner[row.name] ?? "MOD",pack.item.name)}
                 additions[row.name]=row;additionOwner[row.name]=pack.item.name
@@ -469,7 +512,18 @@ enum ModComposition {
                     let prior=Dictionary(uniqueKeysWithValues:(spriteBase[rel] ?? []).map{($0.name,$0)})
                     for row in try F.sprites(F.read(pack.files[rel]!.url)) {
                         spriteArchives.insert((row.file as NSString).deletingPathExtension+".farc")
-                        if pack.moduleMap.keys.contains(where:{row.name==String(format:"SPR_SEL_MD%03dCMN",$0) || row.name==String(format:"SPR_CMNITM_THMB%03d",$0)}) {continue}
+                        if pack.item.format=="pjdv-runtime-song-v1",row.name=="SPR_SEL_PVTMB",row != prior[row.name] {
+                            let archive=(rel as NSString).deletingLastPathComponent+"/"+(row.file as NSString).deletingPathExtension+".farc"
+                            if pack.files[archive] != nil {videoThumbnails[rel,default:[]].append((pack,row))}
+                            else {
+                                // Converted DLC registries intentionally share
+                                // the base atlas. Accept only an exact alias of
+                                // this package's expanded primary lookup.
+                                guard let primary=pack.files["rom_switch/rom/2d/spr_db.bin"],try F.sprites(F.read(primary.url)).contains(row) else{throw ModLoadError.invalid}
+                            }
+                            continue
+                        }
+                        if pack.moduleMap.keys.contains(where:{row.name==String(format:"SPR_SEL_MD%03dCMN",$0) || row.name==String(format:"SPR_CMNITM_THMB%03d",$0)}) || pack.accessoryMap.keys.contains(where:{row.name==String(format:"SPR_CMNITM_THMB%03d",$0)}) {continue}
                         if row==prior[row.name]{continue}
                         if let old=seen[row.name],old != row {throw ModLoadError.invalid};seen[row.name]=row
                     }
@@ -503,18 +557,27 @@ enum ModComposition {
                         // Names may alias several IDs across atlases; indices
                         // are local to each set. Only an ID pointing at a
                         // different name is an unresolved reference collision.
-                        for member in row.members {if let prior=memberNamesByID[member.id],prior != member.name {throw ModLoadError.conflict(pack.item.name)};usedMembers.insert(member.id)}
+                        for i in row.members.indices {
+                            let member=row.members[i]
+                            if let prior=memberNamesByID[member.id],prior != member.name {
+                                guard pack.item.format=="pjdv-runtime-song-v1" else{throw ModLoadError.conflict(pack.item.name)}
+                                while usedMembers.contains(nextMember){nextMember+=1};row.members[i].id=nextMember;nextMember+=1
+                            }
+                            usedMembers.insert(row.members[i].id)
+                        }
                     }
                     additions[name]=row;additionOwner[name]=pack.item.name
                     known[name]=row;for member in row.members{members[member.name]=member;memberNamesByID[member.id]=member.name}
                 }
             }
             nextSet=max(nextSet,(usedSets.max() ?? 0)+1);nextMember=max(nextMember,(usedMembers.max() ?? 0)+1)
-            for pack in packs where !pack.moduleMap.isEmpty {
+            for pack in packs where !pack.moduleMap.isEmpty || !pack.accessoryMap.isEmpty {
                 guard let file=pack.files["rom_switch/rom/2d/spr_db.bin"] ?? pack.files.first(where:{$0.key.hasSuffix("/2d/spr_db.bin")})?.value else {throw ModLoadError.invalid}
                 let source=Dictionary(uniqueKeysWithValues:try F.sprites(F.read(file.url)).map{($0.name,$0)})
-                for (old,new) in pack.moduleMap.sorted(by:{$0.key<$1.key}) {
-                    for template in ["SPR_SEL_MD%03dCMN","SPR_CMNITM_THMB%03d"] {
+                let mappings=pack.moduleMap.sorted(by:{$0.key<$1.key}).map{($0.key,$0.value,["SPR_SEL_MD%03dCMN","SPR_CMNITM_THMB%03d"])}
+                    + pack.accessoryMap.sorted(by:{$0.key<$1.key}).map{($0.key,$0.value,["SPR_CMNITM_THMB%03d"])}
+                for (old,new,templates) in mappings {
+                    for template in templates {
                         let oldName=String(format:template,old),newName=String(format:template,new)
                         guard var row=source[oldName] else {throw ModLoadError.invalid}
                         row.id=known[newName]?.id ?? nextSet;if known[newName]==nil {nextSet+=1};row.name=newName
@@ -533,12 +596,103 @@ enum ModComposition {
                     }
                 }
             }
+            var thumbnailRows=[String:F.SpriteSet]()
+            for rel in videoThumbnails.keys.sorted() {
+                guard let before=(spriteBase[rel] ?? []).first(where:{$0.name=="SPR_SEL_PVTMB"}) else{throw ModLoadError.invalid}
+                let archive=(rel as NSString).deletingLastPathComponent+"/"+(before.file as NSString).deletingPathExtension+".farc"
+                guard let p=try original(archive) else{throw ModLoadError.invalid}
+                let blocks=try F.archive(F.read(p));guard blocks.count==1 else{throw ModLoadError.unsupported}
+                var payload=try F.SpritePayload(blocks[0].data),row=before
+                for (pack,sourceRow) in videoThumbnails[rel]! {
+                    guard sourceRow.id==before.id,sourceRow.file==before.file,before.members.allSatisfy({sourceRow.members.contains($0)}),let file=pack.files[archive] else{throw ModLoadError.unsupported}
+                    let sourceBlocks=try F.archive(F.read(file.url));guard sourceBlocks.count==1 else{throw ModLoadError.unsupported}
+                    let source=try F.SpritePayload(sourceBlocks[0].data)
+                    for member in sourceRow.members where !member.texture && !before.members.contains(member) {
+                        guard !row.members.contains(where:{$0.name==member.name}) else{throw ModLoadError.conflict(pack.item.name)}
+                        guard source.names.indices.contains(member.index) else{throw ModLoadError.invalid}
+                        let textureIndex=payload.textures.count
+                        let position=try payload.add(from:source,index:member.index,name:source.names[member.index],texturePrefix:"PJDV_"+String(pack.item.id.uuidString.prefix(8))+"_")
+                        // Match the texture label written into the SPR payload;
+                        // a different DB name leaves a registered sprite blank.
+                        let textureName="SPRTEX_SEL_PVTMB_"+payload.textureNames[textureIndex]
+                        for (name,index,isTexture) in [(member.name,position,false),(textureName,textureIndex,true)] {
+                            let id:Int
+                            if let existing=members[name]{id=existing.id}
+                            else{while usedMembers.contains(nextMember){nextMember+=1};id=nextMember;nextMember+=1;usedMembers.insert(id);members[name] = .init(id:id,name:name,index:index,texture:isTexture)}
+                            row.members.append(.init(id:id,name:name,index:index,texture:isTexture))
+                        }
+                    }
+                }
+                thumbnailRows[rel]=row;try write(archive,F.archiveData([.init(name:blocks[0].name,data:payload.data())]));handled.insert(archive)
+            }
             for rel in paths.sorted() {
                 var rows=spriteBase[rel] ?? [];var indices=Dictionary(uniqueKeysWithValues:rows.enumerated().map{($0.element.name,$0.offset)})
                 for name in additions.keys.sorted(){let row=additions[name]!;if let i=indices[name]{rows[i]=row}else{indices[name]=rows.count;rows.append(row)}}
+                // DLC registries are loaded after the base DB and can replace
+                // its shared thumbnail lookup without owning an atlas. Carry
+                // the expanded lookup into those registries too; native image
+                // reads still use the original language-specific atlas paths.
+                if let thumbnail=thumbnailRows[rel] ?? thumbnailRows["rom_switch/rom/2d/spr_db.bin"] {
+                    if let i=rows.firstIndex(where:{$0.name==thumbnail.name}) {
+                        let old=rows[i]
+                        guard old.id==thumbnail.id,old.file==thumbnail.file,old.members.allSatisfy({thumbnail.members.contains($0)}) else{throw ModLoadError.unsupported}
+                        rows[i]=thumbnail
+                    } else {rows.append(thumbnail)}
+                }
                 guard Set(rows.map(\.id)).count==rows.count else {throw ModLoadError.conflict("角色图片")}
                 var ids=[Int:String]();for row in rows{for member in row.members{if let old=ids[member.id],old != member.name{throw ModLoadError.conflict("角色图片")};ids[member.id]=member.name}}
                 try write(rel,F.spriteData(rows));handled.insert(rel)
+            }
+        }
+        func moviePlaylists()throws {
+            // Each converted movie pack carries a full baseline playlist plus
+            // its additions. Merge by song identity, never by row position.
+            for rel in Set(packs.flatMap{$0.files.keys}).filter({$0.hasSuffix("/gm_pv_list_tbl.farc")}).sorted() {
+                let inputs=packs.compactMap{pack in pack.files[rel].map{(pack,$0)}}
+                guard inputs.count>1,Set(inputs.map{$0.1.check.sha256}).count>1,
+                      inputs.allSatisfy({$0.0.item.format=="pjdv-runtime-song-v1"}) else {continue}
+                var blocks=try readArchive(rel)
+                let sources=try inputs.map{($0.0,try F.archive(F.read($0.1.url)))}
+                let names=blocks.map(\.name)
+                guard Set(names).count==names.count else {throw ModLoadError.invalid}
+                for (_,source) in sources {
+                    guard source.map(\.name).sorted()==names.sorted() else {throw ModLoadError.unsupported}
+                }
+                func parsed(_ data:Data)throws->(Props,[Props],[Int:Props]) {
+                    let d=try F.properties(data),rows=F.group(d,"pv_list")
+                    guard let count=d["pv_list.data_list.length"],count==String(rows.count),rows.count<=65536 else {throw ModLoadError.invalid}
+                    // Reconstruct to reject holes, alternate indices and
+                    // unknown playlist metadata rather than silently dropping it.
+                    guard F.setGroup(d,"pv_list",rows,countKey:"pv_list.data_list.length")==d else {throw ModLoadError.unsupported}
+                    var ids=[Int:Props]()
+                    for row in rows {
+                        guard let raw=row["id"],let id=Int(raw),id>=0,raw==String(id),ids[id]==nil else {throw ModLoadError.invalid}
+                        ids[id]=row
+                    }
+                    return (d,rows,ids)
+                }
+                for i in blocks.indices {
+                    // Non-playlist archive members must be byte-identical.
+                    if blocks[i].name != "gm_pv_list.bin" {
+                        guard sources.allSatisfy({$0.1.first(where:{$0.name==blocks[i].name})?.data==blocks[i].data}) else {throw ModLoadError.unsupported}
+                        continue
+                    }
+                    let (before,rows,old)=try parsed(blocks[i].data)
+                    var additions=[Int:Props](),owners=[Int:String]()
+                    for (pack,source) in sources {
+                        let (d,_,ids)=try parsed(source.first{$0.name==blocks[i].name}!.data)
+                        guard d.filter({!$0.key.hasPrefix("pv_list.")})==before.filter({!$0.key.hasPrefix("pv_list.")}),
+                              old.allSatisfy({ids[$0.key]==$0.value}) else {throw ModLoadError.unsupported}
+                        for (id,row) in ids where old[id]==nil {
+                            guard (1...999).contains(id) else {throw ModLoadError.unsupported}
+                            if let previous=additions[id],previous != row {try fail(owners[id] ?? "MOD",pack.item.name)}
+                            additions[id]=row;owners[id]=pack.item.name
+                        }
+                    }
+                    blocks[i].data=try F.propertyData(F.setGroup(before,"pv_list",rows+additions.keys.sorted().map{additions[$0]!},countKey:"pv_list.data_list.length"))
+                }
+                guard names.contains("gm_pv_list.bin") else {throw ModLoadError.unsupported}
+                try write(rel,F.archiveData(blocks));handled.insert(rel)
             }
         }
         func mergeProperties(_ base:Props,_ sources:[(Pack,Props)])throws->Props {

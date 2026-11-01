@@ -315,7 +315,7 @@ struct ModRegistry {
 // runs plugin code.
 struct RuntimeMod: Codable {
     struct Check: Codable { let path: String; let bytes: UInt64; let sha256: String }
-    // A separate model-conversion contract: older clients must reject this
+    // A separate native-conversion contract: older clients must reject this
     // format rather than silently ignore its DLC baseline requirements.
     struct Conversion: Codable {
         let converter:String
@@ -380,7 +380,7 @@ struct RuntimeModCatalog {
     func directory(_ item: RuntimeMod) -> URL { root.appendingPathComponent(item.id.uuidString, isDirectory: true) }
     private func validate(_ item: RuntimeMod) throws {
         guard (item.format == "pjdv-runtime-mod-v1" && item.conversion==nil) ||
-              (item.format == "pjdv-runtime-model-v1" && item.conversion != nil) else {throw ModPackageError.invalidRecord}
+              (["pjdv-runtime-model-v1","pjdv-runtime-song-v1"].contains(item.format) && item.conversion != nil) else {throw ModPackageError.invalidRecord}
         guard !item.name.isEmpty, item.name.utf8.count <= 256,
               item.notes.utf8.count <= 4096, (1...4).contains(item.layers.count), Set(item.layers).count == item.layers.count,
               (1...32).contains(item.baseChecks.count), (1...50000).contains(item.files.count) else { throw ModPackageError.invalidRecord }

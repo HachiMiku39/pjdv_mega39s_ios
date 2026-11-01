@@ -1,5 +1,13 @@
 # 本地 PC MOD 转换试验 / Local PC MOD conversion trials
 
+2026-11-01 完整包后续：Heavy Metal 14 首和 Rock 19 首经开发适配后在 App 分别导入、组合，随机四首 EXTREME 整曲完成；修复 1916 像素视频输出及分数时间基准限制。测试转换产物已按要求删除，原始包与证据保留。**原始 Eden 整包直接导入仍待完成。** [中英结果与空间清理](../../Reports/EDEN-FULL-PACKS-20261101.md)。Complete-pack follow-up: all 33 songs were retained in two developer-adapted packs; four preselected random EXTREME songs completed on Mac. Trial assets were removed after testing; raw Eden import/persistent IDs remain pending.
+
+最新本地候选：资源型模型与常规视频歌曲已有 App 内结构识别和转换，见 [2026-11-01 验证](../../Reports/NATIVE-RESOURCE-MODS-20261101.md)。Eden 的 15 包、编号／登记限制及导入存储优化另见 [Eden 与空间检查](../../Reports/EDEN-STORAGE-20261101.md)。下文保留各工具原验证日期的范围，不代表当前发布包已支持任意 Mod。
+
+Latest local candidate: structural resource-model and conventional movie-song conversion runs inside the App; see the November 1 validation above. The Eden report covers all 15 local packs, ID/registry blockers and import storage changes. The entries below retain their original dated tool scopes; they do not promise universal support in the public installer.
+
+Eden 后续单曲测试：Beginner／Catchy Pop／Vibes 三个开发子集由 App 独立转换并组合，已完整结算；临时编号不等于原始整包导入。修复歌词字库配对和独立歌曲列表合并，见 [中英证据](../../Reports/EDEN-PLAYBACK-20261101.md)。Eden follow-up: three developer single-song subsets completed native conversion/composition and full songs; complete raw-pack import and persistent IDs remain pending.
+
 ## App 原生模型导入 / Native model import (2026-10-31)
 
 本地源码候选已内置 **Leo/need Module Pack 1.0.2** 的原生 ZIP／文件夹转换路径，导入后自行勾选加载；这一包不需要玩家运行下述离线工具。支持范围按完整载荷哈希识别，其他原始模型和歌曲包仍需适配。配置仅含哈希，不含 MOD；新结果格式为 `pjdv-runtime-model-v1`。公开安装包仍为 build19。[中英验证报告](../../Reports/NATIVE-PC-MODEL-IMPORT-20261031.md)

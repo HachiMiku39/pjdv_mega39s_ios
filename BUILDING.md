@@ -1,8 +1,8 @@
 # 源码与构建（2026-10-25）
 
-本仓库包含 Swift/UIKit 宿主、Mac AppKit 辅助组件、NVN → Metal／Horizon 兼容层、逆向工具和测试。公开源码与精简预览包为 **0.1.5 build19**。AutoPlay、调试信息和热切换的实际验证范围及限制见中英文 README。游戏资源、密钥、存档和本机签名数据不发布。
+本仓库包含 Swift/UIKit 宿主、Mac AppKit 辅助组件、NVN → Metal／Horizon 兼容层、逆向工具和测试。公开源码与精简预览包为 **0.1.5 build21**。AutoPlay、调试信息和热切换的实际验证范围及限制见中英文 README。游戏资源、密钥、存档和本机签名数据不发布。
 
-The public source and lightweight preview installers are **0.1.5 build19**. Both READMEs describe measured AutoPlay, diagnostics and hot-switch checks and outstanding limitations. Game payloads, keys, saves and local signing data are excluded.
+The public source and lightweight preview installers are **0.1.5 build21**. Both READMEs describe measured AutoPlay, diagnostics and hot-switch checks and outstanding limitations. Game payloads, keys, saves and local signing data are excluded.
 
 ## 源码目录
 
@@ -149,3 +149,11 @@ The importer uses bounded chunks and does not activate imported packages. Only e
 发布基线为当前已公开源码，加上共用视频背景原点修正。版本号为 0.1.5 / 20；构建及测试输出放外置 SSD。公开源码不含 `PrivateBuild`、生成的游戏程序段或游戏载荷，须按本文件已有步骤自行准备输入。独立合成检查可运行 `Scripts/test-movie-origin.sh` 和 `Scripts/test-present-capture.sh`，设置 `PJDV_RUNTIME_SOURCE` 为 `Runtime/dm` 目录、`PJDV_TEST_ROOT` 为新的外置 SSD 目录；需要可用 Metal GPU。`test-movie-origin.sh` 可选接收本地视频顶点缓存文件，校验真实生成接口；不提交该文件。
 
 The release uses the public source baseline plus the shared movie-origin fix, version 0.1.5 / 20. Build/test outputs belong on external storage. Original guest segments, generated game inputs and payloads are excluded; prepare them using the existing instructions. The two GPU test runners above use synthetic data and optionally validate a locally generated movie shader interface. Do not publish private capture dumps, keys, profiles, save data or game/MOD archives. See the bilingual build20 release report for actual validation limits.
+
+## build21（2026-11-01） / Build 21
+
+本版增加 `Sources/PCSongConverter.swift`、`PCModVideo.swift` 和 `PCModVP9.c`，以及 `ThirdParty/libvpx-1.17.0` 的 BSD 许可解码器源码。构建仅在外置 DerivedData 生成解码静态库，不联网下载。软件回退不执行 PC 插件，不附带游戏／MOD 媒体。资源模型、常规 FT 视频歌曲的结构识别边界、Eden 临时编号和真机验收限制见本版报告。
+
+新增 `Scripts/test-pc-song-import.sh`（合成谱面／封面／字库／时间基准），以及 `Scripts/test-avc-contract.sh`（实际 AVC 边界与 AddressSanitizer）。两者使用全新外置 `PJDV_TEST_ROOT`；后者可用 `PJDV_RUNTIME_SOURCE` 指定 `Runtime/dm`。模型、安装器、多选组合检查仍保留。测试不需要商业游戏或真实密钥。
+
+Build21 adds the three native song/video sources above and pinned BSD-licensed libvpx1.17.0 source. The decoder-only library builds in external DerivedData without network downloads. No PC plugin executes and no game/MOD media is included. The song runner covers synthetic charts, jackets, fonts and timebases; the AVC runner includes the real runtime boundary under AddressSanitizer. Use a fresh external test directory and optionally the runtime-root override. These tests need no commercial assets or real keys. See the release report for actual Mac samples and pending device acceptance.

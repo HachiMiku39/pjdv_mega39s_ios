@@ -5,19 +5,27 @@ BETTER THAN MOST OF APPS
 
 **简体中文** | [English](README.en.md)
 
-**0.1.5 build20 精简预览｜2026-11-01**
+**0.1.5 build21 精简预览｜2026-11-01**
 
-本版修复《Catch the Wave》视频背景大片黑区，加入已适配 MOD 的 App 内多选合并、组合存档、失败回滚、坏包隔离和完整重新校验，并支持 **Leo/need Module Pack 1.0.2 精确版本**原始 ZIP／文件夹的原生转换。未知 PC 包、其他版本、原始歌曲包、Windows DLL 和 New Classics 不会自动兼容。
+新增受支持的资源型 PC 模型与常规视频歌曲包的 App 内 ZIP／文件夹识别和转换，不再仅限 Leo/need 1.0.2 精确样本。内置流式 USM／VP9 转换及受限软件解码回退，修复中文字幕字库配对、独立曲包列表合并、合法分数时间基准误拒绝，以及《Cosmos》1916 像素视频载入崩溃。文件夹副本在支持时使用独立 APFS 克隆，其他情况按块复制；保留校验、取消和失败回滚。
 
-MOD 管理 → 添加包 → 勾选一个或多个已适配包 → 加载。失败保留上一套配置；取消全部勾选后加载可恢复原版。普通玩家无需 Xcode 或 Python。只提供不含游戏／MOD 资源、XCI、密钥或存档的精简 IPA／DMG，导入自己的资源。升级前备份存档并覆盖安装。
+MOD 管理 → 添加 ZIP／文件夹 → 转换 → 勾选一个或多个可用包 → 加载。失败保留上一套配置；取消全部勾选后加载恢复原版。只发布不含游戏／MOD 资源、XCI、密钥和存档的精简 IPA／DMG，导入自己的资源，升级前备份存档并覆盖安装。
 
-iPhone Air 已完成背景修复的两轮 PV、重试及 MetalFX／HDR 抽样；MOD 多选和 Leo/need 流程主要沿用 M4／模拟器的分项证据，**尚未完成新版原始导入→组合→真人打歌→正常成绩保存→重启的整套真机验收**。Calc 部分镜头倒置、SPiCa 崩溃、New Classics 玩法、通用清单 v2 和升级存档迁移仍待完成。[本版说明](Reports/RELEASE-build20-20261101.md) · [背景修复证据](Reports/CATCH-WAVE-VIDEO-ORIGIN-20261101.md)
+Kimagure Mercy 模型与 Tonny’s 视频歌曲原始 ZIP 已在 Mac 抽样。Eden Heavy Metal／Rock 完整开发适配包共 33 首登记成功，随机四首 EXTREME 完整结算，但 **Eden 大于 999 的原始编号仍需开发侧准备，不能宣称原始整包直接导入或任意 Mod 通用兼容**。新导入流程与正常成绩保存的完整真机验收仍待完成；Windows DLL、New Classics、复杂实时 3D 舞台、Calc 部分倒置镜头及 SPiCa 崩溃仍有限制。测试产生的 Eden 移植副本已清理，原始包保留。
 
-[下载 build20 预览版](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b20)
+[下载 build21 精简预览](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b21) · [本版说明](Reports/RELEASE-build21-20261101.md) · [原始模型／歌曲验证](Reports/NATIVE-RESOURCE-MODS-20261101.md) · [Eden 抽样与清理](Reports/EDEN-FULL-PACKS-20261101.md)
 
 ## 开发验证记录
 
-以下记录保留验证当日的版本状态；“本地候选／公开包仍为 build19”等表述是历史状态。本次发布范围以上方 build20 说明为准。
+**Eden 完整曲包抽样与清理（2026-11-01，未发布源码候选）：** Heavy Metal 14 首／37 谱面、Rock 19 首／35 谱面完整开发适配后由 App 分别导入并组合，预先随机抽取四首 EXTREME 均完整结算。修复 Cosmos 的 1916 像素视频布局崩溃及合法 IVF 时间基准误拒绝，三平台编译通过。**仍需开发侧临时编号，不代表原始 Eden 整包直接导入已完成。** 按要求删除本轮及上一轮 Eden 移植测试副本，实测释放约 38.22 GB，保留原始 Mod、XCI、存档及证据。[中英结果、截图与清理范围](Reports/EDEN-FULL-PACKS-20261101.md)
+
+以下记录保留验证当日的版本状态；“本地候选／公开包仍为 build19”等表述是历史状态。本次发布范围以上方 build21 说明为准。
+
+**Eden 单曲组合播放（2026-11-01，未发布源码候选）：** Beginner、Catchy Pop、Vibes 各取一首开发子集，由 App 分别转换后同时加载；HARD／HARD／EXTREME 均完整结算（686／607／665 COOL，AutoPlay 临时档）。修复中文歌词方框和独立曲包列表冲突，封面、字幕与冷启动配置已检查，普通存档哈希未变。**临时 800–802 编号不代表完整 Eden 原包可直接导入；持久编号、Core、模型及 3D／Edit 适配仍待完成。** [中英报告、截图与显示计时边界](Reports/EDEN-PLAYBACK-20261101.md)
+
+**Eden 与导入存储检查（2026-11-01，本地源码候选）：** 找到 15 个 PC Eden Project 包，约 14.65 GiB；9 个以视频 PV 为主的包仍受歌曲编号超过 999 等限制，其余涉及模型登记、3D 和 Core 能力适配，不能直接宣称全套可用。测试缓存经完整校验后无损共享存储，554 个文件保留路径和内容，开发卷实测释放约 3.59 GiB。文件夹导入及转换副本新增 APFS 克隆，跨卷仍按块复制；原始 Mod、XCI、基线及存档保留。**改动尚未发布，Eden 整包原生导入待完成。** [中英清单、空间结果与接入方案](Reports/EDEN-STORAGE-20261101.md)
+
+**资源型 MOD 原生导入扩展（2026-11-01，build20 之后的本地源码候选）：** 从 GameBanana 新下载 Kimagure Mercy Miku Module 1.1 和 Tonny’s Song Pack 1.2，由 Mac App 从原始 ZIP 转换并组合加载，不依赖电脑预合并。模型名称、预览、装备和《愛言葉》3D 演奏已抽样；新曲《くたばろうぜ》EXTREME 已完整结算（AutoPlay 临时档，642 COOL／642 连击）。新增流式 VP9 转换与受限软件解码回退。开放范围为受支持的资源型模型及常规视频 FT 歌曲，复杂 3D 舞台、New Classics、代码插件和未知格式仍需适配。**这是未发布的源码候选，不是任意 MOD 通用承诺；公开 build20 尚无此扩展，真机导入与真人音画同步待验收。** [中英范围、测量与验证记录](Reports/NATIVE-RESOURCE-MODS-20261101.md)
 
 
 
@@ -45,7 +53,7 @@ iPhone Air 已完成背景修复的两轮 PV、重试及 MetalFX／HDR 抽样；
 
 《初音未来 Project DIVA MEGA39’s》Switch JP v1.0.9 的 Apple Silicon 兼容移植研究。原游戏 ARM64 程序经 Horizon 服务兼容层运行，图形通过 **NVN → Metal** 输出。
 
-**0.1.5（build20）精简预览｜2026-11-01。** 只发布不含游戏资源、密钥及个人存档的精简安装包，不再自动制作全量包。
+**0.1.5（build21）精简预览｜2026-11-01。** 只发布不含游戏资源、密钥及个人存档的精简安装包，不再自动制作全量包。
 
 **build10 更新（2026-10-22）**：导入端改为识别同一 MEGA39’s Title ID（0100F3100DA46000）的包内内容，不再要求固定 NCA 文件名、v1.0.9 资源指纹或恰好 27 DLC。按 CNMT 选择更新、实际 DLC 数量和完整语言资源；包内已有内容默认开放现存难度与服装。不支持的语言回落日语。
 

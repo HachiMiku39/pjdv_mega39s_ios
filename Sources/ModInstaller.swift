@@ -1,5 +1,23 @@
 import Foundation
 import zlib
+import Darwin
+
+enum ModStorage {
+    // Independent inodes with copy-on-write data. Never hard-link a user's
+    // mutable source into installed content. Other filesystems use streaming.
+    static func cloneRegularFile(_ source:URL,to destination:URL)throws->Bool {
+        let fm=FileManager.default
+        guard !fm.fileExists(atPath:destination.path) else {throw ModInstallError.integrity}
+        let result=source.withUnsafeFileSystemRepresentation {src in
+            destination.withUnsafeFileSystemRepresentation {dst in
+                clonefile(src!,dst!,UInt32(CLONE_NOFOLLOW))
+            }
+        }
+        guard result==0 else{return false}
+        guard try fm.attributesOfItem(atPath:destination.path)[.type] as? FileAttributeType == .typeRegular else {throw ModPackageError.specialFile}
+        return true
+    }
+}
 
 enum ModInstallError: LocalizedError {
     case unsupportedCompression, integrity, storage, tooLarge
@@ -87,18 +105,20 @@ enum ModInstaller {
                     if type == .typeDirectory {try fm.createDirectory(at:target,withIntermediateDirectories:true);return}
                     guard type == .typeRegular else {throw ModPackageError.specialFile}
                     try fm.createDirectory(at:target.deletingLastPathComponent(),withIntermediateDirectories:true)
-                    guard fm.createFile(atPath:target.path,contents:nil) else {throw ModInstallError.storage}
-                    let input=try FileHandle(forReadingFrom:item),output=try FileHandle(forWritingTo:target)
-                    defer {try? input.close();try? output.close()}
+                    let cloned=try ModStorage.cloneRegularFile(item,to:target)
+                    guard cloned || fm.createFile(atPath:target.path,contents:nil) else {throw ModInstallError.storage}
+                    let input=try FileHandle(forReadingFrom:cloned ? target:item)
+                    let output=cloned ? nil:try FileHandle(forWritingTo:target)
+                    defer {try? input.close();try? output?.close()}
                     while true {
                         let count=try autoreleasepool {()->Int in
                             try check();let b=try input.read(upToCount:chunk) ?? Data()
-                            if !b.isEmpty {try output.write(contentsOf:b);try update(relative,b.count)}
+                            if !b.isEmpty {try output?.write(contentsOf:b);try update(relative,b.count)}
                             return b.count
                         }
                         if count==0 {break}
                     }
-                    try output.synchronize()
+                    try output?.synchronize()
                     let after=try fm.attributesOfItem(atPath:item.path)
                     guard (before[.size] as? NSNumber)==(after[.size] as? NSNumber),
                           (before[.modificationDate] as? Date)==(after[.modificationDate] as? Date) else {throw ModPackageError.changedSource}

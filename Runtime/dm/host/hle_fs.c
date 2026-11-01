@@ -49,6 +49,23 @@ typedef struct { char name[32]; char dir[1024]; char overlay[4096]; char commit[
 static mount_t g_mnt[MAX_MOUNT];   // commit 非空 = 事务式存档挂载 | commit non-empty = transactional save mount
 static int g_nmnt;
 static pthread_mutex_t g_lock = PTHREAD_MUTEX_INITIALIZER;
+#if defined(DM_GAME_M39)
+// A new MOD profile inherits the vanilla save. The game adds its new song IDs
+// after mount, so mount/commit alone leaves their difficulty flags closed until
+// an unrelated settings save. Reapply the existing policy on the guest input
+// thread, at most once a second. Only native initialized IDs/availability flags
+// are touched; no song IDs, scores or clear records are synthesized.
+void pjdv_profile_input_poll(void *caller){
+    if(!pjdv_unlock_enabled())return;
+    module_t *m=module_of(caller);if(!m || strcmp(m->name,"main"))return;
+    static _Atomic uint64_t previous;
+    uint64_t now=clock_gettime_nsec_np(CLOCK_MONOTONIC),before=atomic_load(&previous);
+    if(now-before<1000000000ull || !atomic_compare_exchange_strong(&previous,&before,now))return;
+    // Saving owns this lock; input must never wait behind a disk transaction.
+    if(pthread_mutex_trylock(&g_lock))return;
+    pjdv_profile_live_apply(0);pthread_mutex_unlock(&g_lock);
+}
+#endif
 static pthread_mutex_t g_path_lock = PTHREAD_MUTEX_INITIALIZER;
 static void path_unlock(pthread_mutex_t **m) { pthread_mutex_unlock(*m); }
 #define PATH_LOCK() pthread_mutex_t *path_guard __attribute__((cleanup(path_unlock))) = &g_path_lock; pthread_mutex_lock(path_guard)
@@ -1061,4 +1078,3 @@ void pjdv_fs_session_end(void) {
     LOG("PJDV session filesystem released: files=0 directories=0 mounts=0");
 }
 #endif
-

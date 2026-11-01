@@ -1,8 +1,11 @@
-// Switch Npad/touch bridge with bounded read-only M39 v1.0.9 diagnostics.
+// Switch Npad/touch bridge with bounded M39 v1.0.9 diagnostics and availability policy.
 #include "hle.h"
 #include "dm_input.h"
 #include <stdatomic.h>
 #include <mach/mach.h>
+#if defined(DM_GAME_M39)
+void pjdv_profile_input_poll(void *caller);
+#endif
 enum { NPAD_HANDHELD=0x20, STYLE_FULLKEY=1, STYLE_HANDHELD=2, STYLE_JOYDUAL=4, ATTR_CONNECTED=1 };
 typedef struct { int64_t sampling;uint64_t buttons;int32_t lx,ly,rx,ry;uint32_t attributes,pad; } NpadState;
 _Static_assert(sizeof(NpadState)==0x28,"NpadState ABI");
@@ -101,10 +104,24 @@ static void vibration_input_trace(const NpadState *s,uint32_t id,void *caller){
 }
 HLE_FORCE("_ZN2nn3hid12GetNpadStateEPNS0_16NpadFullKeyStateERKj", "全键手柄状态；取 dm_input", void, h_hid_GetFullKey, NpadState *s, const uint32_t *id) {
     fill(s,*id,STYLE_FULLKEY);
+#if defined(DM_GAME_M39)
+    if(!*id)pjdv_profile_input_poll(__builtin_return_address(0));
+#endif
     vibration_input_trace(s,*id,__builtin_return_address(0));
 }
-HLE_FORCE("_ZN2nn3hid12GetNpadStateEPNS0_17NpadHandheldStateERKj", "掌机手柄状态；取 dm_input", void, h_hid_GetHandheld, NpadState *s, const uint32_t *id) { fill(s, *id, STYLE_HANDHELD); }
-HLE_FORCE("_ZN2nn3hid12GetNpadStateEPNS0_16NpadJoyDualStateERKj", "Paired-controller fallback when the game excludes full-key style", void, h_hid_GetJoyDual, NpadState *s, const uint32_t *id) { fill(s,*id,STYLE_JOYDUAL);vibration_input_trace(s,*id,__builtin_return_address(0)); }
+HLE_FORCE("_ZN2nn3hid12GetNpadStateEPNS0_17NpadHandheldStateERKj", "掌机手柄状态；取 dm_input", void, h_hid_GetHandheld, NpadState *s, const uint32_t *id) {
+    fill(s,*id,STYLE_HANDHELD);
+#if defined(DM_GAME_M39)
+    if(*id==NPAD_HANDHELD)pjdv_profile_input_poll(__builtin_return_address(0));
+#endif
+}
+HLE_FORCE("_ZN2nn3hid12GetNpadStateEPNS0_16NpadJoyDualStateERKj", "Paired-controller fallback when the game excludes full-key style", void, h_hid_GetJoyDual, NpadState *s, const uint32_t *id) {
+    fill(s,*id,STYLE_JOYDUAL);
+#if defined(DM_GAME_M39)
+    if(!*id)pjdv_profile_input_poll(__builtin_return_address(0));
+#endif
+    vibration_input_trace(s,*id,__builtin_return_address(0));
+}
 
 // Arcade mode initializes motion even with button-only virtual input. There is
 // currently no host IMU feed: expose an inactive, stationary orientation rather

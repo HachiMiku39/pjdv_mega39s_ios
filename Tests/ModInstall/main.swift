@@ -52,3 +52,33 @@ try fm.createSymbolicLink(at:link,withDestinationURL:fixture)
 do {_=try ModInstaller.install(link,under:installed,progress:Progress()){_ in};fatalError("Selected symlink accepted")}catch{}
 try fm.removeItem(at:alias);try fm.removeItem(at:link)
 print("PASS: complete prepared-package installation through an ancestor alias; selected symlink still rejected")
+
+// An imported directory must remain independent if the user later edits its
+// source in place. This would fail for a hard link despite identical hashes.
+let original=Data(repeating:0x39,count:1024*1024)
+let cloneRoot=root.appendingPathComponent("CloneChecks-"+UUID().uuidString)
+try fm.createDirectory(at:cloneRoot,withIntermediateDirectories:false)
+let cloneSource=cloneRoot.appendingPathComponent("source.bin"),cloneTarget=cloneRoot.appendingPathComponent("target.bin")
+try original.write(to:cloneSource)
+let cloned=try ModStorage.cloneRegularFile(cloneSource,to:cloneTarget)
+precondition(cloned,"Run this regression on the external APFS development volume")
+let sa=try fm.attributesOfItem(atPath:cloneSource.path),ta=try fm.attributesOfItem(atPath:cloneTarget.path)
+precondition(sa[.systemFileNumber] as? NSNumber != ta[.systemFileNumber] as? NSNumber)
+let edit=try FileHandle(forWritingTo:cloneSource);try edit.write(contentsOf:Data([0x55]));try edit.close()
+let afterEdit=try Data(contentsOf:cloneTarget);precondition(afterEdit==original)
+do {_=try ModStorage.cloneRegularFile(cloneSource,to:cloneTarget);fatalError("Overwrote an existing clone")}catch{}
+let afterCollision=try Data(contentsOf:cloneTarget);precondition(afterCollision==original)
+print("PASS: APFS copy-on-write uses independent inodes, survives in-place source edits and refuses overwrite")
+
+if let folder=ProcessInfo.processInfo.environment["PJDV_CROSS_VOLUME_SOURCE"] {
+    let source=URL(fileURLWithPath:folder),relative="rom/objset/example.farc"
+    let original=try Data(contentsOf:source.appendingPathComponent(relative))
+    let fallback=try ModStorage.cloneRegularFile(source.appendingPathComponent(relative),to:root.appendingPathComponent("cross-volume-probe.bin"))
+    precondition(!fallback,"Choose the synthetic fixture on the exFAT partition")
+    let imported=try ModInstaller.install(source,under:installed,progress:Progress()){_ in}
+    let bytes=try Data(contentsOf:imported.root.appendingPathComponent(relative));precondition(bytes==original)
+    let write=try FileHandle(forWritingTo:imported.root.appendingPathComponent(relative));try write.write(contentsOf:Data([0x55]));try write.close()
+    let sourceAfter=try Data(contentsOf:source.appendingPathComponent(relative));precondition(sourceAfter==original)
+    try fm.removeItem(at:imported.root)
+    print("PASS: cross-volume exFAT folder uses streamed copying and leaves its source independent")
+}

@@ -35,5 +35,12 @@ int main(int argc,char **argv){
     id=268;memcpy(b+4,&id,4);memcpy(a,b,PJDV_PROFILE_BYTES);
     assert(pjdv_profile_unlock(b,PJDV_PROFILE_BYTES,&changes));assert(changes.songs==1 && changes.difficulties==15);
     for(size_t i=0;i<PJDV_PROFILE_BYTES;i++)if(a[i]!=b[i])assert(allowed(i,a));
-    free(a);free(b);puts("Profile unlock passed: real save score-byte preservation, ownership masks, all 15 difficulty slots, unused slots, idempotency, malformed input rejection and fresh-profile shape");
+    // The native game registers a MOD song after mount. The next policy pass
+    // opens that existing entry without creating IDs or changing its records.
+    id=871;memcpy(b+4+PJDV_SONG_BYTES,&id,4);b[8+PJDV_SONG_BYTES+0x14]=123;
+    memcpy(a,b,PJDV_PROFILE_BYTES);
+    assert(pjdv_profile_unlock(b,PJDV_PROFILE_BYTES,&changes));assert(changes.songs==2 && changes.difficulties==15);
+    for(size_t i=0;i<PJDV_PROFILE_BYTES;i++)if(a[i]!=b[i])assert(allowed(i,a));
+    assert(b[8+PJDV_SONG_BYTES+0x14]==123);
+    free(a);free(b);puts("Profile unlock passed: real save score-byte preservation, ownership masks, all 15 difficulty slots, unused slots, idempotency, malformed input rejection, fresh profile and native post-mount MOD registration");
 }

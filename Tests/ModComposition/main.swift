@@ -47,10 +47,11 @@ try put(base.appendingPathComponent("rom/data.txt"),Data("common=yes\na=old\nb=o
 func package(_ name:String,_ path:String,_ content:String)throws->RuntimeMod {
     try packageBytes(name,path,Data(content.utf8))
 }
-func packageBytes(_ name:String,_ path:String,_ raw:Data)throws->RuntimeMod {
+func packageBytes(_ name:String,_ path:String,_ raw:Data,format:String="pjdv-runtime-mod-v1")throws->RuntimeMod {
     let id=UUID(),file=RuntimeMod.Check(path:"0/"+path,bytes:UInt64(raw.count),sha256:F.sha(raw))
     let report=Data(name.utf8),sidecar=RuntimeMod.Check(path:"0/UI-FIX.json",bytes:UInt64(report.count),sha256:F.sha(report))
-    let item=RuntimeMod(format:"pjdv-runtime-mod-v1",id:id,name:name,notes:"This test report must never appear in the manager",layers:["0"],baseChecks:[baseCheck],files:[file,sidecar])
+    let conversion:RuntimeMod.Conversion? = format=="pjdv-runtime-song-v1" ? .init(converter:"synthetic-test",profile:"movie-playlist",sourceSHA256:F.sha(raw),base:[baseCheck],dlc:[],dlcFolders:[]) : nil
+    let item=RuntimeMod(format:format,id:id,name:name,notes:"This test report must never appear in the manager",layers:["0"],baseChecks:[baseCheck],files:[file,sidecar],conversion:conversion)
     try put(catalog.directory(item).appendingPathComponent(file.path),raw)
     try put(catalog.directory(item).appendingPathComponent(sidecar.path),report)
     try put(catalog.directory(item).appendingPathComponent("runtime.json"),JSONEncoder().encode(item));return item
@@ -109,3 +110,72 @@ let collision=F.SpriteSet(id:4,name:"SPR_BAD",file:"bad.bin",members:[.init(id:2
 let bad=try packageBytes("Bad atlas",spritePath,F.spriteData([baseline,collision]))
 reject{_=try ModComposition.prepare([sa,bad],catalog:catalog,base:base,dlc:dlc,root:cache)}
 print("PASS: cross-atlas name aliases and local indices preserved; unrelated sprite-ID collisions rejected; converter reports excluded")
+
+// A later DLC DB can replace the base lookup although it has no local atlas.
+// Use a tiny synthetic image to cover that real load-order failure.
+let thumbBase=root.appendingPathComponent("ThumbBase"),thumbDLC=root.appendingPathComponent("ThumbDLC"),thumbInput=root.appendingPathComponent("ThumbInput")
+var tiny=Data(repeating:0,count:96)
+for (i,v) in [0,96,1,1,32,84,92,72].enumerated(){try F.put(&tiny,i*4,v)}
+try F.put(&tiny,32+32,Int(Float(1).bitPattern));try F.put(&tiny,32+36,Int(Float(1).bitPattern))
+tiny.replaceSubrange(80..<84,with:Data("FIX\0".utf8));try F.put(&tiny,84,80)
+tiny.replaceSubrange(88..<92,with:Data("001\0".utf8));try F.put(&tiny,92,88)
+let tinyTexture:[UInt32]=[0x03505854,1,0x01010101,16,0x04505854,1,0x01010101,16,0x02505854,1,1,2,0,4,0xff0000ff]
+for v in tinyTexture{var v=v.littleEndian;withUnsafeBytes(of:&v){tiny.append(contentsOf:$0)}}
+let originalThumb=try F.SpritePayload(tiny)
+var expandedThumb=originalThumb;_=try expandedThumb.add(from:originalThumb,index:0,name:"871",texturePrefix:"NEW_")
+let thumbRow=F.SpriteSet(id:99,name:"SPR_SEL_PVTMB",file:"spr_sel_pvtmb.bin",members:[.init(id:1000,name:"SPRTEX_SEL_PVTMB_FIX",index:0,texture:true),.init(id:1001,name:"SPR_SEL_PVTMB_001",index:0,texture:false)])
+var expandedRow=thumbRow;expandedRow.members += [.init(id:2000,name:"SPRTEX_SEL_PVTMB_NEW_0",index:1,texture:true),.init(id:2001,name:"SPR_SEL_PVTMB_871",index:1,texture:false)]
+let thumbArchive="rom_switch/rom/2d/spr_sel_pvtmb.farc",dlcSprite="rom_switch_dlc/dlc18/rom/2d/spr_db.bin"
+try put(thumbBase.appendingPathComponent(spritePath),F.spriteData([thumbRow]))
+try put(thumbDLC.appendingPathComponent("dlc18/"+dlcSprite),F.spriteData([thumbRow]))
+try put(thumbBase.appendingPathComponent(thumbArchive),F.archiveData([.init(name:thumbRow.file,data:originalThumb.data())]))
+var thumbFiles=[String:ModComposition.File]()
+for (rel,data) in [(spritePath,try F.spriteData([expandedRow])),(dlcSprite,try F.spriteData([thumbRow])),(thumbArchive,try F.archiveData([.init(name:thumbRow.file,data:expandedThumb.data())]))] {
+    let url=thumbInput.appendingPathComponent(rel);try put(url,data);thumbFiles[rel] = .init(url:url,check:.init(path:rel,bytes:UInt64(data.count),sha256:F.sha(data)))
+}
+let thumbItem=RuntimeMod(format:"pjdv-runtime-song-v1",id:UUID(),name:"Synthetic movie song",notes:"",layers:["0"],baseChecks:[],files:[])
+let thumbWorker=try ModComposition.Worker(packs:[.init(thumbItem,thumbFiles)],base:thumbBase,dlc:thumbDLC,output:root.appendingPathComponent("ThumbOutput"),progress:Progress())
+try fm.createDirectory(at:thumbWorker.output,withIntermediateDirectories:true);try thumbWorker.build()
+let thumbDB=try F.sprites(Data(contentsOf:thumbWorker.output.appendingPathComponent(spritePath)))
+let lastDB=try F.sprites(Data(contentsOf:thumbWorker.output.appendingPathComponent(dlcSprite)))
+require(thumbDB==lastDB && thumbDB[0].members.contains(where:{$0.name=="SPR_SEL_PVTMB_871"}))
+let actualThumb=try F.SpritePayload(F.archive(Data(contentsOf:thumbWorker.output.appendingPathComponent(thumbArchive)))[0].data)
+let newTexture=thumbDB[0].members.first{$0.texture && $0.index==1}!
+require(newTexture.name=="SPRTEX_SEL_PVTMB_"+actualThumb.textureNames[1])
+require(actualThumb.sprites[0]==originalThumb.sprites[0] && actualThumb.textures[0].starts(with:originalThumb.textures[0]))
+// Converted output must remain composable: its DLC lookup is now expanded,
+// still without a local atlas. Exercise the second merge used by the App.
+let convertedFiles=Dictionary(uniqueKeysWithValues:thumbWorker.records.map{($0.path,ModComposition.File(url:thumbWorker.output.appendingPathComponent($0.path),check:$0))})
+let secondThumbWorker=try ModComposition.Worker(packs:[.init(thumbItem,convertedFiles)],base:thumbBase,dlc:thumbDLC,output:root.appendingPathComponent("ThumbReoutput"),progress:Progress())
+try fm.createDirectory(at:secondThumbWorker.output,withIntermediateDirectories:true);try secondThumbWorker.build()
+let secondDB=try F.sprites(Data(contentsOf:secondThumbWorker.output.appendingPathComponent(dlcSprite)))
+require(secondDB[0].members.contains(where:{$0.name=="SPR_SEL_PVTMB_871"}))
+print("PASS: later DLC thumbnail lookup without local atlas; converted-package recomposition; texture labels match payload; original images preserved")
+
+// Independent native movie-song packages patch the same full playlist. The
+// composition must retain both additions without overwriting native records.
+let playlistPath="rom_ps4/rom/gm_pv_list_tbl.farc",nativeSong=["id":"2","name":"Native","hard.length":"1"]
+func playlist(_ rows:[[String:String]],extra:Data=Data([7,8]))throws->Data {
+    try F.archiveData([.init(name:"gm_pv_list.bin",data:F.propertyData(F.setGroup(["unknown":"keep"],"pv_list",rows,countKey:"pv_list.data_list.length"))),.init(name:"opaque.bin",data:extra)])
+}
+try put(base.appendingPathComponent(playlistPath),playlist([nativeSong]))
+let movieA=["id":"800","name":"First","hard.length":"1"],movieB=["id":"801","name":"Second","extreme.length":"1"]
+func moviePackage(_ name:String,_ rows:[[String:String]],extra:Data=Data([7,8]))throws->RuntimeMod {
+    try packageBytes(name,playlistPath,playlist(rows,extra:extra),format:"pjdv-runtime-song-v1")
+}
+let pa=try moviePackage("Movie A",[nativeSong,movieA]),pb=try moviePackage("Movie B",[nativeSong,movieB])
+let movies=try ModComposition.prepare([pa,pb],catalog:catalog,base:base,dlc:dlc,root:cache)
+let movieArchive=try F.archive(Data(contentsOf:URL(fileURLWithPath:movies.paths[0]).appendingPathComponent(playlistPath)))
+let movieProps=try F.properties(movieArchive.first{$0.name=="gm_pv_list.bin"}!.data)
+require(F.group(movieProps,"pv_list")==[nativeSong,movieA,movieB] && movieProps["unknown"]=="keep")
+require(movieArchive.first{$0.name=="opaque.bin"}!.data==Data([7,8]))
+require(try ModComposition.prepare([pb,pa],catalog:catalog,base:base,dlc:dlc,root:cache).paths==movies.paths)
+let same=try moviePackage("Same identity",[nativeSong,movieA])
+_=try ModComposition.prepare([pa,pb,same],catalog:catalog,base:base,dlc:dlc,root:cache)
+let clash=try moviePackage("Collision",[nativeSong,["id":"800","name":"Wrong"]])
+let removed=try moviePackage("Deleted baseline",[movieB])
+let altered=try moviePackage("Changed native",[["id":"2","name":"Changed"],movieB])
+let opaqueChange=try moviePackage("Changed opaque",[nativeSong,movieB],extra:Data([9]))
+for bad in [clash,removed,altered,opaqueChange] {reject{_=try ModComposition.prepare([pa,bad],catalog:catalog,base:base,dlc:dlc,root:cache)}}
+require(try Data(contentsOf:base.appendingPathComponent(playlistPath))==playlist([nativeSong]))
+print("PASS: independent movie playlists merged by stable song ID; reverse selection and duplicates; native/opaque preservation; collision/deletion/unknown-member rejection")

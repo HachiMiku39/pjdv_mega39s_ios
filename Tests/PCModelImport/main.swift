@@ -90,3 +90,21 @@ rejects{_=try PCModelConverter.translations(Data("cn.1 = \"a\"\ncn.1 = \"b\"".ut
 rejects{_=try PCModelConverter.translations(Data("[cn]\n1='unsupported'".utf8))}
 require(try PCModelConverter.translations(Data("cn.1 = \"a\\nb\"".utf8))["cn"]?[1]=="a\nb")
 print("PASS: cancellation, source mutation, unknown DLL, asset symlink, changed DLC metadata/folders, rollback, strict translation parsing and source preservation")
+
+// Unseen resource-only packs are selected by structure. Windows CRLF must not
+// turn the entire table into a single property (Swift treats CRLF as one Character).
+require(try F.properties(Data("item.0.no=1\r\nitem.length=1\r\n".utf8))["item.length"]=="1")
+require(try F.properties(Data("a=1\rb=2\r".utf8))["b"]=="2")
+let generic=try PCModelConverter.recognizeResourceModel(source,progress:Progress())!
+require(generic.profile.id=="resource-model-v1" && generic.sourceSHA256==candidate.sourceSHA256)
+let genericResult=try PCModelConverter.convert(generic,base:base,dlc:dlc,catalog:catalog,progress:Progress())
+require(genericResult.item.name=="Synthetic" && genericResult.item.id != first.item.id)
+let genericAgain=try PCModelConverter.convert(generic,base:base,dlc:dlc,catalog:catalog,progress:Progress());require(genericAgain.reused)
+try put(source.appendingPathComponent("inject.dll"),Data([77,90]));rejects{_=try PCModelConverter.recognizeResourceModel(source,progress:Progress())};try fm.removeItem(at:source.appendingPathComponent("inject.dll"))
+print("PASS: structural model recognition without a hash allowlist, Windows/newline properties, reuse and executable rejection")
+
+let counted=Data(base64Encoded:"RkFSQwAAAEgAAAAGAAAAAAABAgMEBQYHCAkKCwwNDg+H4fleFdzX9m8os8ag/hhu4wPs+oVtj9tfpIdqvBdUWi3GaAJhfZfMIYr/4iSoVNoAAQIDBAUGBwgJCgsMDQ4P4/EKXz3/YwMz4yF8voIiPZ/nAm5wmaUGmGTW2JXM4n8nRmLANnBxyheBUstGTZ6G")!
+let decoded=try F.archive(counted);require(decoded.count==1 && decoded[0].name=="fixture.txt" && decoded[0].data==Data("bounded FARC fixture\n".utf8))
+rejects{_=try F.archive(Data(counted.dropLast(20)))}
+var damaged=counted;damaged[100]^=0xff;rejects{_=try F.archive(damaged)}
+print("PASS: independent counted/CBC/gzip FARC fixture, truncation and damaged payload rejection")

@@ -42,7 +42,8 @@ struct ResourceLayout {
     let dlcContents:[ImportCatalog.DLC]
     var languages:[String] {ResourceLanguageProbe.detect(root:rom)}
     var resourceVersionVerified:Bool {content?.usesVerifiedResourceVersion ?? true}
-    static func locate(_ root:URL,requireComplete:Bool=true) throws -> ResourceLayout {
+    static func locate(_ suppliedRoot:URL,requireComplete:Bool=true) throws -> ResourceLayout {
+        let root=suppliedRoot.standardizedFileURL.resolvingSymlinksInPath()
         let fm=FileManager.default
         if requireComplete && fm.fileExists(atPath:root.appendingPathComponent(".pjdv-import-in-progress").path) {throw ImportFailure.invalid("资源导入尚未完成，请重新选择同一 XCI 继续。 ")}
         let rom=["romfs","MEGA39-v1.0.9"].map{root.appendingPathComponent($0,isDirectory:true)}.first{fm.fileExists(atPath:$0.appendingPathComponent("preparation.json").path)}
@@ -90,9 +91,9 @@ struct ResourceLayout {
 enum ResourceLibrary {
     private static let selection="pjdv.resourceRootBookmark.v1"
     static var appDataRoot:URL {
-        #if targetEnvironment(simulator)
-        // Explicit isolated simulator workspace; production devices always use
-        // their normal container. Keeps compatibility trials on external SSD.
+        #if targetEnvironment(simulator) || targetEnvironment(macCatalyst)
+        // Explicit developer test workspace on external SSD. Ordinary launches
+        // keep their existing data; physical iOS devices ignore this override.
         if let path=ProcessInfo.processInfo.environment["PJDV_APP_DATA_TEST_ROOT"],path.hasPrefix("/") {
             return URL(fileURLWithPath:path,isDirectory:true)
         }
@@ -112,6 +113,12 @@ enum ResourceLibrary {
         #endif
     }
     static func open() throws -> ResourceAccess {
+        #if targetEnvironment(simulator) || targetEnvironment(macCatalyst)
+        if ProcessInfo.processInfo.environment["PJDV_APP_DATA_TEST_ROOT"] != nil,
+           (try? ResourceLayout.locate(localRoot)) != nil {
+            return ResourceAccess(localRoot)
+        }
+        #endif
         #if targetEnvironment(macCatalyst)
         if ProcessInfo.processInfo.environment["PJDV_RESOURCES_TEST_BUNDLE_ONLY"] == "1" {
             guard let root=Bundle.main.url(forResource:"GameResources",withExtension:nil) else {throw ImportFailure.invalid("整合包缺少内置资源")}

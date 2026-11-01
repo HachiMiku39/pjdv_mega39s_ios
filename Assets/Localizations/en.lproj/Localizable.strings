@@ -309,3 +309,7 @@
 "正在识别 MOD…" = "Identifying MOD…";
 "正在转换 MOD…" = "Converting MOD…";
 "原始 PC 包目前支持 Leo/need 1.0.2；其他包请使用已适配版本。" = "Raw PC import currently supports Leo/need 1.0.2. Use prepared versions for other packages.";
+
+"支持资源型模型包和常规视频歌曲包；特殊玩法及插件需适配。" = "Resource-only models and conventional video song packs can be converted. Custom gameplay and plugins require adaptation.";
+
+"正在转换 MOD 视频…" = "Converting MOD video…";

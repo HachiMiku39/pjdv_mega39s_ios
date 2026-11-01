@@ -1,13 +1,13 @@
 import Foundation
 import CryptoKit
 
-// Native conversion is deliberately scoped to exact, previously exercised
-// payloads. These profiles contain hashes/paths only, never MOD assets. A
-// different version remains inactive until its references have been tested.
+// Hash profiles remain useful regressions, but new resource-only model packs
+// are recognized by their databases and references, not a package-name allowlist.
+// Conversion is transactional; unhandled assets or executable dependencies fail.
 enum PCModelConverter {
     typealias F=ModFormats
     typealias Props=[String:String]
-    static let revision="native-pc-model-2"
+    static let revision="native-pc-model-3"
     struct Profile:Codable {let id:String;let name:String;let files:[RuntimeMod.Check]}
     struct Profiles:Codable {let format:String;let profiles:[Profile]}
     struct Candidate {let root:URL;let profile:Profile;let sourceSHA256:String}
@@ -81,6 +81,70 @@ enum PCModelConverter {
         guard let profile=matches.first(where:{$0.files.sorted{$0.path<$1.path}.map{$0.path+":"+String($0.bytes)+":"+$0.sha256}==expected}) else {return nil}
         return Candidate(root:root,profile:profile,sourceSHA256:F.sha(Data(expected.joined(separator:"\n").utf8)))
     }
+    static func recognizeResourceModel(_ installed:URL,progress:Progress,
+                                       report:((ModInstallUpdate)->Void)?=nil)throws->Candidate? {
+        let fm=FileManager.default;try check(progress)
+        var root=installed.standardizedFileURL.resolvingSymlinksInPath()
+        // ZIPs commonly wrap a single MOD folder. Limit traversal; never search
+        // arbitrary descendants or accidentally combine several independent MODs.
+        for _ in 0..<4 {
+            if fm.fileExists(atPath:root.appendingPathComponent("rom/mod_gm_module_tbl.farc").path){break}
+            let dirs=try children(root).filter{(try? fm.attributesOfItem(atPath:$0.path)[.type]) as? FileAttributeType == .typeDirectory}
+            guard dirs.count==1 else{return nil};root=dirs[0]
+            guard root.resolvingSymlinksInPath()==root else{throw ModPackageError.specialFile}
+        }
+        guard fm.fileExists(atPath:root.appendingPathComponent("rom/mod_gm_module_tbl.farc").path) else{return nil}
+        for path in ["rom/mod_chritm_prop.farc","rom/objset/mod_obj_db.bin","rom/objset/mod_tex_db.bin","rom/2d/mod_spr_db.bin"] {
+            guard fm.fileExists(atPath:root.appendingPathComponent(path).path) else{throw ModLoadError.unsupported}
+        }
+        guard let it=fm.enumerator(at:root,includingPropertiesForKeys:nil) else{throw ModLoadError.invalid}
+        var inputs=[(String,URL,UInt64)](),total:UInt64=0
+        for case let url as URL in it {
+            try check(progress);let rel=String(url.path.dropFirst(root.path.count+1)),parts=rel.split(separator:"/")
+            if parts.contains(where:{$0.hasPrefix("._") || $0==".DS_Store" || $0=="__MACOSX"}){it.skipDescendants();continue}
+            let a=try fm.attributesOfItem(atPath:url.path),type=a[.type] as? FileAttributeType
+            if type == .typeDirectory{continue};guard type == .typeRegular else{throw ModPackageError.specialFile}
+            let ext=url.pathExtension.lowercased()
+            guard !["dll","exe","dylib","so","nro","ips","pchtxt"].contains(ext) else{throw ModLoadError.unsupported}
+            if !rel.hasPrefix("rom/") {
+                guard ["config.toml","mod.json"].contains(rel.lowercased()) || ["txt","md","png","jpg","jpeg","webp"].contains(ext) else{throw ModLoadError.unsupported}
+                continue
+            }
+            let bytes=(a[.size] as? NSNumber)?.uint64Value ?? UInt64.max
+            guard inputs.count<2000,bytes<=UInt64(F.fileLimit),total<=1024*1024*1024-bytes else{throw ModLoadError.limit}
+            total+=bytes;inputs.append((rel,url,bytes))
+        }
+        guard !inputs.isEmpty,Set(inputs.map{$0.0.lowercased()}).count==inputs.count else{throw ModPackageError.unsafePath}
+        var checks=[RuntimeMod.Check](),done:UInt64=0
+        for (rel,url,_) in inputs.sorted(by:{$0.0<$1.0}) {
+            let h=try hash(url,progress:progress);checks.append(.init(path:rel,bytes:h.bytes,sha256:h.sha256));done+=h.bytes
+            report?(.init(phase:"正在识别 MOD…",file:"",completed:done,total:total))
+        }
+        // Decode the resource tables before allocating any installed package.
+        _=try F.objects(F.read(root.appendingPathComponent("rom/objset/mod_obj_db.bin")))
+        _=try F.textures(F.read(root.appendingPathComponent("rom/objset/mod_tex_db.bin")))
+        _=try F.sprites(F.read(root.appendingPathComponent("rom/2d/mod_spr_db.bin")))
+        let modules=try F.archive(F.read(root.appendingPathComponent("rom/mod_gm_module_tbl.farc"))).flatMap{try F.group(F.properties($0.data),"module")}
+        guard !modules.isEmpty,modules.count<=32 else{throw ModLoadError.limit}
+        let title=try displayName(root,fallback:modules.first?["name"] ?? "Model MOD")
+        let raw=checks.map{$0.path+":"+String($0.bytes)+":"+$0.sha256}.joined(separator:"\n")
+        return Candidate(root:root,profile:.init(id:"resource-model-v1",name:title,files:checks),sourceSHA256:F.sha(Data(raw.utf8)))
+    }
+    static func displayName(_ root:URL,fallback:String)throws->String {
+        let p=root.appendingPathComponent("config.toml")
+        if FileManager.default.fileExists(atPath:p.path) {
+            let b=try F.read(p);guard b.count<=256*1024,let text=String(data:b,encoding:.utf8) else{throw ModLoadError.invalid}
+            for raw in text.components(separatedBy:.newlines) {
+                let line=raw.trimmingCharacters(in:.whitespaces)
+                if line.hasPrefix("name"),let eq=line.firstIndex(of:"="),line[..<eq].trimmingCharacters(in:.whitespaces)=="name" {
+                    let value=String(line[line.index(after:eq)...]).trimmingCharacters(in:.whitespaces)
+                    if let s=try? JSONSerialization.jsonObject(with:Data(value.utf8),options:.fragmentsAllowed) as? String,!s.isEmpty,s.utf8.count<=256{return s}
+                    if value.hasPrefix("'"),value.hasSuffix("'"),value.count>2,value.utf8.count<=258{return String(value.dropFirst().dropLast())}
+                }
+            }
+        }
+        guard !fallback.isEmpty,fallback.utf8.count<=256 else{throw ModLoadError.invalid};return fallback
+    }
     private static func children(_ url:URL)throws->[URL] {
         let fm=FileManager.default;guard fm.fileExists(atPath:url.path) else {return []}
         return try fm.contentsOfDirectory(at:url,includingPropertiesForKeys:nil,options:.skipsHiddenFiles).sorted{$0.path<$1.path}
@@ -101,6 +165,7 @@ enum PCModelConverter {
                 for lang in try children(rom.appendingPathComponent("lang2")) {
                     let p=lang.appendingPathComponent("str_array.bin");if fm.fileExists(atPath:p.path){urls.insert(p)}
                 }
+                let customize=rom.appendingPathComponent("gm_customize_item_tbl.farc");if fm.fileExists(atPath:customize.path){urls.insert(customize)}
                 let setting=rom.appendingPathComponent("skin_param/osage_setting.txt");if fm.fileExists(atPath:setting.path){urls.insert(setting)}
             }
         }
@@ -173,19 +238,22 @@ enum PCModelConverter {
         func copy(_ sourcePath:String,_ path:String)throws {
             guard let row=candidate.profile.files.first(where:{$0.path==sourcePath}) else {throw ModLoadError.invalid}
             let target=input.appendingPathComponent(path);try fm.createDirectory(at:target.deletingLastPathComponent(),withIntermediateDirectories:true)
-            guard fm.createFile(atPath:target.path,contents:nil) else {throw ModLoadError.invalid}
-            let a=try FileHandle(forReadingFrom:candidate.root.appendingPathComponent(sourcePath)),b=try FileHandle(forWritingTo:target);defer{try? a.close();try? b.close()}
+            let source=candidate.root.appendingPathComponent(sourcePath)
+            let cloned=try ModStorage.cloneRegularFile(source,to:target)
+            guard cloned || fm.createFile(atPath:target.path,contents:nil) else {throw ModLoadError.invalid}
+            let a=try FileHandle(forReadingFrom:cloned ? target:source),b=cloned ? nil:try FileHandle(forWritingTo:target);defer{try? a.close();try? b?.close()}
             var h=SHA256(),count:UInt64=0
             while true {
-                let n=try autoreleasepool{()->Int in try check(progress);let data=try a.read(upToCount:1024*1024) ?? Data();guard UInt64(data.count)<=row.bytes-count else {throw ModPackageError.changedSource};try b.write(contentsOf:data);h.update(data:data);return data.count}
+                let n=try autoreleasepool{()->Int in try check(progress);let data=try a.read(upToCount:1024*1024) ?? Data();guard UInt64(data.count)<=row.bytes-count else {throw ModPackageError.changedSource};try b?.write(contentsOf:data);h.update(data:data);return data.count}
                 if n==0{break};count+=UInt64(n)
             }
             guard count==row.bytes,h.finalize().map({String(format:"%02x",$0)}).joined()==row.sha256 else {throw ModPackageError.changedSource}
-            try b.synchronize();consumed.insert(sourcePath);files[path] = .init(url:target,check:.init(path:path,bytes:row.bytes,sha256:row.sha256))
+            try b?.synchronize();consumed.insert(sourcePath);files[path] = .init(url:target,check:.init(path:path,bytes:row.bytes,sha256:row.sha256))
         }
         func number(_ row:Props,_ key:String)throws->Int {guard let raw=row[key],let n=Int(raw),n>=0 else {throw ModLoadError.invalid};return n}
         func normalize()throws {
             let probe=try ModComposition.Worker(packs:[],base:base,dlc:dlc,output:input,progress:progress)
+            var usedAccessories=Set<Int>(),baseAccessories=[Props]()
             var usedO=Set<Int>(),usedT=Set<Int>(),usedModules=Set<Int>(),usedItems=[String:Set<Int>](),usedCos=[String:Set<Int>]()
             var spriteKnown=[String:F.SpriteSet](),memberKnown=[String:F.Sprite](),maxSprite=0,maxMember=0
             for p in snapshot.urls {try autoreleasepool {
@@ -194,6 +262,8 @@ enum PCModelConverter {
                 else if p.lastPathComponent.hasSuffix("tex_db.bin"){usedT.formUnion(try F.textures(F.read(p)).map(\.id))}
                 else if p.lastPathComponent.hasSuffix("module_tbl.farc") {
                     for b in try F.archive(F.read(p)){for r in F.group(try F.properties(b.data),"module"){usedModules.insert(try number(r,"id"))}}
+                } else if p.lastPathComponent=="gm_customize_item_tbl.farc" {
+                    for b in try F.archive(F.read(p)){for r in F.group(try F.properties(b.data),"cstm_item"){usedAccessories.insert(try number(r,"id"));baseAccessories.append(r)}}
                 } else if p.lastPathComponent.hasSuffix("chritm_prop.farc") {
                     for b in try F.archive(F.read(p)) {
                         let d=try F.properties(b.data)
@@ -217,7 +287,7 @@ enum PCModelConverter {
                     });try put("rom_switch/"+row.path,result)
                 }
             }
-            var chritm=try F.archive(source("rom/mod_chritm_prop.farc")),costumeMaps=[String:[Int:Int]]()
+            var chritm=try F.archive(source("rom/mod_chritm_prop.farc")),costumeMaps=[String:[Int:Int]](),itemMaps=[String:[Int:Int]]()
             for i in chritm.indices {
                 var d=try F.properties(chritm[i].data),items=F.group(d,"item"),costumes=F.group(d,"cos")
                 guard let before=usedItems[chritm[i].name],let cosBefore=usedCos[chritm[i].name] else {throw ModLoadError.unsupported}
@@ -230,7 +300,7 @@ enum PCModelConverter {
                     costumes[j]["id"]=String(cosMap[try number(costumes[j],"id")]!);let count=try number(costumes[j],"item.length");guard count<=256 else {throw ModLoadError.limit}
                     for k in 0..<count{let key="item.\(k)",old=try number(costumes[j],key);guard let n=itemMap[old] ?? (before.contains(old) ? old:nil) else {throw ModLoadError.invalid};costumes[j][key]=String(n)}
                 }
-                costumeMaps[chritm[i].name]=cosMap;d=F.setGroup(F.setGroup(d,"item",items),"cos",costumes);chritm[i].data=try F.propertyData(d)
+                itemMaps[chritm[i].name]=itemMap;costumeMaps[chritm[i].name]=cosMap;d=F.setGroup(F.setGroup(d,"item",items),"cos",costumes);chritm[i].data=try F.propertyData(d)
             }
             try put("rom_switch/rom/chritm_prop.farc",F.archiveData(chritm))
             var modulesArchive=try F.archive(source("rom/mod_gm_module_tbl.farc")),moduleMap=[Int:Int](),modules=[Props]()
@@ -246,6 +316,24 @@ enum PCModelConverter {
             }
             guard !modules.isEmpty,modules.count<=32 else {throw ModLoadError.limit}
             try put("rom_switch/rom/gm_module_tbl.farc",F.archiveData(modulesArchive))
+            var accessoryMap=[Int:Int](),accessories=[Props]()
+            let accessoryPath="rom/mod_gm_customize_item_tbl.farc"
+            if candidate.profile.files.contains(where:{$0.path==accessoryPath}) {
+                var blocks=try F.archive(source(accessoryPath))
+                var free=(0...1200).filter{!usedAccessories.contains($0) && !usedModules.contains($0) && !moduleMap.values.contains($0)}
+                for i in blocks.indices {
+                    let d=try F.properties(blocks[i].data);var rows=F.group(d,"cstm_item")
+                    for j in rows.indices {
+                        let old=try number(rows[j],"id"),obj=try number(rows[j],"obj_id")
+                        guard !free.isEmpty,accessoryMap[old]==nil,let char=rows[j]["chara"],let stem=characters[char],let mapped=itemMaps[stem+"_tbl.txt"]?[obj] else{throw ModLoadError.unsupported}
+                        let id=free.removeFirst();accessoryMap[old]=id;rows[j]["id"]=String(id);rows[j]["obj_id"]=String(mapped);rows[j]["shop_price"]="0"
+                        if let bind=Int(rows[j]["bind_module"] ?? "-1"),bind>=0 {guard let m=moduleMap[bind] else{throw ModLoadError.unsupported};rows[j]["bind_module"]=String(m)}
+                        accessories.append(rows[j])
+                    }
+                    blocks[i].data=try F.propertyData(F.setGroup(d,"cstm_item",rows,countKey:"cstm_item.data_list.length"))
+                }
+                try put("rom_switch/rom/gm_customize_item_tbl.farc",F.archiveData(blocks))
+            }
             let portraits=try F.sprites(source("rom/2d/mod_spr_db.bin"));var nativePortraits=[F.SpriteSet]()
             for (old,new) in moduleMap.sorted(by:{$0.key<$1.key}) {
                 for kind in ["MD","THMB"] {
@@ -262,6 +350,29 @@ enum PCModelConverter {
                     let archive="rom/2d/"+(sourceRow.file as NSString).deletingPathExtension+".farc",blocks=try F.archive(source(archive));guard blocks.count==1,blocks[0].name==sourceRow.file else {throw ModLoadError.unsupported}
                     try put("rom_switch/rom/2d/"+(row.file as NSString).deletingPathExtension+".farc",F.archiveData([.init(name:row.file,data:blocks[0].data)]))
                 }
+            }
+            for (old,new) in accessoryMap.sorted(by:{$0.key<$1.key}) {
+                let oldName=String(format:"SPR_CMNITM_THMB%03d",old),name=String(format:"SPR_CMNITM_THMB%03d",new)
+                let oldFile="spr_"+oldName.dropFirst(4).lowercased()+".bin"
+                let blocks=try F.archive(source("rom/2d/"+(oldFile as NSString).deletingPathExtension+".farc"))
+                guard blocks.count==1,blocks[0].name==oldFile else{throw ModLoadError.unsupported}
+                var row:F.SpriteSet
+                if let registered=portraits.first(where:{$0.name==oldName}){row=registered}
+                else {
+                    // Some PC loaders infer accessory thumbnails by filename
+                    // and omit their sprite registry entry. Reconstruct only
+                    // this documented portrait shape from the supplied payload.
+                    let payload=try F.SpritePayload(blocks[0].data)
+                    guard payload.names==["ITM_IMG"],payload.textures.count==1 else{throw ModLoadError.unsupported}
+                    row=F.SpriteSet(id:0,name:oldName,file:oldFile,members:[.init(id:0,name:oldName+"_ITM_IMG",index:0,texture:false),.init(id:1,name:oldName.replacingOccurrences(of:"SPR_",with:"SPRTEX_")+"_MERGE_BC5COMP_0",index:0,texture:true)])
+                }
+                maxSprite+=1;row.id=spriteKnown[name]?.id ?? maxSprite;row.name=name;row.file="spr_"+name.dropFirst(4).lowercased()+".bin"
+                for j in row.members.indices {
+                    row.members[j].name=row.members[j].name.replacingOccurrences(of:oldName,with:name).replacingOccurrences(of:oldName.replacingOccurrences(of:"SPR_",with:"SPRTEX_"),with:name.replacingOccurrences(of:"SPR_",with:"SPRTEX_"))
+                    maxMember+=1;row.members[j].id=memberKnown[row.members[j].name]?.id ?? maxMember
+                }
+                nativePortraits.append(row)
+                try put("rom_switch/rom/2d/"+(row.file as NSString).deletingPathExtension+".farc",F.archiveData([.init(name:row.file,data:blocks[0].data)]))
             }
             for p in snapshot.urls where p.lastPathComponent=="spr_db.bin" {
                 let rel:String
@@ -282,6 +393,18 @@ enum PCModelConverter {
                 for (old,new) in moduleMap {
                     guard let row=modules.first(where:{$0["id"]==String(new)}),let fallback=row["name"] else {throw ModLoadError.invalid}
                     changes[new+220]=translations[lang]?[old+275] ?? translations[""]?[old+275] ?? fallback
+                }
+                if !accessoryMap.isEmpty {
+                    // Locate the title's native string segment from an existing
+                    // accessory, separately for PS4/Switch resource namespaces.
+                    let jp=p.deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("jp/str_array.bin")
+                    let values=try F.strings(F.read(jp));var offsets=Set<Int>()
+                    for r in baseAccessories {if let name=r["name"],let id=Int(r["id"] ?? ""),let at=values.firstIndex(of:name){offsets.insert(at-id)}}
+                    guard let offset=offsets.sorted().first(where:{n in baseAccessories.filter{r in guard let id=Int(r["id"] ?? ""),let name=r["name"],(0..<values.count).contains(n+id) else{return false};return values[n+id]==name}.count>=min(3,baseAccessories.count)}) else{throw ModLoadError.unsupported}
+                    for (old,new) in accessoryMap {
+                        guard let row=accessories.first(where:{$0["id"]==String(new)}),let fallback=row["name"] else{throw ModLoadError.invalid}
+                        changes[new+offset]=translations[lang]?[old+936] ?? translations[""]?[old+936] ?? fallback
+                    }
                 }
                 try put(String(p.path.dropFirst(base.path.count+1)),F.changeStrings(original,changes))
             }

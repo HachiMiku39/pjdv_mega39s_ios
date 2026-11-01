@@ -1,4 +1,7 @@
-#include "/Volumes/Switch-iOS-Dev/Runtime/PJDV/dm/gfx/pjdv_avc.c"
+#ifndef PJDV_AVC_SOURCE
+#define PJDV_AVC_SOURCE "../Runtime/dm/gfx/pjdv_avc.c"
+#endif
+#include PJDV_AVC_SOURCE
 #include <stdarg.h>
 static unsigned forwarded;
 static void fake_filled(void *component,const void *header){(void)component;(void)header;forwarded++;}
@@ -14,6 +17,20 @@ int main(void){
  for(int i=0;i<8;i++)pixels[8+i]=(uint8_t)(16+i);pixels[16]=32;pixels[17]=33;pixels[18]=230;pixels[19]=231;
  avc_client_nv12(impl,client,color,width,height);CHECK(pixels[7]==0xee && pixels[20]==0xee);for(int i=0;i<8;i++)CHECK(pixels[8+i]==16+i);
  CHECK(pixels[16]==32 && pixels[17]==230 && pixels[18]==33 && pixels[19]==231);
+ // A non-macroblock width is still packed by DecoderImpl. Coded stride/slice
+ // must not move the client chroma planes or write beyond its visible range.
+ width=1916;height=1080;bytes=width*height*3/2;capacity=(uint64_t)offset+bytes+8;
+ uint8_t *wide=malloc(capacity);CHECK(wide);memset(wide,0xee,capacity);
+ size_t luma=(size_t)width*height,chroma=luma/4;
+ memset(wide+offset,77,luma);memset(wide+offset+luma,32,chroma);memset(wide+offset+luma+chroma,230,chroma);
+ memcpy(impl+0x38,&width,4);memcpy(impl+0x3c,&height,4);memcpy(client+4,&bytes,4);memcpy(client+0x18,&capacity,8);memcpy(client+0x28,&wide,8);
+ avc_client_nv12(impl,client,19,1920,1088);
+ CHECK(wide[offset-1]==0xee && wide[offset+bytes]==0xee);
+ for(size_t i=0;i<luma;i++)CHECK(wide[offset+i]==77);
+ for(size_t i=0;i<chroma;i++)CHECK(wide[offset+luma+2*i]==32 && wide[offset+luma+2*i+1]==230);
+ free(wide);
+ width=4;height=2;bytes=12;capacity=sizeof pixels;
+ memcpy(impl+0x38,&width,4);memcpy(impl+0x3c,&height,4);memcpy(client+4,&bytes,4);memcpy(client+0x18,&capacity,8);memcpy(client+0x28,&base,8);
  color=21;avc_client_nv12(impl,client,color,width,height);CHECK(pixels[16]==32 && pixels[17]==230 && pixels[18]==33 && pixels[19]==231);
  type=4;memcpy(impl+0xe0,&type,4);avc_client_nv12(impl,client,color,width,height);CHECK(pixels[7]==0xee && pixels[20]==0xee);
  avc_decoder *d=NULL;CHECK(h_avc_Init((void**)&d,0)==0);d->info=(avc_info){.width=16,.height=16};d->reorder=3;
@@ -29,5 +46,5 @@ int main(void){
  memcpy(header+0x14,&filled,4);memcpy(header+0x58,&stamp,8);h_avc_Filled(component,header);
  filled=0;flags=1;stamp=0;memcpy(header+0x14,&filled,4);memcpy(header+0x60,&flags,4);memcpy(header+0x58,&stamp,8);h_avc_Filled(component,header);memcpy(&stamp,header+0x58,8);CHECK(stamp==400400 && forwarded==2);
  stamp=0;flags=0;memcpy(header+0x60,&flags,4);memcpy(header+0x58,&stamp,8);h_avc_Filled(component,header);memcpy(&stamp,header+0x58,8);CHECK(stamp==0 && forwarded==3);
- CFRelease(image);h_avc_Release(d);puts("AVC contract passed: client planar-to-NV12 with offset guards, NV12 pass-through, audio exclusion, NV12 to padded planar YUV, B-frame ordering, bounded delay, EOS drain, malformed input, empty-EOS timestamp and callback preservation");return 0;
+ CFRelease(image);h_avc_Release(d);puts("AVC contract passed: client planar-to-NV12 with offset guards, packed 1916x1080 with coded 1920x1088 metadata, NV12 pass-through, audio exclusion, NV12 to padded planar YUV, B-frame ordering, bounded delay, EOS drain, malformed input, empty-EOS timestamp and callback preservation");return 0;
 }
