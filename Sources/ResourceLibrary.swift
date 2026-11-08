@@ -80,7 +80,13 @@ struct ResourceLayout {
             if let content {guard content.dlc_indexes.sorted()==contents.map(\.index).sorted() else {throw ImportFailure.invalid("DLC 清单与本次导入结果不一致")}}
             for dir in [rom]+contents.map({dlc.appendingPathComponent(String($0.index),isDirectory:true)}) {
                 let marker=dir.appendingPathComponent("complete.json")
-                guard let row=try JSONSerialization.jsonObject(with:resourceMetadata(marker)) as? [String:Any],row["format"] as? String=="pjdv-prepared-romfs-v1",(row["file_count"] as? Int ?? 0)>0 else {throw ImportFailure.invalid("资源未完成导入："+dir.lastPathComponent)}
+                let metadata:Data
+                do {metadata=try resourceMetadata(marker)}
+                catch let error as NSError where error.domain==NSCocoaErrorDomain && [NSFileReadNoSuchFileError,NSFileNoSuchFileError].contains(error.code) {
+                    let relative=dir==rom ? rom.lastPathComponent+"/complete.json" : "DLC/"+dir.lastPathComponent+"/complete.json"
+                    throw ImportFailure.invalid(LF("资源未完成：缺少 %@。请导入原始 XCI，或完整复制已导入成功的 GameResources；不要手动新建完成标记。",relative))
+                }
+                guard let row=try JSONSerialization.jsonObject(with:metadata) as? [String:Any],row["format"] as? String=="pjdv-prepared-romfs-v1",(row["file_count"] as? Int ?? 0)>0 else {throw ImportFailure.invalid("资源未完成导入："+dir.lastPathComponent)}
             }
             let critical=["rom_switch/rom/pv_db.txt","rom_switch/rom/gm_module_tbl.farc"]
             guard critical.allSatisfy({fm.fileExists(atPath:rom.appendingPathComponent($0).path)}),ResourceLanguageProbe.detect(root:rom).contains("ja") else {throw ImportFailure.invalid("资源缺少曲库、服装数据库或完整日语菜单")}

@@ -53,7 +53,7 @@ final class ResourceImportController:UIViewController,UIDocumentPickerDelegate {
         cancel.setTitle(L("取消导入（保留已完成部分）"),for:.normal);cancel.addTarget(self,action:#selector(cancelWork),for:.touchUpInside);cancel.isHidden=true
         let row1=UIStackView(arrangedSubviews:[xci,folder]);row1.distribution = .fillEqually;row1.spacing=16
         let row2=UIStackView(arrangedSubviews:[keys,local]);row2.distribution = .fillEqually;row2.spacing=16
-        let help=UILabel();help.numberOfLines=0;help.font = .systemFont(ofSize:13);help.text=L("iPad：也可用访达 → iPad → 文件 → PJDV M39，拷入整份 GameResources。\nMac：导入时可选择外置 SSD 为目标。完整资源版可直接启动。")
+        let help=UILabel();help.numberOfLines=0;help.font = .systemFont(ofSize:13);help.text=L("本体导入只需 XCI 和 prod.keys；包内 DLC 随本体导入，MOD 请使用单独入口。\nXCI 放在 PJDVM39 根目录后点“检测 App 根目录中的 XCI／密钥”，或直接点“导入 XCI”。\n“使用已拷入本机的资源”仅连接已导入成功的完整 GameResources，不会解压 XCI。")
         activity.hidesWhenStopped=true;bar.isHidden=true
         transfer.numberOfLines=0;transfer.font = .monospacedDigitSystemFont(ofSize:13,weight:.regular);transfer.isHidden=true;transfer.accessibilityIdentifier="resources.transferRates"
         var rows:[UIView]=[title,version,info,row1,row2]

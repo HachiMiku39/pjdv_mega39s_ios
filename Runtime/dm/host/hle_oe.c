@@ -109,10 +109,23 @@ HLE_FORCE("_ZN2nn2oe25GetProgramTotalActiveTimeEv", "Return active foreground na
     return total;
 }
 
-// OperationMode：0 Handheld、1 Console；PerformanceMode：0 Normal、1 Boost（与运行模式一一对应）
-// OperationMode: 0 Handheld, 1 Console; PerformanceMode: 0 Normal, 1 Boost (one-to-one with the operation mode)
-HLE_FORCE("_ZN2nn2oe16GetOperationModeEv", "运行模式查询；按 DM_OPMODE 给固定值", int, h_oe_GetOpMode, void) { int u = g_ui_opmode; if (atomic_exchange(&g_ui_armed, 0)) atomic_fetch_add(&g_ui_reads, 1); return u >= 0 ? u : opmode(); }
-HLE_FORCE("_ZN2nn2oe18GetPerformanceModeEv", "性能模式查询；与运行模式一致", int, h_oe_GetPerfMode, void) { return opmode(); }
+// OperationMode: 0 Handheld, 1 Console. M39 reports its integrated touch display
+// independently of PerformanceMode (0 Normal, 1 Boost); other games retain
+// the original operation/performance coupling and temporary UI overrides.
+HLE_FORCE("_ZN2nn2oe16GetOperationModeEv", "M39 host has an integrated touch display; other games retain operation-mode notifications", int, h_oe_GetOpMode, void) {
+#if defined(DM_GAME_M39)
+    // Original M39 disables Touch Play in Console mode, independently of the
+    // selected Npad. An Apple host keeps its touch display in every quality
+    // profile. DM_OPMODE remains the performance/render-profile input below;
+    // do not make the original game's input availability depend on that knob.
+    return 0;
+#else
+    int u = g_ui_opmode;
+    if (atomic_exchange(&g_ui_armed, 0)) atomic_fetch_add(&g_ui_reads, 1);
+    return u >= 0 ? u : opmode();
+#endif
+}
+HLE_FORCE("_ZN2nn2oe18GetPerformanceModeEv", "性能模式查询；保留宿主选择的性能档", int, h_oe_GetPerfMode, void) { return opmode(); }
 HLE_FORCE("_ZN2nn2oe27SetPerformanceConfigurationENS0_15PerformanceModeEi", "设 CPU/GPU 频率档；宿主不调频", void, h_oe_SetPerfCfg, int mode, int cfg) {
     LOG("oe::SetPerformanceConfiguration mode=%d cfg=%#x（忽略）", mode, cfg);
 }

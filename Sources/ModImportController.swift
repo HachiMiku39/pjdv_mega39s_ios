@@ -269,6 +269,13 @@ final class ModImportController: UITableViewController, UIDocumentPickerDelegate
         let started=Date()
         DispatchQueue.global(qos:.utility).async { [weak self,access] in
             let result=Result<Bool,Error> {
+                // DLC belongs to the base XCI import. MOD installation is a
+                // separate workflow and must not write packages before a
+                // complete, usable base has been selected.
+                let baseAccess:ResourceAccess
+                do {let candidate=try ResourceLibrary.open();_=try ResourceLayout.locate(candidate.root);baseAccess=candidate}
+                catch {throw ImportFailure.invalid(L("请先使用 XCI 和 prod.keys 完成本体导入，再添加 MOD。"))}
+                defer {withExtendedLifetime(baseAccess){}}
                 let coordinator=NSFileCoordinator(filePresenter:nil)
                 var coordinationError:NSError?, installed:Result<InstalledMod,Error>?
                 coordinator.coordinate(readingItemAt:access.root,options:.withoutChanges,error:&coordinationError) { url in

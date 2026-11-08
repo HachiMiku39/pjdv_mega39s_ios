@@ -28,11 +28,23 @@ void hid_keys_init(void){}
 static uint32_t style_of(uint32_t id){
     uint32_t ids=atomic_load(&supported_ids),styles=atomic_load(&supported_styles);
     // An external/full-key controller is valid in handheld operation mode too.
-    // M39 requests player IDs 0..3; never force its input onto unrequested 0x20.
+    // Keep player 0 on this route; M39's integrated Touch Play device is
+    // registered alongside it below, rather than replacing controller input.
     // DualSense/Xbox use the full-key layout. The JoyDual A/B candidate did
     // not restore gameplay rumble; retain JoyDual only as a restricted fallback.
     if(id==0 && (ids&1))return styles&STYLE_FULLKEY?STYLE_FULLKEY:styles&STYLE_JOYDUAL?STYLE_JOYDUAL:0;
-    if(id==NPAD_HANDHELD && (ids&0x100) && dm_opmode()==0 && (styles&STYLE_HANDHELD))return STYLE_HANDHELD;
+    // M39 Touch Play selects the handheld input object and gates gameplay on
+    // its connection, even though the separate touchscreen path animates UI.
+    // On this host DM_OPMODE also selects a graphics-quality profile; selecting
+    // docked quality must not disconnect the host's integrated touch controls.
+    // Still honor the game's requested IDs/styles and leave full-key routing
+    // intact. Other games retain the original hardware operation-mode rule.
+#if defined(DM_GAME_M39)
+    int handheld_available=1;
+#else
+    int handheld_available=dm_opmode()==0;
+#endif
+    if(id==NPAD_HANDHELD && (ids&0x100) && handheld_available && (styles&STYLE_HANDHELD))return STYLE_HANDHELD;
     return 0;
 }
 static void fill(NpadState *s,uint32_t id,uint32_t style){
@@ -58,6 +70,12 @@ HLE_FORCE("_ZN2nn3hid21InitializeTouchScreenEv", "连 hid 服务；触屏输入�
 HLE_FORCE("_ZN2nn3hid22SetSupportedNpadIdTypeEPKjm", "支持的手柄号；宿主固定", void, h_hid_SetIds, const uint32_t *ids, uint64_t n) {
     uint32_t mask=0;
     for(uint64_t i=0;ids && i<n && i<16;i++)if(ids[i]<8)mask|=1u<<ids[i];else if(ids[i]==NPAD_HANDHELD)mask|=0x100;
+#if defined(DM_GAME_M39)
+    // M39 registers external player IDs 0..3, but Touch Play independently
+    // selects its built-in handheld input object (0x20). Keep that integrated
+    // device alongside requested players; an empty ID set still disables all.
+    if(mask)mask|=0x100;
+#endif
     atomic_store(&supported_ids,mask);
     if(getenv("PJDV_INPUT_TRACE")){for(uint64_t i=0;ids && i<n && i<16;i++)LOG("PJDV supported Npad id[%llu]=%#x",i,ids[i]);}
 }
@@ -68,7 +86,7 @@ HLE_FORCE("_ZN2nn3hid24SetSupportedNpadStyleSetENS_4util10BitFlagSetILi32ENS0_12
     if(getenv("PJDV_INPUT_TRACE"))LOG("PJDV supported Npad styles=%#x",styles);
 }
 HLE_FORCE("_ZN2nn3hid29SetNpadHandheldActivationModeENS0_26NpadHandheldActivationModeE", "掌机手柄激活方式；宿主固定", void, h_hid_SetHhMode, int m) { (void)m; }
-HLE_FORCE("_ZN2nn3hid15GetNpadStyleSetERKj", "手柄样式查询；跟 DM_OPMODE 走", uint32_t, h_hid_GetStyle, const uint32_t *id) { return style_of(*id); }
+HLE_FORCE("_ZN2nn3hid15GetNpadStyleSetERKj", "查询已启用的手柄样式及集成触屏控制器", uint32_t, h_hid_GetStyle, const uint32_t *id) { return style_of(*id); }
 // Read-only v1.0.9 diagnostics. Read through Mach so a retiring guest object
 // cannot turn a diagnostic snapshot into a dangling-pointer access.
 static int vibration_read(uintptr_t address,void *out,size_t size){

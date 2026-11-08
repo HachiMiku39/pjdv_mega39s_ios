@@ -1,8 +1,8 @@
-# 源码与构建（2026-10-25）
+# 源码与构建（2026-11-08）
 
-本仓库包含 Swift/UIKit 宿主、Mac AppKit 辅助组件、NVN → Metal／Horizon 兼容层、逆向工具和测试。公开源码与精简预览包为 **0.1.5 build21**。AutoPlay、调试信息和热切换的实际验证范围及限制见中英文 README。游戏资源、密钥、存档和本机签名数据不发布。
+本仓库包含 Swift/UIKit 宿主、Mac AppKit 辅助组件、NVN → Metal／Horizon 兼容层、逆向工具和测试。公开源码与精简预览包为 **0.1.5 build22**。AutoPlay、调试信息和热切换的实际验证范围及限制见中英文 README。游戏资源、密钥、存档和本机签名数据不发布。
 
-The public source and lightweight preview installers are **0.1.5 build21**. Both READMEs describe measured AutoPlay, diagnostics and hot-switch checks and outstanding limitations. Game payloads, keys, saves and local signing data are excluded.
+The public source and lightweight preview installers are **0.1.5 build22**. Both READMEs describe measured AutoPlay, diagnostics and hot-switch checks and outstanding limitations. Game payloads, keys, saves and local signing data are excluded.
 
 ## 源码目录
 
@@ -157,3 +157,9 @@ The release uses the public source baseline plus the shared movie-origin fix, ve
 新增 `Scripts/test-pc-song-import.sh`（合成谱面／封面／字库／时间基准），以及 `Scripts/test-avc-contract.sh`（实际 AVC 边界与 AddressSanitizer）。两者使用全新外置 `PJDV_TEST_ROOT`；后者可用 `PJDV_RUNTIME_SOURCE` 指定 `Runtime/dm`。模型、安装器、多选组合检查仍保留。测试不需要商业游戏或真实密钥。
 
 Build21 adds the three native song/video sources above and pinned BSD-licensed libvpx1.17.0 source. The decoder-only library builds in external DerivedData without network downloads. No PC plugin executes and no game/MOD media is included. The song runner covers synthetic charts, jackets, fonts and timebases; the AVC runner includes the real runtime boundary under AddressSanitizer. Use a fresh external test directory and optionally the runtime-root override. These tests need no commercial assets or real keys. See the release report for actual Mac samples and pending device acceptance.
+
+## build22 输入与导入回归 / Input and import regression
+
+`bash Scripts/test-input-contract.sh` 检查实际 Npad／原生触屏 C 实现（ASan／UBSan）、Swift 输入顺序，以及 M39 与共用运行模式语义。`bash Scripts/test-resource-import.sh` 生成八个小型合成 XCI，验证无 DLC 本体、包内 DLC／更新、完成标记缺失、续导和根目录检测；不使用商业资源或生产密钥。默认输出在外置开发盘，也可设置 `PJDV_TEST_BUILD_ROOT` 为外置目录。输入测试可用 `PJDV_RUNTIME_SOURCE` 指定公开的 `Runtime/dm`。
+
+The two runners above exercise actual C input services and bounded synthetic XCI imports. They require no commercial payloads or real production keys. Keep build outputs on external storage via PJDV_TEST_BUILD_ROOT; PJDV_RUNTIME_SOURCE can select Runtime/dm. Native gameplay evidence and physical-device/graphics-equivalence limits are recorded in Reports/TOUCH-PLAY-20261108.md and Reports/IMPORT-COMPLETION-20261108.md.

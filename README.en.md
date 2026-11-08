@@ -2,7 +2,17 @@
 
 [简体中文](README.md) | **English**
 
-**0.1.5 build21 lightweight preview — November 1, 2026**
+**0.1.5 build22 lightweight preview — November 8, 2026**
+
+- Fixes integrated Handheld availability and operation-mode gating behind native Touch Play animations without judgments. With AutoPlay off and the host pad hidden, native simulator taps score and Catch the Wave EXTREME drags produce 14560 SLIDE points.
+- Missing `complete.json` now identifies the affected path and offers recovery without bypassing validation. **Base import needs only XCI + prod.keys; bundled DLC is imported with the base. Mods use a separate entry and require a complete base first.** No separate DLC files or manually created JSON are required.
+- Updates import explanations in all five UI languages and retains original XCI, existing resources and saves. Reports distinguish simulator observations from pending physical-device multitouch, prolonged timing and internal graphics-equivalence acceptance. No new graphics features or universal MOD compatibility are claimed.
+
+[Download build22 lightweight preview](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b22) · [Release scope](Reports/RELEASE-build22-20261108.md) · [Touch evidence](Reports/TOUCH-PLAY-20261108.md) · [Import/recovery guide](Reports/IMPORT-COMPLETION-20261108.md)
+
+**Installation:** Re-sign the unsigned IPA with your own valid signing. The arm64 Mac DMG is ad-hoc signed, not notarized. Lightweight installers/source only; no game/MOD payloads, keys, saves or development profiles. Back up saves and update in place to retain resources.
+
+**Inherited build21 features and limits — November 1, 2026**
 
 Adds in-App ZIP/folder recognition and conversion for supported resource-only PC models and conventional movie-song packages, beyond the exact Leo/need 1.0.2 sample. Includes streamed USM/VP9 conversion with a bounded software fallback. Fixes paired CJK lyric atlases, independent song-list composition, incorrectly rejected fractional timebases and Cosmos’ 1916-pixel video-loading crash. Folder copies prefer independent APFS clones where supported, otherwise bounded copying; verification, cancellation and rollback remain.
 
@@ -16,7 +26,7 @@ Raw Kimagure Mercy model and Tonny’s movie-song ZIPs received Mac samples. Com
 
 **Complete Eden pack sampling and cleanup, November 1, 2026 — unpublished source candidate:** Complete developer-adapted Heavy Metal (14 songs / 37 charts) and Rock (19 / 35) folders were independently imported and combined inside the App. Four preselected random EXTREME songs completed. Fixed Cosmos' 1916-pixel client-video layout crash and an incorrectly rejected valid IVF timebase; all three platform targets built. **Developer ID preparation remains necessary; direct raw Eden-pack import is not complete.** Generated trial copies from this and the previous Eden round were deleted as requested, measuring about 38.22 GB reclaimed while retaining original Mods, XCI, saves and evidence. [Bilingual results, screenshots and cleanup scope](Reports/EDEN-FULL-PACKS-20261101.md)
 
-The following entries retain their original dated version status. “Local candidate / public installer remains build19” describes that historical stage; the build21 summary above defines this release.
+The following entries retain their original dated version status. “Local candidate / public installer remains build19” describes that historical stage; the build22 summary above defines this release.
 
 **Eden single-song composition, November 1, 2026 — unpublished source candidate:** One developer subset each from Beginner, Catchy Pop and Vibes was independently converted inside the App and enabled together. HARD/HARD/EXTREME completed with 686/607/665 COOL in disposable AutoPlay saves. Missing Chinese glyphs and independent playlist collisions were corrected; jackets, sampled subtitles and cold-launch selection were checked, and ordinary-save hashes stayed unchanged. **Temporary IDs 800–802 do not establish complete raw Eden import; persistent IDs, Core, module and 3D/Edit adapters remain pending.** [Bilingual evidence, screenshots and timing limits](Reports/EDEN-PLAYBACK-20261101.md)
 

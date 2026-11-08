@@ -306,3 +306,8 @@
 "支持资源型模型包和常规视频歌曲包；特殊玩法及插件需适配。" = "리소스 모델과 일반 영상 곡 팩을 변환합니다. 특수 게임 방식과 플러그인은 별도 대응이 필요합니다.";
 
 "正在转换 MOD 视频…" = "MOD 영상 변환 중…";
+
+/* Base XCI import and prepared-resource recovery */
+"资源未完成：缺少 %@。请导入原始 XCI，或完整复制已导入成功的 GameResources；不要手动新建完成标记。" = "리소스가 불완전합니다: %@ 파일이 없습니다. 원본 XCI를 가져오거나 가져오기가 완료된 GameResources 폴더 전체를 복사하세요. 완료 표시 파일을 직접 만들지 마세요.";
+"本体导入只需 XCI 和 prod.keys；包内 DLC 随本体导入，MOD 请使用单独入口。\nXCI 放在 PJDVM39 根目录后点“检测 App 根目录中的 XCI／密钥”，或直接点“导入 XCI”。\n“使用已拷入本机的资源”仅连接已导入成功的完整 GameResources，不会解压 XCI。" = "본편 가져오기에는 XCI와 prod.keys만 필요하며, 포함된 DLC는 함께 가져옵니다. MOD는 별도 메뉴를 사용하세요.\nXCI를 PJDVM39 루트에 넣은 뒤 앱 루트의 XCI/키 감지를 선택하거나 XCI 가져오기를 누르세요.\n기기에 복사된 리소스 사용은 완전히 가져온 GameResources만 연결하며, XCI 압축을 풀지 않습니다.";
+"请先使用 XCI 和 prod.keys 完成本体导入，再添加 MOD。" = "MOD를 추가하기 전에 XCI와 prod.keys로 본편 가져오기를 완료하세요.";

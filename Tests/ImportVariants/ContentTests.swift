@@ -53,6 +53,22 @@ private let testChain = "test" as NSString
         try XCIResourceImporter(plan:base,root:baseOut,cancel:{false},report:{_ in}).run()
         let baseLayout=try ResourceLayout.locate(baseOut)
         precondition(baseLayout.dlcContents.isEmpty && baseLayout.languages==["ja"])
+        // A copied XCI is an import source, not prepared GameResources.
+        do {_=try ResourceLayout.locate(inboxRoot);preconditionFailure("Accepted loose XCI as extracted resources")}
+        catch ImportFailure.invalid(let message) {precondition(message.contains("GameResources"))}
+        func checkMissingCompletion(_ root:URL,_ marker:URL,_ relative:String) throws {
+            let saved=try Data(contentsOf:marker)
+            try FileManager.default.removeItem(at:marker)
+            defer {try!saved.write(to:marker,options:.atomic)}
+            do {_=try ResourceLayout.locate(root);preconditionFailure("Accepted missing completion marker")}
+            catch ImportFailure.invalid(let message) {
+                precondition(message.contains(relative) && message.contains("XCI") && message.contains("GameResources"))
+            }
+            _=try ResourceLayout.locate(root,requireComplete:false) // resumable destination
+            precondition(!FileManager.default.fileExists(atPath:marker.path)) // never forge success
+        }
+        try checkMissingCompletion(baseOut,baseLayout.rom.appendingPathComponent("complete.json"),"romfs/complete.json")
+        print("PASS loose XCI is not prepared resources; missing base completion gives import guidance without creating a marker")
         let pv=try Data(contentsOf:baseLayout.rom.appendingPathComponent("rom_switch/rom/pv_db.txt"))
         precondition(pv==Data("fixture-pv-db\n".utf8))
         let extracted=io.sample(now:1)
@@ -79,6 +95,8 @@ private let testChain = "test" as NSString
         let mixedLayout=try ResourceLayout.locate(mixedOut)
         precondition(mixedLayout.dlcContents.map(\.index)==[2,23,99])
         precondition(mixedLayout.languages==["zh-Hans","ja"])
+        try checkMissingCompletion(mixedOut,mixedLayout.dlc.appendingPathComponent("23/complete.json"),"DLC/23/complete.json")
+        print("PASS missing DLC completion identifies the affected path; complete resources and resumable imports remain accepted")
         let markerBefore=try Data(contentsOf:baseOut.appendingPathComponent("game-content.json"))
         do {try XCIResourceImporter(plan:mixed,root:baseOut,cancel:{false},report:{_ in}).run();preconditionFailure("Overwrote other version")} catch {}
         let markerAfter=try Data(contentsOf:baseOut.appendingPathComponent("game-content.json"))

@@ -5,7 +5,17 @@ BETTER THAN MOST OF APPS
 
 **简体中文** | [English](README.en.md)
 
-**0.1.5 build21 精简预览｜2026-11-01**
+**0.1.5 build22 精简预览｜2026-11-08**
+
+- 修复原生 Touch Play“有点击动画、没有判定”的集成 Handheld 连接和运行模式门限；AutoPlay 关闭、宿主虚拟手柄隐藏时，模拟器点按已得分，《Catch the Wave》EXTREME 原生滑动取得 14560 SLIDE 分。
+- `complete.json` 缺失时指出对应路径并给出恢复指引，不绕过完整性检查。**本体导入只需 XCI＋prod.keys；包内 DLC 随本体导入；MOD 使用独立入口，需先有完整本体。** 不需另找 DLC 包或手动制作 JSON。
+- 更新五种语言的资源页说明，保留原始 XCI、已有资源和存档。iOS／模拟器输入与导入验证见报告；真机多触点、长时间手感及运行模式变化后的内部画质对照仍待回测。build22 不增加新的画质功能或通用 MOD 兼容承诺。
+
+[下载 build22 精简预览](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b22) · [本版说明](Reports/RELEASE-build22-20261108.md) · [触屏判定证据](Reports/TOUCH-PLAY-20261108.md) · [正确导入与错误恢复](Reports/IMPORT-COMPLETION-20261108.md)
+
+**安装：** IPA 未签名，需自行有效签名；Mac DMG 为 arm64／ad-hoc 签名、未公证。只提供精简包与源码，不含游戏／MOD 资源、密钥、存档或本机签名配置。升级前备份存档，覆盖安装以保留资源。
+
+**继承 build21 的功能与限制（2026-11-01）**
 
 新增受支持的资源型 PC 模型与常规视频歌曲包的 App 内 ZIP／文件夹识别和转换，不再仅限 Leo/need 1.0.2 精确样本。内置流式 USM／VP9 转换及受限软件解码回退，修复中文字幕字库配对、独立曲包列表合并、合法分数时间基准误拒绝，以及《Cosmos》1916 像素视频载入崩溃。文件夹副本在支持时使用独立 APFS 克隆，其他情况按块复制；保留校验、取消和失败回滚。
 
@@ -19,7 +29,7 @@ Kimagure Mercy 模型与 Tonny’s 视频歌曲原始 ZIP 已在 Mac 抽样。Ed
 
 **Eden 完整曲包抽样与清理（2026-11-01，未发布源码候选）：** Heavy Metal 14 首／37 谱面、Rock 19 首／35 谱面完整开发适配后由 App 分别导入并组合，预先随机抽取四首 EXTREME 均完整结算。修复 Cosmos 的 1916 像素视频布局崩溃及合法 IVF 时间基准误拒绝，三平台编译通过。**仍需开发侧临时编号，不代表原始 Eden 整包直接导入已完成。** 按要求删除本轮及上一轮 Eden 移植测试副本，实测释放约 38.22 GB，保留原始 Mod、XCI、存档及证据。[中英结果、截图与清理范围](Reports/EDEN-FULL-PACKS-20261101.md)
 
-以下记录保留验证当日的版本状态；“本地候选／公开包仍为 build19”等表述是历史状态。本次发布范围以上方 build21 说明为准。
+以下记录保留验证当日的版本状态；“本地候选／公开包仍为 build19”等表述是历史状态。本次发布范围以上方 build22 说明为准。
 
 **Eden 单曲组合播放（2026-11-01，未发布源码候选）：** Beginner、Catchy Pop、Vibes 各取一首开发子集，由 App 分别转换后同时加载；HARD／HARD／EXTREME 均完整结算（686／607／665 COOL，AutoPlay 临时档）。修复中文歌词方框和独立曲包列表冲突，封面、字幕与冷启动配置已检查，普通存档哈希未变。**临时 800–802 编号不代表完整 Eden 原包可直接导入；持久编号、Core、模型及 3D／Edit 适配仍待完成。** [中英报告、截图与显示计时边界](Reports/EDEN-PLAYBACK-20261101.md)
 
@@ -126,6 +136,10 @@ GitHub 轻量包没有 XCI、提取后的大型游戏资源、prod.keys 或本�
 本地 development IPA 的签名只覆盖当前登记设备，并有有效期；换 iPad 需要重签。更新测试版尽量覆盖安装，先备份存档再做卸载操作。
 
 **版本提示：** build14 已包含根目录自动导入、备用文件夹入口和导入内存修复；历史 build10 不含这些新入口。
+
+**本体导入只需要 XCI 和 prod.keys。** DLC 已包含在 XCI 中，随本体导入；没有 DLC 的基础包也能导入。MOD 使用独立入口，需先完成本体导入。`complete.json` 由 App 在导入完成后生成，玩家不需额外提供。
+
+遇到 `complete.json` 不存在：不要手动新建 JSON。原始 XCI 请点“导入 XCI”或“检测 App 根目录中的 XCI／密钥”；“使用已拷入本机的资源”只适用于完整提取成功的 GameResources。复制不完整时请补齐整个目录，导入中断时重新选择同一 XCI 续导。[错误复现与中英恢复指南](Reports/IMPORT-COMPLETION-20261108.md)
 
 ### 方式一：根目录自动导入（build13 起，推荐）
 
