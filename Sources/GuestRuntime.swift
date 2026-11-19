@@ -61,9 +61,9 @@ enum GuestRuntime {
     }
     static func validateMapping(completion: @escaping (String) -> Void) {
         let autoplay = AutoPlaySession.enabled
-        let selectedMods = Result { try RuntimeModCatalog.current.selectedMods() }
         let launchOverlay = initialOverlay
         DispatchQueue.global(qos: .userInitiated).async {
+            let selectedMods = Result { try RuntimeModCatalog.current.selectedMods() }
             var error = [CChar](repeating: 0, count: 256)
             let loaded = error.withUnsafeMutableBufferPointer {
                 loadGuestImages($0.baseAddress!, UInt($0.count))

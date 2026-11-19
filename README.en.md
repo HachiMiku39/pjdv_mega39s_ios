@@ -2,6 +2,15 @@
 
 [简体中文](README.md) | **English**
 
+**0.1.5 build23 lightweight preview — November 19, 2026**
+
+- Each cold launch checks GitHub Releases in the background, including published lightweight previews. A newer version offers its release page. Offline access, timeouts and rate limits do not prevent play. No automatic download/installation, GitHub login or token is required.
+- Every Apple Silicon Mac can manually select desktop-pixel or window-pixel 1:1 output while retaining 16:9. This matches the final output surface using ordinary scaling; **the internal 3D scene is not rendered natively at desktop resolution**. Conservative defaults, M1/M2 advanced-effect restrictions and mobile resolution caps remain.
+- Resource preflight runs off the main thread. Bundled shader checks run fully once per process and then reuse success; external resources are rechecked. Repeated shader-preflight median measured about 168.67 ms → 0.0032 ms. **This is not a full-song loading or FPS improvement measurement.**
+- Mac/iOS Release builds and update, display-policy and shader-validation tests pass. M3 Max checks covered live GitHub access, window/full-screen behavior and output-mode round trips. No M1/iPad device or full-song performance qualification was performed this round.
+
+[Download build23 lightweight preview](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b23) · [Implementation and validation boundaries](Reports/UPDATE-DISPLAY-20261119.md)
+
 **0.1.5 build22 lightweight preview — November 8, 2026**
 
 - Fixes integrated Handheld availability and operation-mode gating behind native Touch Play animations without judgments. With AutoPlay off and the host pad hidden, native simulator taps score and Catch the Wave EXTREME drags produce 14560 SLIDE points.

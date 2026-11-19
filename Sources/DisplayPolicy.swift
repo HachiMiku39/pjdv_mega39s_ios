@@ -37,7 +37,11 @@ enum GameFrameGenerationPolicy {
 
 struct GameDisplayPolicy {
     enum DuoPose: String { case ordinary, folded, tabletop, expanded }
-    static func outputMode(_ requested: String, phone: Bool, conservative: Bool = false) -> String {
+    static func outputMode(_ requested: String, phone: Bool, conservative: Bool = false, mac: Bool = false) -> String {
+        // Explicit desktop/window pixel matching is available on every Apple
+        // Silicon Mac. It grants no HDR/RT/120 capability or new default preset.
+        if requested == "desktop" { return mac ? requested : "1080p" }
+        if mac && requested == "screen" { return requested }
         guard phone || conservative else { return requested }
         switch requested {
         case "1440fx", "screenfx": return "1080fx"
@@ -86,5 +90,11 @@ struct GameDisplayPolicy {
     }
     static func usesMetalFX(mode: String) -> Bool {
         ["1080fx", "1440fx", "screenfx"].contains(mode)
+    }
+    static func desktopDrawableSize(pixels: CGSize) -> CGSize {
+        guard pixels.width.isFinite, pixels.height.isFinite, pixels.width >= 16, pixels.height >= 9,
+              pixels.width <= 16384, pixels.height <= 16384 else { return CGSize(width: 1920, height: 1080) }
+        let fitted = fittedRect(in: CGRect(origin: .zero, size: pixels))
+        return CGSize(width: fitted.width.rounded(), height: fitted.height.rounded())
     }
 }

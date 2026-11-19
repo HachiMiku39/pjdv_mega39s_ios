@@ -5,6 +5,15 @@ BETTER THAN MOST OF APPS
 
 **简体中文** | [English](README.en.md)
 
+**0.1.5 build23 精简预览｜2026-11-19**
+
+- 每次冷启动在后台检查 GitHub Releases，包含已发布的精简预览版；有更新时提示并可打开发布页。离线、超时或限流不会阻止启动，不自动下载安装，也不需要 GitHub 登录或令牌。
+- 所有 Apple Silicon Mac 均可手动选择“桌面像素 1:1”或“窗口像素 1:1”，保持 16:9。匹配的是最终输出表面，采用普通放大，**不代表内部 3D 场景已改为桌面原生分辨率**。M1／M2 默认画质、高级特效限制和移动端分辨率限制保留。
+- 资源预检移到后台，随 App 提供的着色器资源在每次进程启动首次完整检查后复用结果；外部资源继续校验。实测重复着色器预检中位数约 168.67 ms → 0.0032 ms，**不是整曲加载时间或 FPS 提升结果**。
+- Mac／iOS Release 与更新、显示策略、着色器校验测试通过。M3 Max 实际检查 GitHub、窗口／全屏和分辨率往返切换通过；本轮没有 M1／iPad 真机或整曲性能验收。
+
+[下载 build23 精简预览](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b23) · [实现与测试边界](Reports/UPDATE-DISPLAY-20261119.md)
+
 **0.1.5 build22 精简预览｜2026-11-08**
 
 - 修复原生 Touch Play“有点击动画、没有判定”的集成 Handheld 连接和运行模式门限；AutoPlay 关闭、宿主虚拟手柄隐藏时，模拟器点按已得分，《Catch the Wave》EXTREME 原生滑动取得 14560 SLIDE 分。

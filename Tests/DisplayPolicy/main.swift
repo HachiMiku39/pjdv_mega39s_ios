@@ -129,3 +129,19 @@ for name in ["Apple M3 Ultra", "Apple M5 Max", "Apple M5 Ultra"] {
 }
 for name in ["Apple M3 Max", "Apple M4", "Apple M5", "Unknown"] { check(!GameFrameGenerationPolicy.native120ModelAllowed(soc: name, mac: true), "Native120 allowlist bypass") }
 print("Native120 exact Mac SoC allowlist and family9+ interpolation policy: PASS")
+
+// Explicit desktop/window pixel matching is a Mac output choice, not a new
+// graphics-feature capability. Phones/tablets retain their prior restrictions.
+for family in [7,8,9] {
+    let policy=GameHardwarePolicy(family:family)
+    precondition(GameDisplayPolicy.outputMode("desktop",phone:false,conservative:policy.conservative,mac:true)=="desktop")
+    precondition(GameDisplayPolicy.outputMode("screen",phone:false,conservative:policy.conservative,mac:true)=="screen")
+    if family<9 {precondition(!policy.allowsHDR && !policy.allowsRayTracing && !policy.allows120(phone:false))}
+}
+precondition(GameDisplayPolicy.outputMode("desktop",phone:true)=="1080p")
+precondition(GameDisplayPolicy.outputMode("desktop",phone:false)=="1080p")
+precondition(GameDisplayPolicy.desktopDrawableSize(pixels:CGSize(width:3840,height:2160))==CGSize(width:3840,height:2160))
+precondition(GameDisplayPolicy.desktopDrawableSize(pixels:CGSize(width:3456,height:2234))==CGSize(width:3456,height:1944))
+precondition(GameDisplayPolicy.desktopDrawableSize(pixels:CGSize(width:CGFloat.infinity,height:2160))==CGSize(width:1920,height:1080))
+precondition(GameDisplayPolicy.desktopDrawableSize(pixels:CGSize(width:20000,height:10000))==CGSize(width:1920,height:1080))
+print("Mac desktop pixels on family7/8/9, 16:9 aspect, invalid dimensions and mobile limits: PASS")

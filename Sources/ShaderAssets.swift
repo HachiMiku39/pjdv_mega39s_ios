@@ -1,5 +1,21 @@
 import Foundation
 
+// Cache successes only for the immutable shader assets inside this app bundle.
+// External resources still receive a fresh validation. A new process/app update
+// always runs the check again; concurrent launch probes share one validation.
+final class ShaderValidationCache {
+    private let lock = NSLock()
+    private var successes = Set<String>()
+    func validate(root: URL, chain: String, check: () throws -> Void) throws {
+        lock.lock(); defer { lock.unlock() }
+        let key = root.standardizedFileURL.path + "\u{0}" + chain
+        guard !successes.contains(key) else { return }
+        try check()
+        if successes.count >= 8 { successes.removeAll() }
+        successes.insert(key)
+    }
+}
+
 enum ShaderAssets {
     static func validate(root: URL, chain: String) throws {
         let fm = FileManager.default

@@ -26,3 +26,14 @@ if CommandLine.arguments.count > 1 {
     try ShaderAssets.validate(root: URL(fileURLWithPath: CommandLine.arguments[1]), chain: "pjdv-842acf8d7583")
     print("PASS actual complete shader cache")
 }
+
+let memo=ShaderValidationCache()
+let countLock=NSLock();var validations=0
+DispatchQueue.concurrentPerform(iterations:32) {_ in
+    try!memo.validate(root:root,chain:"A") {countLock.lock();validations+=1;countLock.unlock()}
+}
+precondition(validations==1)
+try memo.validate(root:root,chain:"B"){validations+=1};precondition(validations==2)
+do {try memo.validate(root:root,chain:"failed"){throw NSError(domain:"test",code:1)}} catch {}
+try memo.validate(root:root,chain:"failed"){validations+=1};precondition(validations==3)
+print("PASS concurrent bundled-validation reuse, chain identity and retry after failure")

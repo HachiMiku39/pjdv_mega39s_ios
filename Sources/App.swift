@@ -6,6 +6,16 @@ import Darwin
 
 #if targetEnvironment(macCatalyst)
 @objc(PJDVMacHardware) private protocol MacHardwarePlugin { static func hardwareSnapshot() -> [String: NSNumber] }
+@objc(PJDVMacDisplay) private protocol MacDisplayPlugin { static func displaySnapshot() -> [String: NSNumber] }
+private enum MacDisplay {
+    static let plugin: MacDisplayPlugin.Type? = {
+        guard let url = Bundle.main.builtInPlugInsURL?.appendingPathComponent("PJDVMacLifecycle.bundle"),
+              let bundle = Bundle(url: url), bundle.load() else { return nil }
+        return bundle.principalClass as? MacDisplayPlugin.Type
+    }()
+    static var snapshot: [String: NSNumber] { plugin?.displaySnapshot() ?? [:] }
+}
+
 #endif
 private enum HostHardware {
     static func sysctlString(_ name: String) -> String? {
@@ -127,6 +137,13 @@ final class LabController: UIViewController {
     private var virtualPad: VirtualPad?
     private var duoPose = GameDisplayPolicy.DuoPose.ordinary
     private var isPhone: Bool { UIDevice.current.userInterfaceIdiom == .phone }
+    private var isMac: Bool {
+        #if targetEnvironment(macCatalyst)
+        return true
+        #else
+        return false
+        #endif
+    }
     private var renderer: LabRenderer?
     private var metalView: TouchMetalView?
     private var lastUpdate = 0.0
@@ -135,6 +152,7 @@ final class LabController: UIViewController {
     private var exitAlertVisible = false
     private var pendingExitError: Int32 = 0
     private var backgroundObserver: NSObjectProtocol?
+    private var displayObserver: NSObjectProtocol?
     private let performance = PerformanceWindow(frame: .zero)
     private let padToggle = UIButton(type: .system)
     private let outputToggle = UIButton(type: .system)
@@ -332,7 +350,7 @@ final class LabController: UIViewController {
         if UserDefaults.standard.string(forKey: outputPreferenceKey) == nil {
             outputMode = DeviceGraphicsProfile.policy.defaultOutput(phone: isPhone, metalFX: supportsMetalFX)
         }
-        outputMode = GameDisplayPolicy.outputMode(outputMode, phone: isPhone, conservative: DeviceGraphicsProfile.policy.conservative)
+        outputMode = GameDisplayPolicy.outputMode(outputMode, phone: isPhone, conservative: DeviceGraphicsProfile.policy.conservative, mac: isMac)
         let launchFG = GameFrameGenerationPolicy.launchMode(ProcessInfo.processInfo.environment["PJDV_GAME_FG"], permits120: supportsGame120)
         if launchFG != 0 { hdrEnabled = false; setGameFG(launchFG) }
         NSLog("PJDV GPU policy family=%d conservative=%d HDR=%d RT=%d output=%@", DeviceGraphicsProfile.policy.family,
@@ -416,6 +434,9 @@ final class LabController: UIViewController {
         outputToggle.showsMenuAsPrimaryAction = true
         view.addSubview(outputToggle)
         applyOutputMode()
+        #if targetEnvironment(macCatalyst)
+        displayObserver = NotificationCenter.default.addObserver(forName: Notification.Name("PJDVHostDisplayDidChange"), object: nil, queue: .main) { [weak self] _ in self?.view.setNeedsLayout() }
+        #endif
         view.addSubview(performance)
         performance.isHidden = !performanceVisible
         autoplayBadge.text = L("AutoPlay 测试 · 不记录成绩")
@@ -451,8 +472,9 @@ final class LabController: UIViewController {
         outputToggle.titleLabel?.minimumScaleFactor = 0.55
         outputToggle.titleLabel?.font = .systemFont(ofSize: isPhone ? 12 : 16)
         status.isHidden = !debugVisible
-        if ["screen", "screenfx"].contains(outputMode), let canvas = metalView {
-            canvas.drawableSize = GameDisplayPolicy.drawableSize(mode: outputMode, bounds: canvas.bounds, scale: displayScale)
+        if ["screen", "screenfx", "desktop"].contains(outputMode), let canvas = metalView {
+            let size = outputDrawableSize(canvas)
+            if canvas.drawableSize != size { canvas.drawableSize = size }
         }
         performance.place(in: layout.metrics, controlsExpanded: !(virtualPad?.isHidden ?? true) && duoPose != .tabletop, compact: isPhone)
     }
@@ -460,6 +482,7 @@ final class LabController: UIViewController {
     deinit {
         sessionTimer?.invalidate()
         if let observer = backgroundObserver { NotificationCenter.default.removeObserver(observer) }
+        if let observer = displayObserver { NotificationCenter.default.removeObserver(observer) }
     }
 
     private func pollSession() {
@@ -540,7 +563,22 @@ final class LabController: UIViewController {
 
     // MTKView's own scale can follow an explicitly sized drawable. Match the
     // window's display backing scale, independent of the previous output mode.
-    private var displayScale: CGFloat { view.window?.screen.scale ?? view.contentScaleFactor }
+    private var displayScale: CGFloat {
+        #if targetEnvironment(macCatalyst)
+        let pixels = MacDisplay.snapshot["contentWidth"]?.doubleValue ?? 0
+        if let width = view.window?.bounds.width, width > 0, pixels > 0 { return CGFloat(pixels) / width }
+        #endif
+        return view.window?.screen.scale ?? view.contentScaleFactor
+    }
+    private func outputDrawableSize(_ canvas: MTKView) -> CGSize {
+        #if targetEnvironment(macCatalyst)
+        if outputMode == "desktop" {
+            let info = MacDisplay.snapshot
+            return GameDisplayPolicy.desktopDrawableSize(pixels: CGSize(width: info["desktopWidth"]?.doubleValue ?? 0, height: info["desktopHeight"]?.doubleValue ?? 0))
+        }
+        #endif
+        return GameDisplayPolicy.drawableSize(mode: outputMode, bounds: canvas.bounds, scale: displayScale)
+    }
 
     private func applyOutputMode() {
         guard let canvas = metalView else { return }
@@ -556,12 +594,14 @@ final class LabController: UIViewController {
         }
         setHDRMode(edr ? 1 : 0, currentEDRHeadroom)
         canvas.preferredFramesPerSecond = gameFGMode() == 2 ? 120 : gameFGMode() == 1 ? 60 : Int(nativeFPS())
-        outputMode = GameDisplayPolicy.outputMode(outputMode, phone: isPhone, conservative: DeviceGraphicsProfile.policy.conservative)
+        outputMode = GameDisplayPolicy.outputMode(outputMode, phone: isPhone, conservative: DeviceGraphicsProfile.policy.conservative, mac: isMac)
         let modes = [("720p", "720p"), ("1080p", L("1080p（普通放大）")),
                      ("1080fx", L("1080p（MetalFX 超分）")), ("1440fx", L("1440p（MetalFX 超分）")),
-                     ("screenfx", L("匹配屏幕（MetalFX 超分）")), ("screen", L("匹配屏幕（普通放大）"))].filter { !DeviceGraphicsProfile.policy.cappedTo1080(phone: isPhone) || ["720p", "1080p", "1080fx"].contains($0.0) }
+                     ("screenfx", L("匹配屏幕（MetalFX 超分）")), ("screen", L(isMac ? "窗口像素 1:1（普通放大）" : "匹配屏幕（普通放大）")),
+                     ("desktop", L("桌面像素 1:1（普通放大）"))].filter { GameDisplayPolicy.outputMode($0.0, phone: isPhone, conservative: DeviceGraphicsProfile.policy.conservative, mac: isMac) == $0.0 }
         if !modes.contains(where: { $0.0 == outputMode }) { outputMode = "1080p" }
-        canvas.drawableSize = GameDisplayPolicy.drawableSize(mode: outputMode, bounds: canvas.bounds, scale: displayScale)
+        let pixels = outputDrawableSize(canvas)
+        if canvas.drawableSize != pixels { canvas.drawableSize = pixels }
         NSLog("PJDV output mode=%@ bounds=%.1fx%.1f displayScale=%.2f canvasScale=%.2f drawable=%.0fx%.0f", outputMode,
               canvas.bounds.width, canvas.bounds.height, displayScale, canvas.contentScaleFactor,
               canvas.drawableSize.width, canvas.drawableSize.height)
@@ -640,7 +680,8 @@ final class LabController: UIViewController {
         let label: String
         switch outputMode {
         case "720p": label = "720p"
-        case "screen": label = L("屏幕分辨率（放大）")
+        case "desktop": label = L("桌面像素 1:1（普通放大）")
+        case "screen": label = L(isMac ? "窗口像素 1:1（普通放大）" : "屏幕分辨率（放大）")
         case "1080fx", "1440fx", "screenfx":
             let name = outputMode == "screenfx" ? L("屏幕") : outputMode == "1440fx" ? "1440p" : "1080p"
             switch upscaleStatus() {
@@ -776,14 +817,14 @@ final class HostLaunchController: UIViewController {
     private let inbox=AppImportInbox()
     private var inboxTimer:Timer?
     private let inboxStatus=UILabel()
+    private let updates = UIButton(type: .system)
+    private var availableUpdate: AvailableRelease?
+    private var resourceGeneration = 0
     init(message: String = "") { self.message = message; super.init(nibName: nil, bundle: nil) }
     required init?(coder: NSCoder) { fatalError("Use programmatic initialization") }
     override var supportedInterfaceOrientations: UIInterfaceOrientationMask { .landscape }
     override func viewDidLoad() {
         super.viewDidLoad();view.backgroundColor = UIColor(red: 0.025, green: 0.04, blue: 0.07, alpha: 1)
-        if let access=try? ResourceLibrary.open(),let layout=try? ResourceLayout.locate(access.root) {
-            AppLanguage.configure(available:layout.languages)
-        } else {AppLanguage.configure(available:["ja"])}
         let title = UILabel();title.text = "PJDV M39";title.font = .boldSystemFont(ofSize: 44);title.textColor = .white
         let detail = UILabel();detail.text = message;detail.textColor = .lightGray;detail.numberOfLines = 0;detail.textAlignment = .center
         start.setTitle(SessionText.start, for: .normal);start.titleLabel?.font = .boldSystemFont(ofSize: 24)
@@ -843,7 +884,12 @@ final class HostLaunchController: UIViewController {
         let phone = UIDevice.current.userInterfaceIdiom == .phone
         title.font = .boldSystemFont(ofSize: phone ? 32 : 44)
         inboxStatus.font = .systemFont(ofSize:13);inboxStatus.textColor = .lightGray;inboxStatus.numberOfLines=0;inboxStatus.textAlignment = .center;inboxStatus.accessibilityIdentifier="launcher.inboxStatus"
-        let stack = UIStackView(arrangedSubviews: [title, detail, resourceStatus, resources,inboxStatus, mods, quality, start, settings, autoplay, experiments]);stack.axis = .vertical;stack.spacing = phone ? 8 : 18;stack.alignment = .center
+        updates.setTitle(L("正在检查 GitHub 更新…"), for: .normal)
+        updates.titleLabel?.font = .systemFont(ofSize: 14)
+        updates.titleLabel?.numberOfLines = 0; updates.titleLabel?.textAlignment = .center
+        updates.accessibilityIdentifier = "launcher.updates"
+        updates.addTarget(self, action: #selector(updatePressed), for: .touchUpInside)
+        let stack = UIStackView(arrangedSubviews: [title, detail, updates, resourceStatus, resources,inboxStatus, mods, quality, start, settings, autoplay, experiments]);stack.axis = .vertical;stack.spacing = phone ? 8 : 18;stack.alignment = .center
         let scroll=UIScrollView(),content=UIView()
         scroll.translatesAutoresizingMaskIntoConstraints=false;content.translatesAutoresizingMaskIntoConstraints=false
         stack.translatesAutoresizingMaskIntoConstraints=false
@@ -855,7 +901,7 @@ final class HostLaunchController: UIViewController {
 
     }
     override func viewDidAppear(_ animated: Bool) {
-        super.viewDidAppear(animated);refreshResources()
+        super.viewDidAppear(animated);refreshResources(); checkUpdates()
         inboxTimer?.invalidate()
         let timer=Timer(timeInterval:2,repeats:true){[weak self] _ in self?.checkImportInbox()}
         inboxTimer=timer;RunLoop.main.add(timer,forMode:.common);checkImportInbox()
@@ -904,24 +950,61 @@ final class HostLaunchController: UIViewController {
             alert.addAction(UIAlertAction(title: SessionText.ok, style: .default)); present(alert, animated: true)
         }
     }
-    private func refreshResources() {
-        do {
-            let access = try ResourceLibrary.open();let layout = try ResourceLayout.locate(access.root)
-            try GameRenderingAssets.validate(layout)
-            let oldLanguage=AppLanguage.current
-            AppLanguage.configure(available:layout.languages)
-            if oldLanguage != AppLanguage.current,let window=view.window {
-                window.rootViewController=HostLaunchController();return
+    private func checkUpdates(force: Bool = false) {
+        updates.isEnabled = false
+        updates.setTitle(L("正在检查 GitHub 更新…"), for: .normal)
+        ReleaseUpdateChecker.shared.check(force: force) { [weak self] result in
+            guard let self else { return }
+            self.updates.isEnabled = true; self.availableUpdate = nil
+            switch result {
+            case .available(let release):
+                self.availableUpdate = release
+                self.updates.setTitle(LF("发现新版本 %@（当前 %@）", release.tag, AppReleaseVersion.current.label), for: .normal)
+                guard self.view.window != nil, self.presentedViewController == nil,
+                      !ReleaseUpdateChecker.promptedTags.contains(release.tag) else { return }
+                ReleaseUpdateChecker.promptedTags.insert(release.tag)
+                let alert = UIAlertController(title: L("发现新版本"), message: LF("GitHub 已发布 %@，当前版本为 %@。", release.tag, AppReleaseVersion.current.label), preferredStyle: .alert)
+                alert.addAction(UIAlertAction(title: L("稍后"), style: .cancel))
+                alert.addAction(UIAlertAction(title: L("查看更新"), style: .default) { _ in UIApplication.shared.open(release.page) })
+                self.present(alert, animated: true)
+            case .current: self.updates.setTitle(LF("未发现更新版本：%@ · 点击重新检查", AppReleaseVersion.current.label), for: .normal)
+            case .unavailable: self.updates.setTitle(L("暂时无法检查更新 · 点击重试；游戏可正常启动"), for: .normal)
+            case .rateLimited: self.updates.setTitle(L("GitHub 暂时限制请求，请稍后检查；游戏可正常启动"), for: .normal)
             }
-            updateLanguageMenu()
-            let version=layout.content?.display_version ?? (layout.content==nil ? "1.0.9" : L("包内版本未标注"))
-            resourceStatus.text = LF("资源就绪 · %@ · %d DLC",version,layout.dlcContents.count)
-            let mods=try RuntimeModCatalog.current.selectedMods()
-            if mods.count==1 {resourceStatus.text! += "\nMOD: "+mods[0].name}
-            else if !mods.isEmpty {resourceStatus.text! += "\n"+LF("已启用 %d 个 MOD",mods.count)}
-            if !layout.resourceVersionVerified {resourceStatus.text! += "\n"+L("资源版本待验证，使用已适配的运行程序")}
-            start.isEnabled = true
-        } catch {resourceStatus.text = error.localizedDescription;start.isEnabled = false}
+        }
+    }
+    @objc private func updatePressed() {
+        if let release = availableUpdate, ReleaseUpdatePolicy.releasePage(release.page) { UIApplication.shared.open(release.page) }
+        else { checkUpdates(force: true) }
+    }
+    private func refreshResources() {
+        resourceGeneration += 1; let generation = resourceGeneration
+        resourceStatus.text = L("正在检查游戏资源…"); start.isEnabled = false
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            let began = ProcessInfo.processInfo.systemUptime
+            let result = Result { () -> (languages: [String], version: String?, legacy: Bool, dlc: Int, verified: Bool, mods: [String]) in
+                let access = try ResourceLibrary.open(); let layout = try ResourceLayout.locate(access.root)
+                try GameRenderingAssets.validate(layout)
+                let mods = try RuntimeModCatalog.current.selectedMods()
+                return (layout.languages, layout.content?.display_version, layout.content == nil, layout.dlcContents.count, layout.resourceVersionVerified, mods.map(\.name))
+            }
+            NSLog("PJDV launcher preflight %.2f ms", (ProcessInfo.processInfo.systemUptime-began)*1000)
+            DispatchQueue.main.async { [weak self] in
+                guard let self, self.resourceGeneration == generation else { return }
+                switch result {
+                case .success(let info):
+                    let oldLanguage = AppLanguage.current; AppLanguage.configure(available: info.languages)
+                    if oldLanguage != AppLanguage.current, let window = self.view.window { window.rootViewController = HostLaunchController(); return }
+                    self.updateLanguageMenu()
+                    self.resourceStatus.text = LF("资源就绪 · %@ · %d DLC", info.version ?? (info.legacy ? "1.0.9" : L("包内版本未标注")), info.dlc)
+                    if info.mods.count == 1 { self.resourceStatus.text! += "\nMOD: " + info.mods[0] }
+                    else if !info.mods.isEmpty { self.resourceStatus.text! += "\n" + LF("已启用 %d 个 MOD", info.mods.count) }
+                    if !info.verified { self.resourceStatus.text! += "\n" + L("资源版本待验证，使用已适配的运行程序") }
+                    self.start.isEnabled = true
+                case .failure(let error): self.resourceStatus.text = error.localizedDescription; self.start.isEnabled = false
+                }
+            }
+        }
     }
     private func updateLanguageMenu() {
         language.setTitle(L("语言")+" / "+(AppLanguage.available.first{$0.0==AppLanguage.current}?.1 ?? "日本語"),for:.normal)

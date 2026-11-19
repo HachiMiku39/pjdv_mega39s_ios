@@ -3,6 +3,7 @@ import CryptoKit
 
 @_silgen_name("pjdv_shader_cache_chain") private func shaderCacheChain() -> UnsafePointer<CChar>
 enum GameRenderingAssets {
+    private static let bundledPreflight = ShaderValidationCache()
     static func root(_ layout: ResourceLayout) throws -> URL {
         let chain = String(cString: shaderCacheChain())
         #if targetEnvironment(simulator)
@@ -12,7 +13,9 @@ enum GameRenderingAssets {
         // XCI supplies game data, not this host's translated shader libraries.
         let root = Bundle.main.url(forResource: "RendererAssets", withExtension: nil) ?? layout.root
         #endif
-        try ShaderAssets.validate(root: root, chain: chain)
+        if root == Bundle.main.url(forResource: "RendererAssets", withExtension: nil) {
+            try bundledPreflight.validate(root: root, chain: chain) { try ShaderAssets.validate(root: root, chain: chain) }
+        } else { try ShaderAssets.validate(root: root, chain: chain) }
         return root
     }
     static func validate(_ layout: ResourceLayout) throws { _ = try root(layout) }

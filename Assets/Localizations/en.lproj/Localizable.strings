@@ -318,3 +318,17 @@
 "资源未完成：缺少 %@。请导入原始 XCI，或完整复制已导入成功的 GameResources；不要手动新建完成标记。" = "Resources are incomplete: %@ is missing. Import the original XCI, or copy the entire GameResources folder from a successful import. Do not create a completion marker manually.";
 "本体导入只需 XCI 和 prod.keys；包内 DLC 随本体导入，MOD 请使用单独入口。\nXCI 放在 PJDVM39 根目录后点“检测 App 根目录中的 XCI／密钥”，或直接点“导入 XCI”。\n“使用已拷入本机的资源”仅连接已导入成功的完整 GameResources，不会解压 XCI。" = "Base import requires only XCI and prod.keys; included DLC is imported with the base. Use the separate MOD entry for Mods.\nPlace XCI in the PJDVM39 root and tap “Detect XCI/keys in App root”, or tap “Import XCI”.\n“Use resources copied to this device” connects only a complete, successfully imported GameResources folder; it does not extract XCI.";
 "请先使用 XCI 和 prod.keys 完成本体导入，再添加 MOD。" = "Import the base game using XCI and prod.keys before adding Mods.";
+
+/* Launch update checks and desktop pixels */
+"正在检查 GitHub 更新…" = "Checking GitHub for updates…";
+"发现新版本 %@（当前 %@）" = "Update available: %@ (current %@)";
+"发现新版本" = "Update available";
+"GitHub 已发布 %@，当前版本为 %@。" = "GitHub has %@ available. Your current version is %@.";
+"稍后" = "Later";
+"查看更新" = "View update";
+"未发现更新版本：%@ · 点击重新检查" = "No newer release: %@ · Check again";
+"暂时无法检查更新 · 点击重试；游戏可正常启动" = "Cannot check updates · Retry; you can still play";
+"GitHub 暂时限制请求，请稍后检查；游戏可正常启动" = "GitHub rate limit · Check later; you can still play";
+"正在检查游戏资源…" = "Checking game resources…";
+"窗口像素 1:1（普通放大）" = "Window pixels 1:1 (standard scaling)";
+"桌面像素 1:1（普通放大）" = "Desktop pixels 1:1 (standard scaling)";
