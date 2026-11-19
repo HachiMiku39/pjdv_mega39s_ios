@@ -820,13 +820,12 @@ final class HostLaunchController: UIViewController {
     private let updates = UIButton(type: .system)
     private var availableUpdate: AvailableRelease?
     private var resourceGeneration = 0
+    private var launcherInterface: LauncherInterface?
     init(message: String = "") { self.message = message; super.init(nibName: nil, bundle: nil) }
     required init?(coder: NSCoder) { fatalError("Use programmatic initialization") }
     override var supportedInterfaceOrientations: UIInterfaceOrientationMask { .landscape }
     override func viewDidLoad() {
-        super.viewDidLoad();view.backgroundColor = UIColor(red: 0.025, green: 0.04, blue: 0.07, alpha: 1)
-        let title = UILabel();title.text = "PJDV M39";title.font = .boldSystemFont(ofSize: 44);title.textColor = .white
-        let detail = UILabel();detail.text = message;detail.textColor = .lightGray;detail.numberOfLines = 0;detail.textAlignment = .center
+        super.viewDidLoad()
         start.setTitle(SessionText.start, for: .normal);start.titleLabel?.font = .boldSystemFont(ofSize: 24)
         start.accessibilityIdentifier = "launcher.startGame"
         start.addTarget(self, action: #selector(startGame), for: .touchUpInside)
@@ -864,7 +863,6 @@ final class HostLaunchController: UIViewController {
         updateLanguageMenu()
         let sticks = UIButton(type: .system); sticks.setTitle(L("虚拟按键：大小与位置"), for: .normal); sticks.accessibilityIdentifier = "launcher.stickLayout"
         sticks.addTarget(self, action: #selector(editSticks), for: .touchUpInside)
-        let settings = UIStackView(arrangedSubviews: [language, sticks]); settings.spacing = 20
         autoplay.accessibilityIdentifier = "launcher.autoplay"
         autoplay.showsMenuAsPrimaryAction = true
         autoplay.isHidden = !AutoPlaySession.supported
@@ -881,23 +879,16 @@ final class HostLaunchController: UIViewController {
             })
         }
         #endif
-        let phone = UIDevice.current.userInterfaceIdiom == .phone
-        title.font = .boldSystemFont(ofSize: phone ? 32 : 44)
-        inboxStatus.font = .systemFont(ofSize:13);inboxStatus.textColor = .lightGray;inboxStatus.numberOfLines=0;inboxStatus.textAlignment = .center;inboxStatus.accessibilityIdentifier="launcher.inboxStatus"
+        inboxStatus.accessibilityIdentifier = "launcher.inboxStatus"
         updates.setTitle(L("正在检查 GitHub 更新…"), for: .normal)
-        updates.titleLabel?.font = .systemFont(ofSize: 14)
-        updates.titleLabel?.numberOfLines = 0; updates.titleLabel?.textAlignment = .center
         updates.accessibilityIdentifier = "launcher.updates"
         updates.addTarget(self, action: #selector(updatePressed), for: .touchUpInside)
-        let stack = UIStackView(arrangedSubviews: [title, detail, updates, resourceStatus, resources,inboxStatus, mods, quality, start, settings, autoplay, experiments]);stack.axis = .vertical;stack.spacing = phone ? 8 : 18;stack.alignment = .center
-        let scroll=UIScrollView(),content=UIView()
-        scroll.translatesAutoresizingMaskIntoConstraints=false;content.translatesAutoresizingMaskIntoConstraints=false
-        stack.translatesAutoresizingMaskIntoConstraints=false
-        view.addSubview(scroll);scroll.addSubview(content);content.addSubview(stack)
-        let fillHeight=content.heightAnchor.constraint(equalTo:scroll.frameLayoutGuide.heightAnchor);fillHeight.priority = .defaultLow
-        NSLayoutConstraint.activate([scroll.leadingAnchor.constraint(equalTo:view.safeAreaLayoutGuide.leadingAnchor),scroll.trailingAnchor.constraint(equalTo:view.safeAreaLayoutGuide.trailingAnchor),scroll.topAnchor.constraint(equalTo:view.safeAreaLayoutGuide.topAnchor),scroll.bottomAnchor.constraint(equalTo:view.safeAreaLayoutGuide.bottomAnchor),
-            content.leadingAnchor.constraint(equalTo:scroll.contentLayoutGuide.leadingAnchor),content.trailingAnchor.constraint(equalTo:scroll.contentLayoutGuide.trailingAnchor),content.topAnchor.constraint(equalTo:scroll.contentLayoutGuide.topAnchor),content.bottomAnchor.constraint(equalTo:scroll.contentLayoutGuide.bottomAnchor),content.widthAnchor.constraint(equalTo:scroll.frameLayoutGuide.widthAnchor),content.heightAnchor.constraint(greaterThanOrEqualTo:scroll.frameLayoutGuide.heightAnchor),fillHeight,
-            stack.centerXAnchor.constraint(equalTo:content.centerXAnchor),stack.centerYAnchor.constraint(equalTo:content.centerYAnchor),stack.topAnchor.constraint(greaterThanOrEqualTo:content.topAnchor,constant:20),stack.bottomAnchor.constraint(lessThanOrEqualTo:content.bottomAnchor,constant:-20),stack.widthAnchor.constraint(equalTo:content.widthAnchor,multiplier:0.88),start.heightAnchor.constraint(greaterThanOrEqualToConstant:60)])
+        let interface = LauncherInterface(message: message, start: start, resources: resources, mods: mods,
+            quality: quality, language: language, sticks: sticks, autoplay: autoplay, experiments: experiments,
+            resourceStatus: resourceStatus, inboxStatus: inboxStatus, updates: updates)
+        interface.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(interface); launcherInterface = interface
+        NSLayoutConstraint.activate([interface.leadingAnchor.constraint(equalTo: view.leadingAnchor), interface.trailingAnchor.constraint(equalTo: view.trailingAnchor), interface.topAnchor.constraint(equalTo: view.topAnchor), interface.bottomAnchor.constraint(equalTo: view.bottomAnchor)])
 
     }
     override func viewDidAppear(_ animated: Bool) {
@@ -918,6 +909,7 @@ final class HostLaunchController: UIViewController {
             let root=ResourceLibrary.appDataRoot
             try FileManager.default.createDirectory(at:root,withIntermediateDirectories:true)
             let snapshot=try AppImportInbox.Snapshot.read(root)
+            inboxStatus.isHidden = snapshot.isEmpty && start.isEnabled
             inboxStatus.text=snapshot.isEmpty ? L("将 XCI 和密钥拷入 PJDVM39 根目录，可自动识别导入。") : inbox.isHandled(snapshot.signature) ? L("根目录文件已检测；可在资源管理查看或重试。") : L("已检测到根目录文件，等待复制稳定后自动导入。")
             guard inbox.ready(snapshot) else{return}
             inbox.markAttempted(snapshot.signature)
@@ -980,6 +972,7 @@ final class HostLaunchController: UIViewController {
     private func refreshResources() {
         resourceGeneration += 1; let generation = resourceGeneration
         resourceStatus.text = L("正在检查游戏资源…"); start.isEnabled = false
+        launcherInterface?.resourceState(ready: nil)
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             let began = ProcessInfo.processInfo.systemUptime
             let result = Result { () -> (languages: [String], version: String?, legacy: Bool, dlc: Int, verified: Bool, mods: [String]) in
@@ -1001,7 +994,10 @@ final class HostLaunchController: UIViewController {
                     else if !info.mods.isEmpty { self.resourceStatus.text! += "\n" + LF("已启用 %d 个 MOD", info.mods.count) }
                     if !info.verified { self.resourceStatus.text! += "\n" + L("资源版本待验证，使用已适配的运行程序") }
                     self.start.isEnabled = true
-                case .failure(let error): self.resourceStatus.text = error.localizedDescription; self.start.isEnabled = false
+                    self.launcherInterface?.resourceState(ready: true)
+                case .failure(let error):
+                    self.resourceStatus.text = error.localizedDescription; self.start.isEnabled = false
+                    self.launcherInterface?.resourceState(ready: nil, error: true)
                 }
             }
         }

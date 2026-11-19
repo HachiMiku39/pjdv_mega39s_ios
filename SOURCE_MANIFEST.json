@@ -1,9 +1,9 @@
 {
   "format": "pjdv-public-source-v1",
   "date": "2026-11-19",
-  "source_build": "0.1.5 build23",
-  "public_release": "v0.1.5b23",
-  "source_parent_commit": "bfb5e059d3940ecf227e0e69392d04bd4cb1587f",
+  "source_build": "0.1.5 build24",
+  "public_release": "v0.1.5b24",
+  "source_parent_commit": "e86d360e4c0b132bb7f62b231ccf53a11355f2c1",
   "native_resource_model_and_movie_song_import": true,
   "Eden_raw_ID_over_999_import": false,
   "universal_PC_Mod_compatibility": false,
@@ -45,6 +45,20 @@
       "mode": "100644"
     },
     {
+      "path": "Assets/Assets.xcassets/LauncherArtwork.imageset/Artwork.png",
+      "bytes": 1051159,
+      "sha256": "a35666909591f8c332426187100b8af68376a14eb293fb744d1d7db3cb6d519b",
+      "git_blob_sha": "4305502bf622f51f6a61993317761bd0511ed8b0",
+      "mode": "100644"
+    },
+    {
+      "path": "Assets/Assets.xcassets/LauncherArtwork.imageset/Contents.json",
+      "bytes": 151,
+      "sha256": "ce19345b09f51fb6131e7622ffb7bb98357a7255dbeb81d07aeede0689c25419",
+      "git_blob_sha": "161a5944404a0e94f0ce196b372e466069e57a0c",
+      "mode": "100644"
+    },
+    {
       "path": "Assets/ControllerGlyphs/recipes.json",
       "bytes": 33610,
       "sha256": "30bf1bef5cfedf244d52306688b23165ed5711b13354c8c35ac9d42339309725",
@@ -60,37 +74,37 @@
     },
     {
       "path": "Assets/Localizations/en.lproj/Localizable.strings",
-      "bytes": 24702,
-      "sha256": "49633a89a465c24b7bcdd381c56b433bcd53f9681bc0e62fbfc2c0956499664f",
-      "git_blob_sha": "9b3dfe4574b8614d65425ec5f2650483c5e965cb",
+      "bytes": 24986,
+      "sha256": "a01f2544e0dfeece321ef6129c93eaaa11aa014ec5a116741ff40fb1580405c0",
+      "git_blob_sha": "d2be108ef4249ab6b40e72a34bd1e0e41f6f61d4",
       "mode": "100644"
     },
     {
       "path": "Assets/Localizations/ja.lproj/Localizable.strings",
-      "bytes": 29051,
-      "sha256": "67e9cb0b54366292fd7e6ac3ca28c36630c257777d5a22bc549c8e87f5d44b18",
-      "git_blob_sha": "92a05c527a949edb5c8061b6b05aa5d2771d82a2",
+      "bytes": 29390,
+      "sha256": "ec41d12a80a627880a5e2e574f8ff8c772b840fdbe229ef52f4e2227b027f0bf",
+      "git_blob_sha": "d80d8f2e92ad693f47b62ac2a77a1afba1a99b39",
       "mode": "100644"
     },
     {
       "path": "Assets/Localizations/ko.lproj/Localizable.strings",
-      "bytes": 26965,
-      "sha256": "e1b306d8470724f4cd62d088946f48f35235cd120e022d0ad6bc462ea6d3714b",
-      "git_blob_sha": "942219039251aa7202bb7afb27f5ca0a0cb145d7",
+      "bytes": 27264,
+      "sha256": "863d88fcf604ac38de3a6ccda23a81747011bba3b8c7cf620a1ddc2a34be1c01",
+      "git_blob_sha": "b8bcd07fc2332a4028c4267b729d7d9d1fd7dcbd",
       "mode": "100644"
     },
     {
       "path": "Assets/Localizations/zh-Hans.lproj/Localizable.strings",
-      "bytes": 23486,
-      "sha256": "cc7475e0453d18b0d130a98e913d65fcb796e3ef8b176d1b48427018487688ad",
-      "git_blob_sha": "b1728aa47e67a9464867a9c0dc6227b4971ac9d5",
+      "bytes": 23768,
+      "sha256": "d8295ffddb40bfcada35be85f80a4a87d6bf378e2358d9fef2e58a54cf324f18",
+      "git_blob_sha": "9d471bb9bdbbcb6ae1be114707929112907dd65c",
       "mode": "100644"
     },
     {
       "path": "Assets/Localizations/zh-Hant.lproj/Localizable.strings",
-      "bytes": 24031,
-      "sha256": "253020df9ca5288da2e733eaa3dd780227464b5a880b2b4d7a43409b5ddaab04",
-      "git_blob_sha": "aa19c8b98808c61cb5236da666200d39e0bdd9d7",
+      "bytes": 24316,
+      "sha256": "f36164bc03c455680a475ca5ddea2d6dde07a8ccc7a57a3244110e9ae9c2eb82",
+      "git_blob_sha": "cef78368ac4517cb3c7712bd9bca575bde70dc1f",
       "mode": "100644"
     },
     {
@@ -124,8 +138,8 @@
     {
       "path": "Info.plist",
       "bytes": 2882,
-      "sha256": "c71eb3c16aa190e1cb25978bda4b8869cfff176797ec08f55d0ce35941386a5b",
-      "git_blob_sha": "de1a1b9c2c78d2fb04d4893dde3a4a08c1d58ef7",
+      "sha256": "b216f013e99bba81d9173ad86cb9d0f85ceeb6dba5556f917cadbc7860352b52",
+      "git_blob_sha": "edba7a26719c9f177d52593ffd25ea0ce59578da",
       "mode": "100644"
     },
     {
@@ -137,16 +151,16 @@
     },
     {
       "path": "README.en.md",
-      "bytes": 64064,
-      "sha256": "12326fec0c0bfd1d5f8c0bcbca3c96a46bdaa40b0a5d216e28f8c912e2d5455e",
-      "git_blob_sha": "3df8eb7c4b6e3353232c36b85f9460e98e8ee5e1",
+      "bytes": 65071,
+      "sha256": "06217560736158e809b437b7fb89fc689dacd072387d02e510e1501c1c9473a7",
+      "git_blob_sha": "a23491884039c4a489033d0b50410f00edccf39f",
       "mode": "100644"
     },
     {
       "path": "README.md",
-      "bytes": 56534,
-      "sha256": "dfc77c1572212f56bb9bebca7376d34b198423269298317a54d18f928559ddb8",
-      "git_blob_sha": "2e55ef03e496550cb2afbb266e688a075e319122",
+      "bytes": 57408,
+      "sha256": "3249ae6367f37c13355ed7af5fa6b242381980c463281597892ae8a4ec69ceaa",
+      "git_blob_sha": "5d8a603e50424c73d1f7c24418ea41a746860574",
       "mode": "100644"
     },
     {
@@ -196,6 +210,13 @@
       "bytes": 7398,
       "sha256": "d1ba537cb1d983c887997a5f2f512c9449adeda0723de79f4495bcbad01b319b",
       "git_blob_sha": "78fd5a42cc7c746fb11552a342ff7b3bb51b1883",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/LAUNCHER-UI-20261119.md",
+      "bytes": 3895,
+      "sha256": "5e618e31e69d5ee432630c0399dca95d92e60c8166c7d6a21cd34115f7e392a5",
+      "git_blob_sha": "dca3314a6bbbd784b51e1191594e041ba34ebc72",
       "mode": "100644"
     },
     {
@@ -5621,7 +5642,7 @@
       "bytes": 730,
       "sha256": "f47c9466f6bf31f2ee8ab9f3ad8ef973847c74574a7ba1896a92d794f63f80cf",
       "git_blob_sha": "3601f29fae574e9f10e0eee1a6f0c63913fb2cba",
-      "mode": "100755"
+      "mode": "100644"
     },
     {
       "path": "Scripts/test-pc-song-import.sh",
@@ -5653,9 +5674,9 @@
     },
     {
       "path": "Sources/App.swift",
-      "bytes": 66640,
-      "sha256": "4573f2cbde3391cc2979c2362ceb040d54195c60fd8a1f686f9e3f4a86e6ac2e",
-      "git_blob_sha": "97ed034264d181b34acab8335c4386fd66477798",
+      "bytes": 64874,
+      "sha256": "64b3599394d52430e2cc5ad27e4ac2d94fcbea2a03487b17fa17ce495fded4c5",
+      "git_blob_sha": "078e39eeb11b19edc360c99e3bda32a76cd2d9a1",
       "mode": "100644"
     },
     {
@@ -5719,6 +5740,13 @@
       "bytes": 29174,
       "sha256": "e8607eb651bc80f20d77a57c7eb86e629ef01fd5f827da1281d25106d9b5baad",
       "git_blob_sha": "402d1a4bc9eba6276ef4201bd5b75d653fbe85b5",
+      "mode": "100644"
+    },
+    {
+      "path": "Sources/LauncherInterface.swift",
+      "bytes": 16458,
+      "sha256": "1a87a78ffce2fd2aac40a143099df82638a5c1847a3f57ae935b7f2df4dd57da",
+      "git_blob_sha": "5495aad7748203b8392819a89aa5ee3cc7d80c72",
       "mode": "100644"
     },
     {
@@ -5891,9 +5919,9 @@
     },
     {
       "path": "SwitchIOSLab.xcodeproj/project.pbxproj",
-      "bytes": 29962,
-      "sha256": "3523c82ec6408c98248295366a507f988dc8cfd6a269947d1f9065b2c4796de1",
-      "git_blob_sha": "e6dec51d1ccc89ee94634f73fec22b906bfda0a4",
+      "bytes": 30250,
+      "sha256": "e3053ebccb614739a69b676b0d2595cf06ecdaee643c58b66fe9008d2b39a782",
+      "git_blob_sha": "be48e1b67de65b8d6f0b706ca884a5513d831775",
       "mode": "100644"
     },
     {
@@ -15207,5 +15235,8 @@
   "startup_release_check": true,
   "desktop_output_all_Apple_Silicon_Macs": true,
   "internal_3D_resolution_changed": false,
-  "bundled_shader_preflight_reuse": true
+  "bundled_shader_preflight_reuse": true,
+  "launcher_redesign": true,
+  "launcher_visual_interaction_acceptance": false,
+  "new_gameplay_or_performance_acceptance": false
 }

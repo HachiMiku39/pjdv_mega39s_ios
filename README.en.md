@@ -2,6 +2,14 @@
 
 [简体中文](README.md) | **English**
 
+**0.1.5 build24 lightweight preview — November 19, 2026**
+
+- Redesigned launcher: a wide-window sidebar, character artwork and start action, resource status, grouped game settings and experiments. Narrow windows use one column. System light/dark appearance and five UI languages are supported.
+- Uses a native Liquid Glass start button on supported systems and compatible controls on older systems. Reuses the existing artwork without repainting. Import, Mods, language, AutoPlay and game-session rules are retained.
+- Mac/iOS Release builds pass; the captured Mac launch log has no constraint conflict or crash. **The preview connection failed, so no screenshot was captured. Resize/theme visuals and button interaction remain unqualified.** This round does not add game graphics, FPS or physical-device acceptance results.
+
+[Download build24 lightweight preview](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b24) · [Changes and validation scope](Reports/LAUNCHER-UI-20261119.md)
+
 **0.1.5 build23 lightweight preview — November 19, 2026**
 
 - Each cold launch checks GitHub Releases in the background, including published lightweight previews. A newer version offers its release page. Offline access, timeouts and rate limits do not prevent play. No automatic download/installation, GitHub login or token is required.
