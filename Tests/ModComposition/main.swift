@@ -1,5 +1,6 @@
 import Foundation
 import CryptoKit
+import Darwin
 let fm=FileManager.default,root=URL(fileURLWithPath:CommandLine.arguments[1],isDirectory:true)
 try fm.createDirectory(at:root,withIntermediateDirectories:true)
 func require(_ v:Bool){precondition(v)}
@@ -80,6 +81,39 @@ require(try F.properties(Data(contentsOf:output))==["common":"yes","a":"new","b"
 require(!fm.fileExists(atPath:URL(fileURLWithPath:first.paths[0]).appendingPathComponent("UI-FIX.json").path))
 let repeated=try ModComposition.prepare([b,a],catalog:catalog,base:base,dlc:dlc,root:cache)
 require(repeated.paths==first.paths)
+// Concurrent cold callers must all observe one publication and keep reading it.
+let concurrentCache = root.appendingPathComponent("ConcurrentCache")
+let resultLock = NSLock()
+var publishedFiles = [UInt64]()
+DispatchQueue.concurrentPerform(iterations:8) { _ in
+    do {
+        let session = try ModComposition.prepare([a,b],catalog:catalog,base:base,dlc:dlc,root:concurrentCache)
+        let file = URL(fileURLWithPath:session.paths[0]).appendingPathComponent("rom/data.txt")
+        require(try F.properties(Data(contentsOf:file))["b"] == "new")
+        let fileID = try fm.attributesOfItem(atPath:file.path)[.systemFileNumber] as! NSNumber
+        resultLock.lock()
+        publishedFiles.append(fileID.uint64Value)
+        resultLock.unlock()
+    } catch { fatalError("Concurrent composition failed: \(error)") }
+}
+require(publishedFiles.count == 8 && Set(publishedFiles).count == 1)
+// Hold the same key as another process and cancel the waiting caller. The
+// successful receipt and payload must remain readable for existing sessions.
+do {
+    let key = URL(fileURLWithPath:first.paths[0]).deletingLastPathComponent().lastPathComponent
+    let fd = Darwin.open(cache.appendingPathComponent(".lock-" + key).path, O_RDWR)
+    require(fd >= 0)
+    defer { Darwin.close(fd) }
+    require(flock(fd, LOCK_EX | LOCK_NB) == 0)
+    let waiting = Progress()
+    DispatchQueue.global().asyncAfter(deadline:.now()+0.2) { waiting.cancel() }
+    do {
+        _ = try ModComposition.prepare([a,b],catalog:catalog,base:base,dlc:dlc,root:cache,progress:waiting)
+        fatalError("Busy key ignored")
+    } catch ModLoadError.cancelled {}
+    require(try F.properties(Data(contentsOf:output))["b"] == "new")
+}
+print("PASS concurrent cold compositions share one published payload; cancelled waiter preserves active cache")
 // Corrupt only generated cache metadata, never a hard-linked package asset.
 var damaged=try Data(contentsOf:output);damaged[0]^=1;try damaged.write(to:output)
 let rebuilt=try ModComposition.prepare([a,b],catalog:catalog,base:base,dlc:dlc,root:cache)

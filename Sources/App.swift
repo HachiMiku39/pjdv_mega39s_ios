@@ -115,7 +115,9 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                options: UIScene.ConnectionOptions) {
         guard let scene = scene as? UIWindowScene else { return }
         let window = UIWindow(windowScene: scene)
-        window.rootViewController = HostLaunchController()
+        if !LabController.restoreDetachedGame(in: window) {
+            window.rootViewController = HostLaunchController()
+        }
         self.window = window
         window.makeKeyAndVisible()
         if #available(iOS 16.0, macCatalyst 16.0, *) {
@@ -124,9 +126,45 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             }
         }
     }
+    func sceneDidDisconnect(_ scene: UIScene) {
+        guard let window, let game = window.rootViewController as? LabController else { return }
+        game.detach(from: window)
+    }
 }
 
 final class LabController: UIViewController {
+    fileprivate static let sessions = GameSessionOwnership<LabController>()
+    private weak var sessionWindow: UIWindow?
+
+    fileprivate static func restoreDetachedGame(in window: UIWindow) -> Bool {
+        guard let game = sessions.current, game.sessionWindow == nil else { return false }
+        game.attach(to: window)
+        return true
+    }
+
+    fileprivate func attach(to window: UIWindow) {
+        sessionWindow = window
+        window.rootViewController = self
+    }
+
+    fileprivate func detach(from window: UIWindow) {
+        guard sessionWindow === window else { return }
+        input.clear()
+        heldKeyboardKeys.removeAll()
+        virtualPad?.releaseButtons()
+        metalView?.resetTouchTracking()
+        if exitAlertVisible {
+            dismiss(animated: false)
+            exitAlertVisible = false
+        }
+        window.rootViewController = nil
+        sessionWindow = nil
+    }
+
+    fileprivate func activateWindow() {
+        guard let session = sessionWindow?.windowScene?.session else { return }
+        UIApplication.shared.requestSceneSessionActivation(session, userActivity: nil, options: nil, errorHandler: nil)
+    }
     override var supportedInterfaceOrientations: UIInterfaceOrientationMask { duoPose == .tabletop ? .portrait : .landscape }
     override var shouldAutorotate: Bool { true }
 
@@ -333,14 +371,13 @@ final class LabController: UIViewController {
             self?.heldKeyboardKeys.removeAll()
         }
         guard let device = MTLCreateSystemDefaultDevice() else {
-            status.text = "Metal device unavailable"
-            showStatus()
+            DispatchQueue.main.async { [weak self] in self?.closeSession(message: "Metal device unavailable", saved: false) }
             return
         }
         #if !targetEnvironment(simulator)
         guard DeviceGraphicsProfile.policy.supported else {
-            status.text = "需要 Apple GPU family 7 或更新设备\niPhone A14 起；iPad／Mac M1 同代 GPU 起\n当前设备：\(device.name)"
-            showStatus()
+            let message = "需要 Apple GPU family 7 或更新设备\niPhone A14 起；iPad／Mac M1 同代 GPU 起\n当前设备：\(device.name)"
+            DispatchQueue.main.async { [weak self] in self?.closeSession(message: message, saved: false) }
             return
         }
         #endif
@@ -447,7 +484,16 @@ final class LabController: UIViewController {
         updatePadVisibility()
         AppLanguage.prepareSession()
         GameRenderProfile.prepareSession()
-        GuestRuntime.validateMapping { [weak self] message in self?.guestStatus = message }
+        GuestRuntime.validateMapping { [weak self] event in
+            guard let self, Self.sessions.current === self else { return }
+            switch event {
+            case .status(let message): self.guestStatus = message
+            case .started: self.sessionHasStarted = true
+            case .failed(let message):
+                self.guestStatus = message
+                if guestSessionPhase() == 0 { self.closeSession(message: message, saved: false) }
+            }
+        }
         let timer = Timer(timeInterval: 0.1, repeats: true) { [weak self] _ in self?.pollSession() }
         sessionTimer = timer
         RunLoop.main.add(timer, forMode: .common)
@@ -488,10 +534,9 @@ final class LabController: UIViewController {
     private func pollSession() {
         renderer?.updateGuestHUD()
         let phase = guestSessionPhase()
-        if phase != 0 { sessionHasStarted = true }
         let error = guestExitError()
         if error != 0 { pendingExitError = error }
-        if guestExitPrompt() != 0, !exitAlertVisible, presentedViewController == nil {
+        if guestExitPrompt() != 0, viewIfLoaded?.window != nil, !exitAlertVisible, presentedViewController == nil {
             exitAlertVisible = true
             input.clear()
             let alert = UIAlertController(title: SessionText.exit, message: SessionText.confirm, preferredStyle: .alert)
@@ -510,7 +555,7 @@ final class LabController: UIViewController {
         } else if phase == 2 {
             view.isUserInteractionEnabled = true
         }
-        if pendingExitError != 0, !exitAlertVisible, presentedViewController == nil {
+        if pendingExitError != 0, viewIfLoaded?.window != nil, !exitAlertVisible, presentedViewController == nil {
             let error = pendingExitError; pendingExitError = 0
             let message = phase == 6 ? SessionText.stopFailed : SessionText.saveFailed
             let alert = UIAlertController(title: SessionText.exitFailed,
@@ -519,15 +564,23 @@ final class LabController: UIViewController {
             present(alert, animated: true)
         }
         guard phase == 0, sessionHasStarted else { return }
-        sessionTimer?.invalidate();sessionTimer = nil
-        input.clear();virtualPad?.releaseButtons();controllers = nil
-        metalView?.isPaused = true;metalView?.delegate = nil;renderer = nil
-        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
-        GuestRuntime.releaseResourceAccess()
+        closeSession(message: SessionText.saved, saved: true)
+    }
+
+    private func closeSession(message: String, saved: Bool) {
+        guard Self.sessions.finish(self, cleanup: {
+            sessionTimer?.invalidate(); sessionTimer = nil
+            input.clear(); virtualPad?.releaseButtons(); controllers = nil
+            metalView?.isPaused = true; metalView?.delegate = nil; renderer = nil
+            attachGuestMetalLayer(nil)
+            try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+            GuestRuntime.releaseResourceAccess()
+        }) else { return }
         #if targetEnvironment(macCatalyst)
-        if MacHostTermination.terminate() { return }
+        if saved, MacHostTermination.terminate() { return }
         #endif
-        view.window?.rootViewController = HostLaunchController(message: SessionText.saved)
+        sessionWindow?.rootViewController = HostLaunchController(message: message)
+        sessionWindow = nil
     }
 
     private func showStatus() {
@@ -926,7 +979,7 @@ final class HostLaunchController: UIViewController {
         autoplay.setTitle(L(AutoPlaySession.enabled ? "实验性 AutoPlay：开（不记录成绩）" : "实验性 AutoPlay：关"), for: .normal)
         autoplay.menu = UIMenu(title: L("仅在开始游戏前设置；自动 COOL，使用临时存档。"), children: [false, true].map { enabled in
             UIAction(title: L(enabled ? "开启 AutoPlay（不记录成绩）" : "关闭 AutoPlay"), state: AutoPlaySession.enabled == enabled ? .on : .off) { [weak self] _ in
-                guard guestSessionPhase() == 0 else { return }
+                guard LabController.sessions.current == nil, guestSessionPhase() == 0 else { return }
                 AutoPlaySession.enabled = enabled; self?.updateAutoplayMenu()
             }
         })
@@ -1011,7 +1064,7 @@ final class HostLaunchController: UIViewController {
         })
     }
     @objc private func manageMods() {
-        guard guestSessionPhase() == 0 else{return}
+        guard LabController.sessions.current == nil, guestSessionPhase() == 0 else{return}
         let controller=ModImportController(style:.insetGrouped)
         controller.onClose={ [weak self] in self?.refreshResources() }
         let panel=UINavigationController(rootViewController:controller)
@@ -1032,12 +1085,19 @@ final class HostLaunchController: UIViewController {
         })
     }
     @objc private func startGame() {
+        guard let window = view.window else { return }
+        if LabController.restoreDetachedGame(in: window) { return }
+        if let running = LabController.sessions.current {
+            resourceStatus.text = SessionText.otherWindow
+            running.activateWindow()
+            return
+        }
         guard guestSessionPhase() == 0 else { return }
         do {let access = try ResourceLibrary.open();let layout = try ResourceLayout.locate(access.root);try GameRenderingAssets.validate(layout)}
         catch {resourceStatus.text = error.localizedDescription;return}
-        AppLanguage.prepareSession()
-        GameRenderProfile.prepareSession()
-        view.window?.rootViewController = LabController()
+        let game = LabController()
+        guard LabController.sessions.claim(game) else { return }
+        game.attach(to: window)
     }
 }
 
@@ -1064,6 +1124,7 @@ private enum SessionText {
     static var standardQuality: String { pick("标准", "標準", "Standard", "標準", "표준") }
     static var highQuality: String { pick("高画质（试验）", "高畫質（試驗）", "High (Experimental)", "高画質（試験）", "고화질 (실험)") }
     static var start: String { pick("启动游戏", "啟動遊戲", "Start Game", "ゲームを開始", "게임 시작") }
+    static var otherWindow: String { pick("游戏已在另一个窗口启动", "遊戲已在另一個視窗啟動", "The game is open in another window.", "ゲームは別のウインドウで起動しています", "게임이 다른 창에서 실행 중입니다") }
     static var confirm: String { pick("保存进度并退出游戏？", "儲存進度並結束遊戲？", "Save your progress and exit the game?", "進行状況を保存してゲームを終了しますか？", "진행 상황을 저장하고 게임을 종료하시겠습니까?") }
     static var saving: String { pick("正在保存并结束游戏…", "正在儲存並結束遊戲…", "Saving and closing the game…", "保存して終了しています…", "저장하고 종료하는 중…") }
     static var saved: String { pick("进度已保存，游戏会话已结束", "進度已儲存，遊戲已結束", "Progress saved. Game session closed.", "保存してゲームを終了しました", "저장 후 게임을 종료했습니다") }

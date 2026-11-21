@@ -1,8 +1,8 @@
-# 源码与构建（2026-11-08）
+# 源码与构建 · 2026-11-21
 
-本仓库包含 Swift/UIKit 宿主、Mac AppKit 辅助组件、NVN → Metal／Horizon 兼容层、逆向工具和测试。公开源码与精简预览包为 **0.1.5 build22**。AutoPlay、调试信息和热切换的实际验证范围及限制见中英文 README。游戏资源、密钥、存档和本机签名数据不发布。
+本仓库提供 PJDV M39 0.1.5 build25 的 Swift／UIKit 宿主、Mac 辅助组件、NVN → Metal／Horizon 兼容层、构建工具和测试。完整链接需要自行准备下列本地构建输入。
 
-The public source and lightweight preview installers are **0.1.5 build22**. Both READMEs describe measured AutoPlay, diagnostics and hot-switch checks and outstanding limitations. Game payloads, keys, saves and local signing data are excluded.
+The repository contains the Swift/UIKit host, Mac helpers, NVN-to-Metal and Horizon runtime, build tools and tests for PJDV M39 0.1.5 build25. The full app requires the local build inputs described below.
 
 ## 源码目录
 

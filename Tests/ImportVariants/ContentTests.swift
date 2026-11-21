@@ -1,5 +1,6 @@
 import Foundation
 import CryptoKit
+import Darwin
 
 private let testChain = "test" as NSString
 @_cdecl("pjdv_shader_cache_chain") func fixtureShaderChain() -> UnsafePointer<CChar> {testChain.utf8String!}
@@ -81,6 +82,24 @@ private let testChain = "test" as NSString
         precondition(before==SHA256.hash(data:sourceAfter))
         print("PASS visible preparation/hash-verification phases, base-only CNMT discovery, hash-resolved renamed NCA, metadata-free unique package, zero DLC, extraction, verified resume and unchanged source")
         let mixed=try plan("update-subset")
+        // A competing writer owns this already-populated root. An importer
+        // must report contention before reading its different version marker.
+        do {
+            let lockURL = baseOut.appendingPathComponent(".pjdv-import.lock")
+            let fd = Darwin.open(lockURL.path, O_RDWR)
+            precondition(fd >= 0)
+            defer { Darwin.close(fd) }
+            precondition(flock(fd, LOCK_EX | LOCK_NB) == 0)
+            do {
+                try XCIResourceImporter(plan:mixed,root:baseOut,cancel:{false},report:{_ in}).run()
+                preconditionFailure("Concurrent import acquired a busy destination")
+            } catch ImportFailure.invalid(let message) {
+                precondition(message == "此资源目录正在被另一个导入任务使用", "Destination inspected outside the writer lock")
+            }
+        }
+        let unchangedLayout = try ResourceLayout.locate(baseOut)
+        precondition(unchangedLayout.content?.index_sha256 == base.content.index_sha256)
+        print("PASS contending import rejected before inspecting or changing another version")
         precondition(mixed.content.content_version==65536)
         precondition(mixed.volumes.compactMap{$0.dlc?.index}==[2,23,99])
         precondition(mixed.content.languages==["zh-Hans","ja"])

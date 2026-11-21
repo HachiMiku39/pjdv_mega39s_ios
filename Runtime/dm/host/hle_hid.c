@@ -48,14 +48,18 @@ static uint32_t style_of(uint32_t id){
     return 0;
 }
 static void fill(NpadState *s,uint32_t id,uint32_t style){
-    memset(s,0,sizeof *s);s->sampling=atomic_fetch_add(&samples,1)+1;
-    if(style_of(id)!=style)return;
+    if(style_of(id)!=style){
+        memset(s,0,sizeof *s);
+        s->sampling=atomic_fetch_add(&samples,1)+1;
+        return;
+    }
     static uint64_t traced_buttons;
     pthread_mutex_lock(&lock);*s=current;s->buttons|=latch;latch=0;
+    s->sampling=atomic_fetch_add(&samples,1)+1;
     int changed=traced_buttons!=s->buttons;traced_buttons=s->buttons;pthread_mutex_unlock(&lock);
     // Attached handheld Joy-Cons expose both sides as connected and wired,
     // not just the aggregate IsConnected flag, which leaves both sides absent.
-    s->sampling=atomic_load(&samples);s->attributes=style==STYLE_HANDHELD?0x3f:style==STYLE_JOYDUAL?0x15:ATTR_CONNECTED;
+    s->attributes=style==STYLE_HANDHELD?0x3f:style==STYLE_JOYDUAL?0x15:ATTR_CONNECTED;
     if(changed && getenv("PJDV_INPUT_TRACE") && atomic_fetch_add(&input_trace_count,1)<96)
         LOG("PJDV input guest id=%#x style=%u buttons=%#llx attributes=%#x",id,style,s->buttons,s->attributes);
     if(s->lx<-16384)s->buttons|=1ull<<16;if(s->lx>16384)s->buttons|=1ull<<18;

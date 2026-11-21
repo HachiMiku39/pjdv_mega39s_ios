@@ -194,6 +194,9 @@ static int64_t block_inner(thr_t *t, int kind, int64_t ns) {
             while(atomic_load(&g_session_park)==1)pthread_cond_wait(&t->cv,&G);
             t->parked=0;
             if(atomic_load(&g_session_park)==2){wait_unlink(t);t->wkind=0;pthread_mutex_unlock(&G);pjdv_thread_unwind();}
+            // A guest event can wake this waiter while it is parked. Recheck
+            // the original wait predicate before sleeping on its condition.
+            continue;
         }
 #endif
         int rc;
@@ -244,10 +247,18 @@ void guest_thread_init(void);   // thread.c：每线程 TSD 槽（门、x18、TL
 #if defined(DM_GAME_M39)
 static void thread_body(void *p) {
     thr_t *t=p;
-    pjdv_thread_checkpoint();
     pthread_mutex_lock(&G);
-    while(!t->started && !atomic_load(&g_session_park))pthread_cond_wait(&t->cv,&G);
-    pthread_mutex_unlock(&G);pjdv_thread_checkpoint();
+    while (!t->started) {
+        if (atomic_load(&g_session_park)) {
+            pthread_mutex_unlock(&G);
+            pjdv_thread_checkpoint();
+            pthread_mutex_lock(&G);
+        } else {
+            pthread_cond_wait(&t->cv, &G);
+        }
+    }
+    pthread_mutex_unlock(&G);
+    pjdv_thread_checkpoint();
     dm_thread_enter(t->entry,t->arg,t->stack_top);
     die("Guest entry returned without ExitThread");
 }
@@ -577,20 +588,27 @@ int svc_thread(int num, uint64_t *regs) {
         t->entry = regs[1]; t->arg = regs[2]; t->stack_top = regs[3] & ~0xFull;
         t->prio = (int)regs[4]; t->core = (int)regs[5]; t->mask = t->core >= 0 ? 1ull << t->core : 7;
         t->born_ns = now_ns(); t->born_tick = dm_thread_tick_fn ? dm_thread_tick_fn() : 0;
-        pthread_mutex_lock(&G); t->handle = h_new(O_THREAD, t); t->id = g_next_id++; t->all = g_all; g_all = t; pthread_mutex_unlock(&G);
         pthread_attr_t a; pthread_attr_init(&a); pthread_attr_setstacksize(&a, 1 << 20);
         pthread_attr_setdetachstate(&a, PTHREAD_CREATE_DETACHED);   // 退出即回收宿主资源（客体经句柄等待，不 join） | Host resources are reclaimed on exit (the guest waits through the handle, no join)
+        pthread_mutex_lock(&G);
+        t->handle = h_new(O_THREAD, t);
+        t->id = g_next_id++;
+        t->all = g_all;
+        g_all = t;
         if (pthread_create(&t->pt, &a, thread_main, t)) die("pthread_create");
         pthread_attr_destroy(&a);
         if (g_flag.thr) LOG("CreateThread h=%#x entry=%#llx arg=%#llx sp=%#llx prio=%d core=%d", t->handle, t->entry, t->arg, t->stack_top, t->prio, t->core);
-        regs[0] = 0; regs[1] = t->handle; return 1;
+        regs[0] = 0; regs[1] = t->handle;
+        pthread_mutex_unlock(&G);
+        return 1;
     }
     case 0x09: {  // StartThread(w0)
         pthread_mutex_lock(&G);
         thr_t *t = h_get((uint32_t)regs[0], O_THREAD);
         if (t) { t->started = 1; pthread_cond_signal(&t->cv); }
+        regs[0] = t ? 0 : R_BAD_HANDLE;
         pthread_mutex_unlock(&G);
-        regs[0] = t ? 0 : R_BAD_HANDLE; return 1;
+        return 1;
     }
     case 0x0A: thread_exit(cur()); return 1;
     case 0x0B: {  // SleepThread(x0 ns)；0/-1/-2 = 各类让出 | SleepThread(x0 ns); 0/-1/-2 = the various kinds of yield
@@ -622,17 +640,57 @@ int svc_thread(int num, uint64_t *regs) {
         if (g_flag.bootprof) { uint64_t d = now_ns() - t0; dm_prof_add(PROF_SLEEP, d, 0); thr_t *me = pthread_getspecific(g_keythr); if (me && me->handle == 0x1001) dm_prof_add(PROF_MAIN_WAIT, d, 0); }
         return 1;
     }
-    case 0x0C: { thr_t *t = h_get((uint32_t)regs[1], O_THREAD); regs[0] = t ? 0 : R_BAD_HANDLE; regs[1] = t ? (uint64_t)t->prio : 0; return 1; }
-    case 0x0D: { thr_t *t = h_get((uint32_t)regs[0], O_THREAD); if (t) t->prio = (int)regs[1]; regs[0] = t ? 0 : R_BAD_HANDLE; return 1; }
-    case 0x0E: { thr_t *t = h_get((uint32_t)regs[2], O_THREAD);
-                 regs[0] = t ? 0 : R_BAD_HANDLE; regs[1] = t ? (uint64_t)(uint32_t)t->core : 0; regs[2] = t ? t->mask : 0; return 1; }
-    case 0x0F: {  // SetThreadCoreMask(w0, w1 理想核, x2 掩码)：-1 = 用进程缺省、-2/-3 = 不改理想核；宿主只记账 | SetThreadCoreMask(w0, w1 ideal core, x2 mask): -1 = use the process default, -2/-3 = leave the ideal core unchanged; the host only keeps the bookkeeping
-        thr_t *t = h_get((uint32_t)regs[0], O_THREAD);
-        if (t) { int c = (int)regs[1]; if (c >= 0) t->core = c; else if (c == -1) t->core = 0; if (regs[2]) t->mask = regs[2]; }
-        regs[0] = t ? 0 : R_BAD_HANDLE; return 1;
+    case 0x0C: {  // GetThreadPriority
+        pthread_mutex_lock(&G);
+        thr_t *t = h_get((uint32_t)regs[1], O_THREAD);
+        regs[0] = t ? 0 : R_BAD_HANDLE;
+        regs[1] = t ? (uint64_t)t->prio : 0;
+        pthread_mutex_unlock(&G);
+        return 1;
     }
-    case 0x10: regs[0] = (uint64_t)(uint32_t)cur()->core; return 1;
-    case 0x25: { thr_t *t = h_get((uint32_t)regs[1], O_THREAD); regs[0] = t ? 0 : R_BAD_HANDLE; regs[1] = t ? t->id : 0; return 1; }
+    case 0x0D: {  // SetThreadPriority
+        pthread_mutex_lock(&G);
+        thr_t *t = h_get((uint32_t)regs[0], O_THREAD);
+        if (t) t->prio = (int)regs[1];
+        regs[0] = t ? 0 : R_BAD_HANDLE;
+        pthread_mutex_unlock(&G);
+        return 1;
+    }
+    case 0x0E: {  // GetThreadCoreMask
+        pthread_mutex_lock(&G);
+        thr_t *t = h_get((uint32_t)regs[2], O_THREAD);
+        regs[0] = t ? 0 : R_BAD_HANDLE;
+        regs[1] = t ? (uint64_t)(uint32_t)t->core : 0;
+        regs[2] = t ? t->mask : 0;
+        pthread_mutex_unlock(&G);
+        return 1;
+    }
+    case 0x0F: {  // SetThreadCoreMask; -1 selects the default, -2/-3 retain the current core.
+        pthread_mutex_lock(&G);
+        thr_t *t = h_get((uint32_t)regs[0], O_THREAD);
+        if (t) {
+            int core = (int)regs[1];
+            if (core >= 0) t->core = core;
+            else if (core == -1) t->core = 0;
+            if (regs[2]) t->mask = regs[2];
+        }
+        regs[0] = t ? 0 : R_BAD_HANDLE;
+        pthread_mutex_unlock(&G);
+        return 1;
+    }
+    case 0x10:  // GetCurrentProcessorNumber
+        pthread_mutex_lock(&G);
+        regs[0] = (uint64_t)(uint32_t)cur()->core;
+        pthread_mutex_unlock(&G);
+        return 1;
+    case 0x25: {  // GetThreadId
+        pthread_mutex_lock(&G);
+        thr_t *t = h_get((uint32_t)regs[1], O_THREAD);
+        regs[0] = t ? 0 : R_BAD_HANDLE;
+        regs[1] = t ? t->id : 0;
+        pthread_mutex_unlock(&G);
+        return 1;
+    }
 
     case 0x1A: {  // ArbitrateLock(w0 持有者句柄, x1 地址, w2 本线程标签) | ArbitrateLock(w0 owner handle, x1 address, w2 this thread's tag)
         thr_t *t = cur(); uint64_t addr = regs[1];
@@ -756,8 +814,9 @@ int svc_thread(int num, uint64_t *regs) {
         pthread_mutex_lock(&G);
         thr_t *t = h_get((uint32_t)regs[0], O_THREAD);
         if (t) { t->cancel = 1; if (t->wkind == 4) wake(t, -1); }
+        regs[0] = t ? 0 : R_BAD_HANDLE;
         pthread_mutex_unlock(&G);
-        regs[0] = t ? 0 : R_BAD_HANDLE; return 1;
+        return 1;
     }
     case 0x16: {  // CloseHandle(w0)：事件两端都关才释放；线程句柄关闭后槽位回收，对象在线程也退出后释放 | CloseHandle(w0): an event is freed only when both ends are closed; after a thread handle is closed the slot is recycled, and the object is freed once the thread has also exited
         pthread_mutex_lock(&G);

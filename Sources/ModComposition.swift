@@ -1,5 +1,6 @@
 import Foundation
 import CryptoKit
+import Darwin
 
 // Prepared packages are combined on the device. Original resources and package
 // payloads are read-only. The result is published only after the whole build
@@ -64,6 +65,20 @@ enum ModComposition {
             key.append(Data((p.path+":"+String((a[.size] as? NSNumber)?.uint64Value ?? 0)+":"+String((a[.modificationDate] as? Date)?.timeIntervalSince1970 ?? 0)).utf8))
         }
         let cacheKey=F.sha(key),profile=identity(items),destination=root.appendingPathComponent(cacheKey,isDirectory:true)
+        // Every scene/process using this cache key checks the winner's receipt
+        // before it can build or replace anything. Keep the lock inode stable.
+        try fm.createDirectory(at:root,withIntermediateDirectories:true)
+        let lockURL = root.appendingPathComponent(".lock-" + cacheKey)
+        let fd = Darwin.open(lockURL.path, O_RDWR | O_CREAT | O_NOFOLLOW | O_CLOEXEC, 0o600)
+        guard fd >= 0 else { throw NSError(domain:NSPOSIXErrorDomain,code:Int(errno)) }
+        defer { Darwin.close(fd) }
+        while flock(fd, LOCK_EX | LOCK_NB) != 0 {
+            let code = errno
+            guard code == EWOULDBLOCK || code == EINTR else { throw NSError(domain:NSPOSIXErrorDomain,code:Int(code)) }
+            if progress.isCancelled { throw ModLoadError.cancelled }
+            Thread.sleep(forTimeInterval:0.05)
+        }
+        if progress.isCancelled { throw ModLoadError.cancelled }
         if let raw=try? Data(contentsOf:destination.appendingPathComponent("complete.json")),let receipt=try? JSONDecoder().decode(Receipt.self,from:raw),receipt.key==cacheKey {
             var valid=true
             for c in receipt.files {
@@ -76,11 +91,11 @@ enum ModComposition {
             }
             if valid {return Session(paths:[destination.appendingPathComponent("0").path],profileID:profile)}
         }
-        try fm.createDirectory(at:root,withIntermediateDirectories:true)
         try fm.createDirectory(at:staging.appendingPathComponent("0"),withIntermediateDirectories:true)
         var committed=false;defer{if !committed {try? fm.removeItem(at:staging)}}
         try worker.build()
         try encoder.encode(Receipt(key:cacheKey,files:worker.records,generated:worker.generated.sorted())).write(to:staging.appendingPathComponent("complete.json"),options:.atomic)
+        if progress.isCancelled {throw ModLoadError.cancelled}
         if fm.fileExists(atPath:destination.path) {
             // Only a failed/incomplete cache for this exact key is replaced.
             let stale=root.appendingPathComponent(".stale-"+UUID().uuidString)

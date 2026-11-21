@@ -175,7 +175,7 @@ static void pjdv_game_fg_commit(id<MTLCommandBuffer> cb,id<CAMetalDrawable> dr,u
 #if !TARGET_OS_SIMULATOR
     [dr addPresentedHandler:^(id<MTLDrawable> d){if(d.presentedTime>0){extern void pjdv_frame_presented(double);pjdv_frame_presented(d.presentedTime);
         BOOL bypass=NO;if(generated && stats){const uint32_t *s=stats.contents;bypass=s[0] && s[1]*2>s[0];}
-            atomic_fetch_add(bypass?&g_fg_bypass_count:generated?&g_fg_generated_count:&g_fg_real_count,1);if(ticket)g_pres[ticket%PRING]=(pres_ent){ticket,d.presentedTime};}}];
+            atomic_fetch_add(bypass?&g_fg_bypass_count:generated?&g_fg_generated_count:&g_fg_real_count,1);if(ticket)record_present_time(ticket,d.presentedTime);}}];
 #endif
 #if !DM_NVN_M3
     // Returning the source ticket alone does not order later Metal4 writes

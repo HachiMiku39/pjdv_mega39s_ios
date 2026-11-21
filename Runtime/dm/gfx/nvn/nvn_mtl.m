@@ -129,7 +129,9 @@ static id<MTLTexture> g_bloomq_view;
 static int g_bloomq_i;
 static struct { int state; uint64_t s_ser, b0_ser, b1_ser, s_h, samp_h, b1_h; const tex_t *s_tex; float threshold, coeff_g, coeff_b; } g_bloomq;
 static uint64_t g_bloomq_last_b0, g_bloomq_last_b1h, g_bloomq_last_b1s;   // 最近一次泛光 1/4 叠加改读：B0 序号 → B1 句柄（跨帧保留，见 2e2d6700a2569795 那支） | Most recent bloom 1/4 overlay read redirection: B0 serial → B1 handle (kept across frames, see the 2e2d6700a2569795 branch)
-static uint64_t g_present_alloc_fence[3];
+// Queue tickets may be retired by frame coalescing. A slot, including its
+// shared UV/HDR buffers, stays owned until its actual GPU feedback completes.
+static int g_present_slot_busy[3]; // protected by g_pq_mu
 static pthread_mutex_t g_pq_mu = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t g_pq_cv = PTHREAD_COND_INITIALIZER;
 static pthread_cond_t g_link_cv = PTHREAD_COND_INITIALIZER;
@@ -137,7 +139,7 @@ static pthread_mutex_t g_link_mu = PTHREAD_MUTEX_INITIALIZER;
 static uint64_t g_link_tick_ns, g_link_tick_n;
 static uint64_t g_link_dropped;
 static int g_pq_inflight;   // 持 g_pq_mu：已提交给 GPU、完成回调还没来的上屏数 | Under g_pq_mu: number of presents committed to the GPU whose completion callback has not arrived yet
-int g_dm_present_link;   // 出图节拍模式（DM_PRESENT_LINK 的运行时值，同进程交替测量时直接改它）：0 = 自己取 drawable；1 = 显示节拍 60 Hz；2 = 120 Hz 节拍、游戏隔拍出一帧 | Present pacing mode (runtime value of DM_PRESENT_LINK, modified directly during same-process alternating measurement): 0 = acquire the drawable itself; 1 = display link at 60 Hz; 2 = display link at 120 Hz, the game presents a frame every other display-link tick
+_Atomic int g_dm_present_link;   // 出图节拍模式（DM_PRESENT_LINK 的运行时值，同进程交替测量时直接改它）：0 = 自己取 drawable；1 = 显示节拍 60 Hz；2 = 120 Hz 节拍、游戏隔拍出一帧 | Present pacing mode (runtime value of DM_PRESENT_LINK, modified directly during same-process alternating measurement): 0 = acquire the drawable itself; 1 = display link at 60 Hz; 2 = display link at 120 Hz, the game presents a frame every other display-link tick
 static int g_present_latency = 1;
 static uint64_t g_pq_done;
 static uint64_t g_pq_read;
@@ -879,11 +881,18 @@ void mtl_ub_present(double iv) {   // 出图线程每帧调一次：实际上屏
 // 所以真机要量的开关必须在这里加一行；Mac / 单测里没登记的仍按符号名找。
 // Registered runtime switches: name → address. Main-program symbols of an iOS release build are not in the dynamic symbol table and dlsym cannot find them (in the first real-device round all four categories were 「找不到全局变量」(global variable not found) and the whole round was wasted),
 // so a switch to be measured on a real device must have a line added here; on Mac / in unit tests unregistered ones are still looked up by symbol name.
-static int *ub_var(const char *nm) {
-    extern int g_bloom_q, g_dm_present_link;
-    static const struct { const char *n; int *p; } t[] = { {"g_bloom_q", &g_bloom_q}, {"g_dm_present_link", &g_dm_present_link}, {"g_frz_on", &g_frz_on} };
+static void *ub_var(const char *nm) {
+    extern int g_bloom_q;
+    static const struct { const char *n; void *p; } t[] = { {"g_bloom_q", &g_bloom_q}, {"g_dm_present_link", &g_dm_present_link}, {"g_frz_on", &g_frz_on} };
     for (size_t i = 0; i < sizeof t / sizeof t[0]; i++) if (!strcmp(nm, t[i].n)) return t[i].p;
     return dlsym(RTLD_DEFAULT, nm);
+}
+static int ub_exchange(void *address, int value) {
+    if (address == &g_dm_present_link) return atomic_exchange(&g_dm_present_link, value);
+    int *setting = address;
+    int previous = *setting;
+    *setting = value;
+    return previous;
 }
 static void ub_frame(uint64_t f) {
     if (g_ub_n < 0) { g_ub_n = 0; const char *e = getenv("DM_NVN_UB"), *n = getenv("DM_NVN_UB_N"); if (n && atoi(n) >= 60) g_ub_N = atoi(n);
@@ -900,13 +909,13 @@ static void ub_frame(uint64_t f) {
         int c0 = atomic_load(&g_ubp_c[0]), c1 = atomic_load(&g_ubp_c[1]), c2 = atomic_load(&g_ubp_c[2]), c3 = atomic_load(&g_ubp_c[3]), n_ = c0 + c1 + c2;
         MLOG("UB 上屏 %llu %s 帧 %d 均 %.3f ms 2拍 %d 3拍 %d 4拍以上 %d 丢弃 %d", (unsigned long long)pp, pc < 0 ? "base" : g_ub_name[pc], n_, n_ ? atomic_load(&g_ubp_sum_us) / 1000.0 / n_ : 0.0, c0, c1, c2, c3); }
     int nc = (ph & 1) ? (int)((ph / 2) % (uint64_t)g_ub_n) : -1;
-    static int *sp[16]; static int sv[16], ns;   // 上一相设过的变量：先还原 | Variables set by the previous phase: restore first
-    for (int i = 0; i < ns; i++) *sp[i] = sv[i]; ns = 0;
+    static void *sp[16]; static int sv[16], ns;   // 上一相设过的变量：先还原 | Variables set by the previous phase: restore first
+    for (int i = 0; i < ns; i++) (void)ub_exchange(sp[i], sv[i]); ns = 0;
     for (int i = 0; nc >= 0 && i < g_ub_nk[nc] && ns < 16; i++) { const char *k = g_ub_keys[nc][i]; if (strncmp(k, "@set:", 5)) continue;
         char nm[48]; const char *eq = strchr(k, '='); if (!eq) continue; size_t l = (size_t)(eq - (k + 5)); if (l >= sizeof nm) continue; memcpy(nm, k + 5, l); nm[l] = 0;
-        int *a_ = ub_var(nm); static int bad, ok;
+        void *a_ = ub_var(nm); static int bad, ok;
         if (!a_) { if (bad++ < 8) MLOG("【红】DM_NVN_UB：找不到全局变量 %s（真机上要先在 ub_var 的表里登记）", nm); continue; }
-        sp[ns] = a_; sv[ns] = *a_; ns++; *a_ = atoi(eq + 1); if (ok++ < 8) MLOG("DM_NVN_UB：%s = %d（原值 %d）", nm, atoi(eq + 1), sv[ns - 1]); }
+        sp[ns] = a_; sv[ns] = ub_exchange(a_, atoi(eq + 1)); ns++; if (ok++ < 8) MLOG("DM_NVN_UB：%s = %d（原值 %d）", nm, atoi(eq + 1), sv[ns - 1]); }
     atomic_store(&g_ub_cur, nc);
 }
 static int ub_skip(const char *key) {   // 本相要不要丢掉这个片元着色器的绘制 | Whether this phase should drop draws of this fragment shader
@@ -6001,7 +6010,7 @@ void mtl_rt_force_full(int n) { g_rt.force_full = n; }   // 宿主调：要换 3
 // source cadence reduces actual game submissions, not just drawable copies.
 #include "pjdv_fg_policy.h"
 static _Atomic int g_game_fg_mode;
-static int g_game_fg_previous_link;
+static _Atomic int g_game_fg_previous_link;
 static void pjdv_game_fg_reset(void);
 int pjdv_game_frame_generation_mode(void){return atomic_load(&g_game_fg_mode);}
 void pjdv_set_game_frame_generation(int mode){
@@ -6643,9 +6652,21 @@ void ts_after(void) {
 #define PRING 1024
 typedef struct { uint64_t n; double t; } pres_ent;
 static pres_ent g_pres[PRING];
+static pthread_mutex_t g_pres_mu = PTHREAD_MUTEX_INITIALIZER;
+static void record_present_time(uint64_t ticket, double time) {
+    pthread_mutex_lock(&g_pres_mu);
+    pres_ent *entry = &g_pres[ticket % PRING];
+    if (ticket >= entry->n) *entry = (pres_ent){ticket, time};
+    pthread_mutex_unlock(&g_pres_mu);
+}
 // 取第 n 次出图的实际呈现时刻（未就绪返回 0，被丢弃返回 −1）
 // Get the actual presentation time of the nth present (returns 0 if not ready, -1 if dropped)
-double mtl_presented_time(uint64_t n) { pres_ent e = g_pres[n % PRING]; return e.n == n ? e.t : 0; }
+double mtl_presented_time(uint64_t n) {
+    pthread_mutex_lock(&g_pres_mu);
+    pres_ent entry = g_pres[n % PRING];
+    pthread_mutex_unlock(&g_pres_mu);
+    return entry.n == n ? entry.t : 0;
+}
 static _Atomic uint64_t g_drawable_ns;   // 出图里等 nextDrawable 的累计墙钟（计时埋点） | Accumulated wall clock waiting for nextDrawable in present (timing instrumentation)
 uint64_t mtl_drawable_ns_take(void) { return atomic_exchange(&g_drawable_ns, 0); }
 // 有窗口时屏幕的最高刷新率（Hz）；无窗口返回 0。Mac 用 CoreGraphics 显示模式（线程安全的 C 接口，出图配置在游戏线程上读）
@@ -6776,6 +6797,30 @@ static int present_encode_m4(CBUF cb, id<MTLTexture> src, id<MTLTexture> dst, co
 }
 #include "pjdv_game_fg.inc"
 static double g_link_it_tin;   // 节拍回调正在上屏的那一帧的入队时刻（只在节拍线程读写） | Enqueue time of the frame the display-link callback is presenting (read and written only on the display-link thread)
+static void present_acquire_slot(int slot) {
+    pthread_mutex_lock(&g_pq_mu);
+    while (g_present_slot_busy[slot]) pthread_cond_wait(&g_pq_cv, &g_pq_mu);
+    g_present_slot_busy[slot] = 1;
+    pthread_mutex_unlock(&g_pq_mu);
+}
+
+// Used when encoding fails before a GPU completion handler takes ownership.
+static void present_cancel_slot(int slot) {
+    pthread_mutex_lock(&g_pq_mu);
+    g_present_slot_busy[slot] = 0;
+    pthread_cond_broadcast(&g_pq_cv);
+    pthread_mutex_unlock(&g_pq_mu);
+}
+
+static void present_complete_slot(int slot, uint64_t ticket) {
+    pthread_mutex_lock(&g_pq_mu);
+    g_present_slot_busy[slot] = 0;
+    if (ticket > g_pq_done) g_pq_done = ticket;
+    g_pq_inflight--;
+    pthread_cond_broadcast(&g_pq_cv);
+    pthread_mutex_unlock(&g_pq_mu);
+}
+
 static int present_now(const tex_t *t, double period, uint64_t frame, uint64_t ticket, const int crop[4], id<CAMetalDrawable> supplied, double target_ts, uint64_t sourceFence) {
     if (g_present_stall_ns) { struct timespec ts = {0, (long)g_present_stall_ns}; nanosleep(&ts, NULL); }
     g_present_n++;
@@ -6858,16 +6903,16 @@ static int present_now(const tex_t *t, double period, uint64_t frame, uint64_t t
     if(pjdv_game_fg_present(src,crop,dr,frame,ticket,sourceFence))return 1;
     int alloc_i = (int)(ticket % 3);
     PJDVHDRScene *hdrFrame=pjdv_hdr_scene(frame);
-    if (g_present_alloc_fence[alloc_i]) {
-        pthread_mutex_lock(&g_pq_mu);
-        while (g_pq_done < g_present_alloc_fence[alloc_i]) pthread_cond_wait(&g_pq_cv, &g_pq_mu);
-        pthread_mutex_unlock(&g_pq_mu);
-    }
+    present_acquire_slot(alloc_i);
 #if DM_NVN_M3
     CBUF cb = [g_q commandBuffer];   // 老接口：交画面记在命令缓冲上（presentDrawable），这一帧的绘制做完才上屏 | older API: presentation is recorded on the command buffer (presentDrawable), so the frame reaches the screen only after its drawing is done
+    if (!cb) { present_cancel_slot(alloc_i); return 0; }
     id<MTLTexture> upscaled=pjdv_spatial_encode(cb,src,dr.texture,crop,alloc_i);
     id<MTLTexture> mapped=pjdv_hdr_encode(cb,upscaled ?: src,dr.texture,upscaled?NULL:crop,alloc_i,hdrFrame);
-    if (!present_encode_m4(cb, mapped ?: upscaled ?: src, dr.texture, mapped || upscaled ? NULL : crop, alloc_i)) return 0;
+    if (!present_encode_m4(cb, mapped ?: upscaled ?: src, dr.texture, mapped || upscaled ? NULL : crop, alloc_i)) {
+        present_cancel_slot(alloc_i);
+        return 0;
+    }
     NSDictionary *fxCapture=pjdv_fx_capture_encode(cb,src,upscaled,mapped,dr.texture,crop,frame,alloc_i);
 #else
     [g_present_alloc4[alloc_i] reset];
@@ -6876,7 +6921,11 @@ static int present_now(const tex_t *t, double period, uint64_t frame, uint64_t t
     [cb beginCommandBufferWithAllocator:g_present_alloc4[alloc_i]];
     id<MTLTexture> upscaled=pjdv_spatial_encode(cb,src,dr.texture,crop,alloc_i);
     id<MTLTexture> mapped=pjdv_hdr_encode(cb,upscaled ?: src,dr.texture,upscaled?NULL:crop,alloc_i,hdrFrame);
-    if (!present_encode_m4(cb, mapped ?: upscaled ?: src, dr.texture, mapped || upscaled ? NULL : crop, alloc_i)) { [cb endCommandBuffer]; [g_q4 signalDrawable:dr]; return 0; }
+    if (!present_encode_m4(cb, mapped ?: upscaled ?: src, dr.texture, mapped || upscaled ? NULL : crop, alloc_i)) {
+        [cb endCommandBuffer]; [g_q4 signalDrawable:dr];
+        present_cancel_slot(alloc_i);
+        return 0;
+    }
     NSDictionary *fxCapture=pjdv_fx_capture_encode(cb,src,upscaled,mapped,dr.texture,crop,frame,alloc_i);
     [cb endCommandBuffer];
 #endif
@@ -6891,7 +6940,7 @@ static int present_now(const tex_t *t, double period, uint64_t frame, uint64_t t
 #if TARGET_OS_SIMULATOR && DM_NVN_M3
         if(f.status==MTLCommandBufferStatusCompleted){extern void pjdv_frame_presented(double);pjdv_frame_presented(f.GPUEndTime>0?f.GPUEndTime:CACurrentMediaTime());}
 #endif
-        pthread_mutex_lock(&g_pq_mu); if (ticket > g_pq_done) g_pq_done = ticket; g_pq_inflight--; pthread_cond_broadcast(&g_pq_cv); pthread_mutex_unlock(&g_pq_mu);
+        present_complete_slot(alloc_i, ticket);
     }];
 #if !DM_NVN_M3
     CBUF buffers[] = {cb};
@@ -6918,7 +6967,6 @@ static int present_now(const tex_t *t, double period, uint64_t frame, uint64_t t
 #if !DM_NVN_M3
     [g_q4 signalDrawable:dr];
 #endif
-    g_present_alloc_fence[alloc_i] = ticket;
 #if TARGET_OS_SIMULATOR   // iOS 模拟器 SDK 没有呈现时刻回调与最短显示时长（只作画面验收用，不计节拍） | The iOS simulator SDK has no presentation-time callback and no minimum display duration (used only for picture acceptance, display-link ticks are not counted)
     (void)period; M3_PRESENT(cb, dr);
 #else
@@ -6926,7 +6974,7 @@ static int present_now(const tex_t *t, double period, uint64_t frame, uint64_t t
     [dr addPresentedHandler:^(id<MTLDrawable> d) {   // 真实呈现时刻（屏幕上真正换上这一帧的时间，CACurrentMediaTime 基准） | Actual presentation time (the time this frame is really put on screen, CACurrentMediaTime base)
         CFTimeInterval tt = d.presentedTime;
         extern void pjdv_frame_presented(double);if(tt>0)pjdv_frame_presented(tt);
-        g_pres[pn % PRING] = (pres_ent){pn, tt > 0 ? tt : -1};
+        record_present_time(pn, tt > 0 ? tt : -1);
     }];
     // 每张至少显示一个出图周期：GPU 完成时刻在 120 Hz 刷新边界附近抖动时，不再出现「25 ms + 8.33 ms」成对的顿挫
     // Each frame is displayed for at least one present period: when the GPU completion time jitters around a 120 Hz refresh boundary, the paired "25 ms + 8.33 ms" stutter no longer appears
@@ -6999,7 +7047,7 @@ __attribute__((weak)) uint64_t dm_focus_in_since(void) { return 0; }
     uint64_t first = g_pq_read + 1, ticket = g_pq_in;
     pq_item it = g_pq[(g_pq_in - 1) % PQ]; g_link_it_tin = it.t_in;
     g_pq_read = g_pq_in;
-    if (ticket > first) { g_link_dropped += ticket - first; for (uint64_t k = first; k < ticket; k++) g_pres[k % PRING] = (pres_ent){k, -1}; }   // 被合并丢弃的旧帧记「未上屏」，上屏统计如实算掉帧 | Old frames merged and dropped are recorded as "not presented", so the present statistics honestly count them as dropped frames
+    if (ticket > first) { g_link_dropped += ticket - first; for (uint64_t k = first; k < ticket; k++) record_present_time(k, -1); }
     if (ticket > 1 && g_pq_done < ticket - 1) g_pq_done = ticket - 1;
     pthread_cond_broadcast(&g_pq_cv);
     pthread_mutex_unlock(&g_pq_mu);
@@ -7014,57 +7062,101 @@ __attribute__((weak)) uint64_t dm_focus_in_since(void) { return 0; }
 }
 @end
 
-static id g_link; static CFRunLoopRef g_link_rl; static _Atomic int g_link_started;
-static int g_link_owns_layer, g_classic_busy;   // 持 g_pq_mu：图层挂着节拍对象期间 nextDrawable 会抛异常，自取 drawable 的出图线程与节拍对象互斥 | Under g_pq_mu: nextDrawable throws while the layer has the display link object attached, so the present thread that takes its own drawable and the display link object are mutually exclusive
-static int link_on(void) { return g_dm_present_link && g_link != nil; }
-static CAFrameRateRange link_range(int mode) API_AVAILABLE(macos(14.0), macCatalyst(17.0), ios(17.0)) { return mode == 3 ? CAFrameRateRangeMake(30, 30, 30) : mode == 2 ? CAFrameRateRangeMake(60, 120, 120) : CAFrameRateRangeMake(60, 60, 60); }
-static int g_link_mode = 1;   // 节拍对象当前的模式：1 / 2 同 g_dm_present_link，3 = 省电模式 30 Hz | Current mode of the display link object: 1 / 2 same as g_dm_present_link, 3 = power-saving mode 30 Hz
-static void *link_main(void *arg) {
-    if (@available(macOS 14.0, macCatalyst 17.0, iOS 17.0, *)) {   // 显示节拍线程：切到节拍模式时起，切回 0 时退出 | Display link thread: started when switching to display-link mode, exits when switching back to 0
-    (void)arg;
-    pthread_setname_np("nvn-present-link");
-    pthread_set_qos_class_self_np(QOS_CLASS_USER_INTERACTIVE, 0);
-    CAMetalLayer *layer = (__bridge CAMetalLayer *)front_metal_layer();
-    pthread_mutex_lock(&g_pq_mu); g_link_owns_layer = 1; while (g_classic_busy) pthread_cond_wait(&g_pq_cv, &g_pq_mu); pthread_mutex_unlock(&g_pq_mu);   // 等出图线程手上那一帧交完 | Wait for the present thread to finish handing over the frame it holds
-    NvMetalDisplayLinkDelegate *delegate = [NvMetalDisplayLinkDelegate new];
-    CAMetalDisplayLink *link = [[CAMetalDisplayLink alloc] initWithMetalLayer:layer];
-    link.preferredFrameRateRange = link_range(g_link_mode);
-    link.preferredFrameLatency = g_present_latency;
-    link.delegate = delegate;
-    [link addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSDefaultRunLoopMode];
-    g_link_rl = CFRunLoopGetCurrent(); g_link = link;
-    CFRunLoopRun();   // 切回模式 0 时节拍对象作废、本线程退出（图层还挂着节拍对象时 nextDrawable 取不到图，不能只暂停） | When switching back to mode 0 the display link object is invalidated and this thread exits (nextDrawable cannot get a drawable while the layer still has the display link object attached, so pausing alone is not enough)
-    g_link_started = 0;
-    return NULL;
+// g_pq_mu covers the worker, its published run loop, and exclusive layer ownership.
+static id g_link;
+static CFRunLoopRef g_link_rl;
+static int g_link_started, g_link_mode, g_link_owns_layer, g_classic_busy;
 
-    }
+static int link_on(void) {
+    pthread_mutex_lock(&g_pq_mu);
+    int active = g_link != nil;
+    pthread_mutex_unlock(&g_pq_mu);
+    return active;
+}
+static CAFrameRateRange link_range(int mode) API_AVAILABLE(macos(14.0), macCatalyst(17.0), ios(17.0)) { return mode == 3 ? CAFrameRateRangeMake(30, 30, 30) : mode == 2 ? CAFrameRateRangeMake(60, 120, 120) : CAFrameRateRangeMake(60, 60, 60); }
+
+static void *link_main(void *arg) {
+    (void)arg;
+    if (@available(macOS 14.0, macCatalyst 17.0, iOS 17.0, *)) { @autoreleasepool {
+        pthread_setname_np("nvn-present-link");
+        pthread_set_qos_class_self_np(QOS_CLASS_USER_INTERACTIVE, 0);
+        pthread_mutex_lock(&g_pq_mu);
+        g_link_owns_layer = 1;
+        while (g_classic_busy && g_link_mode) pthread_cond_wait(&g_pq_cv, &g_pq_mu);
+        BOOL requested = g_link_mode != 0;
+        pthread_mutex_unlock(&g_pq_mu);
+
+        CAMetalLayer *layer = requested ? (__bridge CAMetalLayer *)front_metal_layer() : nil;
+        if (layer) {
+            __attribute__((objc_precise_lifetime)) NvMetalDisplayLinkDelegate *delegate = [NvMetalDisplayLinkDelegate new];
+            CAMetalDisplayLink *link = [[CAMetalDisplayLink alloc] initWithMetalLayer:layer];
+            link.preferredFrameLatency = g_present_latency;
+            link.delegate = delegate;
+            CFRunLoopRef rl = CFRunLoopGetCurrent();
+            pthread_mutex_lock(&g_pq_mu);
+            BOOL run = g_link_mode != 0;
+            if (run) {
+                link.preferredFrameRateRange = link_range(g_link_mode);
+                [link addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSDefaultRunLoopMode];
+                g_link_rl = rl;
+                g_link = link;
+            }
+            pthread_mutex_unlock(&g_pq_mu);
+            if (run) CFRunLoopRun();
+            [link invalidate];
+        }
+        // Release the layer only after invalidation, including a stop that
+        // arrived while we were waiting for a classic present to finish.
+        pthread_mutex_lock(&g_pq_mu);
+        g_link = nil;
+        g_link_rl = NULL;
+        g_link_owns_layer = 0;
+        g_link_started = 0;
+        pthread_cond_broadcast(&g_pq_cv);
+        pthread_mutex_unlock(&g_pq_mu);
+    } }
     return NULL;
+}
+static void link_request_mode(int want) API_AVAILABLE(macos(14.0), macCatalyst(17.0), ios(17.0)) {
+    pthread_mutex_lock(&g_pq_mu);
+    int previous = g_link_mode;
+    g_link_mode = want;
+    if (!g_link_started && want && front_metal_layer()) {
+        g_link_started = 1;
+        pthread_t th;
+        if (pthread_create(&th, NULL, link_main, NULL)) MDIE("显示节拍线程起不来");
+        pthread_detach(th);
+    } else if (g_link && previous != want) {
+        CAMetalDisplayLink *link = g_link;
+        CFRunLoopRef rl = g_link_rl;
+        if (want) {
+            CFRunLoopPerformBlock(rl, kCFRunLoopDefaultMode, ^{
+                link.preferredFrameRateRange = link_range(want);
+            });
+        } else {
+            g_link = nil;
+            CFRunLoopPerformBlock(rl, kCFRunLoopDefaultMode, ^{ CFRunLoopStop(rl); });
+        }
+        CFRunLoopWakeUp(rl);
+    }
+    if (previous != want) pthread_cond_broadcast(&g_pq_cv);
+    pthread_mutex_unlock(&g_pq_mu);
 }
 static void link_sync(void) {
     if (@available(macOS 14.0, macCatalyst 17.0, iOS 17.0, *)) {
-    if (pjdv_test_macos11_api()) { g_dm_present_link = 0; return; }
-   // 游戏出图线程每帧调：把节拍对象的状态对齐到 g_dm_present_link 与省电模式（运行中可改） | Called every frame by the game's present thread: aligns the display link object's state to g_dm_present_link and the power-saving mode (can change at run time)
-    static int applied; int fg=pjdv_game_frame_generation_mode(); if(fg)g_dm_present_link=pjdv_fg_link_mode(fg); int want = g_dm_present_link;
-    if (want < 0 || want > 2) { g_dm_present_link = applied == 3 ? 1 : applied; return; }
-    if (want && mtl_fps_target() == 30 && !pjdv_game_frame_generation_mode()) want = 3;   // 省电模式：显示节拍 30 Hz | Power-saving mode: display link at 30 Hz
-    if (want == applied) return;
-    g_link_mode = want;
-    if (!g_link_started) {
-        if (!want) { applied = 0; return; }
-        if (!front_metal_layer()) return;
-        g_link_started = 1; pthread_t th; if (pthread_create(&th, NULL, link_main, NULL)) MDIE("显示节拍线程起不来"); pthread_detach(th);
-        return;   // 节拍对象在新线程里建，下一帧再对齐 | The display link object is created on a new thread; align again next frame
-    }
-    CAMetalDisplayLink *link = g_link; if (!link) return;
-    if (want) link.preferredFrameRateRange = link_range(want);
-    else { CFRunLoopRef rl = g_link_rl; g_link = nil; CFRunLoopPerformBlock(rl, kCFRunLoopDefaultMode, ^{ [link invalidate]; pthread_mutex_lock(&g_pq_mu); g_link_owns_layer = 0; pthread_cond_broadcast(&g_pq_cv); pthread_mutex_unlock(&g_pq_mu); CFRunLoopStop(rl); }); CFRunLoopWakeUp(rl); }
-    MLOG("出图节拍模式 %d → %d（帧 %llu）", applied, want, (unsigned long long)atomic_load(&g_cur_frame));
-    applied = want;
-    pthread_mutex_lock(&g_pq_mu); pthread_cond_broadcast(&g_pq_cv); pthread_mutex_unlock(&g_pq_mu);
-    // The fallback below is only for systems without CAMetalDisplayLink.
-    // Clearing the request here leaves the link owning the layer while its
-    // delegate refuses queued frames; the classic presenter cannot take over.
-    return;
+        if (pjdv_test_macos11_api()) { g_dm_present_link = 0; return; }
+        int fg = pjdv_game_frame_generation_mode();
+        if (fg) g_dm_present_link = pjdv_fg_link_mode(fg);
+        int want = g_dm_present_link;
+        if (want < 0 || want > 2) {
+            pthread_mutex_lock(&g_pq_mu);
+            g_dm_present_link = g_link_mode == 3 ? 1 : g_link_mode;
+            pthread_mutex_unlock(&g_pq_mu);
+            return;
+        }
+        if (want && mtl_fps_target() == 30 && !fg) want = 3;
+        link_request_mode(want);
+        return;
     }
     g_dm_present_link = 0;
 }
@@ -7078,7 +7170,7 @@ static void present_drop_for_suspend(void) {
     pthread_mutex_lock(&g_pq_mu);
     if (g_link_owns_layer) {
         uint64_t n = g_pq_in - g_pq_read;
-        for (uint64_t k = g_pq_read + 1; k <= g_pq_in; k++) g_pres[k % PRING] = (pres_ent){k, -1};
+        for (uint64_t k = g_pq_read + 1; k <= g_pq_in; k++) record_present_time(k, -1);
         g_link_dropped += n; g_pq_read = g_pq_in;
         while (g_pq_inflight) pthread_cond_wait(&g_pq_cv, &g_pq_mu);
         if (g_pq_done < g_pq_in) g_pq_done = g_pq_in;
@@ -7158,7 +7250,7 @@ void mtl_present_wait(uint64_t tk) {
         if (g_pq_read >= tk) continue;
         if (now - last < STALL_NS) { pthread_cond_timedwait(&g_pq_cv, &g_pq_mu, &ts); continue; }   // 节拍还在走，只是这张还没轮到：接着等（有上限，不空转） | The display link is still running, it is just not this one's turn yet: keep waiting (bounded, no busy spinning)
         uint64_t n = tk - g_pq_read;
-        for (uint64_t k = g_pq_read + 1; k <= tk; k++) g_pres[k % PRING] = (pres_ent){k, -1};
+        for (uint64_t k = g_pq_read + 1; k <= tk; k++) record_present_time(k, -1);
         g_link_dropped += n; g_pq_read = tk;
         while (g_pq_inflight) pthread_cond_wait(&g_pq_cv, &g_pq_mu);
         if (g_pq_done < tk) g_pq_done = tk;
@@ -7185,7 +7277,17 @@ void mtl_bw(uint64_t *load, uint64_t *store, uint64_t *full) { *load = g_bw_load
 uint64_t mtl_udc_saved_bytes(void) { return g_udc_saved_bytes; }
 int mtl_has_window(void) { return front_metal_layer() != NULL; }
 int mtl_link_active(void) { return link_on(); }
-void mtl_link_pause(int on) { if (@available(macOS 14.0, macCatalyst 17.0, iOS 17.0, *)) { CAMetalDisplayLink *l = g_link; if (l) l.paused = on != 0; } }   // 测试用（DM_TEST_BG）：模仿系统在后台停掉节拍回调 | For testing (DM_TEST_BG): imitates the system stopping the display-link callback in the background
+void mtl_link_pause(int on) {
+    if (@available(macOS 14.0, macCatalyst 17.0, iOS 17.0, *)) {
+        pthread_mutex_lock(&g_pq_mu);
+        CAMetalDisplayLink *l = g_link;
+        if (l) {
+            CFRunLoopPerformBlock(g_link_rl, kCFRunLoopDefaultMode, ^{ l.paused = on != 0; });
+            CFRunLoopWakeUp(g_link_rl);
+        }
+        pthread_mutex_unlock(&g_pq_mu);
+    }
+}
 int mtl_link_wait_tick(uint64_t timeout_ns) {
     if (!mtl_link_active()) return 0;
     // ProMotion may reduce callbacks below 120Hz. Mode 2 uses the original
@@ -7230,6 +7332,22 @@ void mtl_alloc_stats(uint64_t *waits, uint64_t *grown, int *n) { *waits = g_allo
 #if defined(DM_GAME_M39)
 // Precondition: all guest scopes parked, NVN calls idle, present/GPU callbacks
 // drained. Keep only reusable device/compiler caches with no guest addresses.
+static int wait_present_idle(unsigned timeout_ms) {
+    struct timespec deadline;
+    clock_gettime(CLOCK_REALTIME, &deadline);
+    deadline.tv_sec += timeout_ms / 1000;
+    deadline.tv_nsec += (long)(timeout_ms % 1000) * 1000000;
+    if (deadline.tv_nsec >= 1000000000) { deadline.tv_sec++; deadline.tv_nsec -= 1000000000; }
+    pthread_mutex_lock(&g_pq_mu);
+    while (g_link_started || g_classic_busy || g_pq_read != g_pq_in || g_pq_inflight) {
+        if (pthread_cond_timedwait(&g_pq_cv, &g_pq_mu, &deadline) != 0) {
+            pthread_mutex_unlock(&g_pq_mu);
+            return 0;
+        }
+    }
+    pthread_mutex_unlock(&g_pq_mu);
+    return 1;
+}
 int pjdv_metal_session_end(void) {
     if(g_cb || g_enc || g_blit || g_up_cb)return 0;
     while(atomic_load(&g_warm_running))usleep(1000);
@@ -7240,10 +7358,12 @@ int pjdv_metal_session_end(void) {
 #if !DM_NVN_M3
     if(g_feedback_q)dispatch_sync(g_feedback_q,^{});
 #endif
-    mtl_link_pause(1);
-    int saved_link_mode=g_dm_present_link;g_dm_present_link=0;link_sync();
-    while(atomic_load(&g_link_started))usleep(1000);
-    g_dm_present_link=saved_link_mode;
+    if (@available(macOS 14.0, macCatalyst 17.0, iOS 17.0, *)) {
+        link_request_mode(0);
+    }
+    // A presenter can still be encoding at the earlier drain. Its worker
+    // must finish submitting and its GPU completion must run before cleanup.
+    if (!wait_present_idle(5000)) return 0;
 #if !TARGET_OS_SIMULATOR
     pjdv_rt_stage_release();
 #endif

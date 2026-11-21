@@ -12,6 +12,38 @@ uint64_t guest_ns(void){return now_ns();}
 int touch_fill(void *out,uint64_t t){(void)out;(void)t;return 0;}
 int touch_fill_capacity(void *out,unsigned n,uint64_t t){(void)out;(void)n;(void)t;return 0;}
 #define CHECK(x) do{if(!(x)){fprintf(stderr,"Npad failure line %d: %s\n",__LINE__,#x);return 1;}}while(0)
+enum { reader_count = 4, samples_per_reader = 4096 };
+typedef struct { int64_t ids[samples_per_reader]; } poll_result;
+static void *poll_full_key(void *opaque) {
+    poll_result *result = opaque;
+    const uint32_t player = 0;
+    for (int i = 0; i < samples_per_reader; i++) {
+        NpadState snapshot;
+        h_hid_GetFullKey(&snapshot, &player);
+        result->ids[i] = snapshot.sampling;
+    }
+    return NULL;
+}
+
+static int verify_concurrent_sample_ids(void) {
+    poll_result results[reader_count];
+    pthread_t readers[reader_count];
+    unsigned char seen[reader_count * samples_per_reader] = {0};
+    const int64_t first = dm_input_samples() + 1;
+    for (int i = 0; i < reader_count; i++)
+        CHECK(pthread_create(&readers[i], NULL, poll_full_key, &results[i]) == 0);
+    for (int i = 0; i < reader_count; i++)
+        CHECK(pthread_join(readers[i], NULL) == 0);
+    for (int i = 0; i < reader_count; i++) {
+        for (int j = 0; j < samples_per_reader; j++) {
+            const int64_t slot = results[i].ids[j] - first;
+            CHECK(slot >= 0 && slot < (int64_t)sizeof(seen) && !seen[slot]);
+            seen[slot] = 1;
+        }
+    }
+    return 0;
+}
+
 int main(void){
  uint32_t handheld=0x20,player=0;NpadState state;
  h_hid_SetIds(&handheld,1);
@@ -58,5 +90,7 @@ int main(void){
  h_hid_SetStyles(0);CHECK(h_hid_GetStyle(&player)==0);
  h_hid_GetJoyDual(&state,&player);CHECK(state.buttons==0 && state.attributes==0);
  uint32_t other=1;CHECK(h_hid_GetStyle(&other)==0);
+ h_hid_SetStyles(STYLE_FULLKEY);CHECK(h_hid_GetStyle(&player)==STYLE_FULLKEY);
+ CHECK(verify_concurrent_sample_ids() == 0);
  puts("Npad contract passed: ABI, handheld side connections, requested IDs/styles, docked-quality integrated Touch Play, full-key and paired-controller fallback, invalid-style/empty-ID isolation, short-tap latch and release");return 0;
 }

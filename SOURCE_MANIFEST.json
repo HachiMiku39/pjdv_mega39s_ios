@@ -1,9 +1,9 @@
 {
   "format": "pjdv-public-source-v1",
-  "date": "2026-11-19",
-  "source_build": "0.1.5 build24",
-  "public_release": "v0.1.5b24",
-  "source_parent_commit": "e86d360e4c0b132bb7f62b231ccf53a11355f2c1",
+  "date": "2026-11-21",
+  "source_build": "0.1.5 build25",
+  "public_release": "v0.1.5b25",
+  "source_parent_commit": "58e7d3753792924c90c19cea4d4ef503d683dc42",
   "native_resource_model_and_movie_song_import": true,
   "Eden_raw_ID_over_999_import": false,
   "universal_PC_Mod_compatibility": false,
@@ -130,16 +130,16 @@
     },
     {
       "path": "BUILDING.md",
-      "bytes": 18795,
-      "sha256": "71550168eeb46fc7163c2a9e254069ba145581013600f581203dd1ed04a8650f",
-      "git_blob_sha": "15ed6c51bb0ac9433e4e219323b7e8fa0b40509c",
+      "bytes": 18629,
+      "sha256": "5f165d5d8f89b4c7ed4f87aac2dfb7cba6d4726723473c49a21c406bc5264adb",
+      "git_blob_sha": "a2376fc687f7f7b92900b951256a735ea5bbc6c9",
       "mode": "100644"
     },
     {
       "path": "Info.plist",
       "bytes": 2882,
-      "sha256": "b216f013e99bba81d9173ad86cb9d0f85ceeb6dba5556f917cadbc7860352b52",
-      "git_blob_sha": "edba7a26719c9f177d52593ffd25ea0ce59578da",
+      "sha256": "74497c4cab347c43470ff469af8b8d64a886075176c33f195069c1e0d10ddccc",
+      "git_blob_sha": "2d5ab2e1641bede164fe3fcfcf1bbfecb3176358",
       "mode": "100644"
     },
     {
@@ -151,16 +151,16 @@
     },
     {
       "path": "README.en.md",
-      "bytes": 65071,
-      "sha256": "06217560736158e809b437b7fb89fc689dacd072387d02e510e1501c1c9473a7",
-      "git_blob_sha": "a23491884039c4a489033d0b50410f00edccf39f",
+      "bytes": 67355,
+      "sha256": "d131826dc7fbac2aa845ad503c92e9a226d99a33c8cd4a5403fb74669e4ec0b0",
+      "git_blob_sha": "95dc9d985b316bbac9046e2a32011cb5e4c2cbb8",
       "mode": "100644"
     },
     {
       "path": "README.md",
-      "bytes": 57408,
-      "sha256": "3249ae6367f37c13355ed7af5fa6b242381980c463281597892ae8a4ec69ceaa",
-      "git_blob_sha": "5d8a603e50424c73d1f7c24418ea41a746860574",
+      "bytes": 59379,
+      "sha256": "61601d7a39a164b1d59ea90d2714a7ca9f5fa4c80576b7245e210849ba03e210",
+      "git_blob_sha": "ae5389c653b201965d89fba4a6cd2327a70e234d",
       "mode": "100644"
     },
     {
@@ -182,6 +182,13 @@
       "bytes": 4235,
       "sha256": "af1de5ad06b709def3f6c2f4e4997587e4adee7ce0627233d144c7ec8bc706f1",
       "git_blob_sha": "1f86e0bf95db2c1b1b5189398eddcf98c28dc0df",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/CONCURRENCY-AUDIT-20261121.md",
+      "bytes": 7221,
+      "sha256": "d0e12d8ae554d4e685ce7864ba4346f6f4e078a38e5f7c2c7235b86ce7e3d934",
+      "git_blob_sha": "aef73a9d93a9c58641bf2f9eae576f46ab92b00e",
       "mode": "100644"
     },
     {
@@ -329,6 +336,13 @@
       "bytes": 4224,
       "sha256": "bbcab73cfa71cba5240ab9e2956cba6ed2784350fd3101042476e73ccff3618b",
       "git_blob_sha": "f640c04fa825c5d1e9a4a30ec830c6b2e88988a3",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/RELEASE-build25-20261121.md",
+      "bytes": 5381,
+      "sha256": "daff43d4ac2198f0f9727a87e231b1c41e1f46e615a9bd62ed1b811d2f522fe1",
+      "git_blob_sha": "d7193b76935745b9ec93c54331e26ea1664c65f0",
       "mode": "100644"
     },
     {
@@ -1173,9 +1187,9 @@
     },
     {
       "path": "Runtime/dm/gfx/nvn/nvn_mtl.m",
-      "bytes": 702270,
-      "sha256": "591637df727b29d183371a4b40b910bd44e38a18a0cc433964c9a06a9501c9e3",
-      "git_blob_sha": "54f7702925b72b84cf3dc6d73d44edd5f51e01cb",
+      "bytes": 703527,
+      "sha256": "119d82a891072b65b26f436a7ca0fb2a8b43a92a2d45251482554121070320bc",
+      "git_blob_sha": "4aab79a40fa2ca1c38bbb0eb18819f1dbee29c9d",
       "mode": "100644"
     },
     {
@@ -1299,9 +1313,9 @@
     },
     {
       "path": "Runtime/dm/gfx/nvn/pjdv_game_fg.inc",
-      "bytes": 18421,
-      "sha256": "4e477a15f1e2286292be947a51c0434f6bb2bc29b61849bc6e0d32770936043c",
-      "git_blob_sha": "b28fd98e9007ceb339d1f27a4853fdafdfe27bba",
+      "bytes": 18409,
+      "sha256": "8d8c09ef947ff64169b503a91dbac7db948195424d4f94572fd5b217c253d62e",
+      "git_blob_sha": "554cab15f722323f204fd0b633855aec3b311297",
       "mode": "100644"
     },
     {
@@ -2398,9 +2412,9 @@
     },
     {
       "path": "Runtime/dm/host/hle_hid.c",
-      "bytes": 13038,
-      "sha256": "4ac3776ae8ffbc47769ccb76fd8c9de196383c4ccdceac4cd50388fd8f2be1d2",
-      "git_blob_sha": "99495a4bef18f3c99881370e1c8254b324bfb368",
+      "bytes": 13081,
+      "sha256": "53f0de11613a6379d3a35edd7ee00efdfdd02fb7aa1ac2adc304ba9b90796217",
+      "git_blob_sha": "7c0a9855956a9ce7de2e6efeb884f423409b0f39",
       "mode": "100644"
     },
     {
@@ -2496,9 +2510,9 @@
     },
     {
       "path": "Runtime/dm/host/hle_thread.c",
-      "bytes": 60830,
-      "sha256": "b721165dd3779f4dbb3f0f982254a92bb52376510ca36ef83a6f6d0aad135ed3",
-      "git_blob_sha": "d67c65bd8c37214a11eeea88bca0dbe29a65518a",
+      "bytes": 61759,
+      "sha256": "387c2b5e9b03fcd07e8f504c07f6edbce258dd27e2ef53f0b2a6e2d24ad21a77",
+      "git_blob_sha": "64450d18fa428512e752b5e9dbbbf53a33e9ebba",
       "mode": "100644"
     },
     {
@@ -2573,9 +2587,9 @@
     },
     {
       "path": "Runtime/dm/host/pjdv_boot.c",
-      "bytes": 8801,
-      "sha256": "0c3085fef77ecf7f1f0131042d1e54bc16dda15c9bb78589b995e63b91ad98c5",
-      "git_blob_sha": "4f210a3891006de416551be4133de5dd7893d824",
+      "bytes": 8822,
+      "sha256": "6e0b84d7b12d0c9d34254751b89fbdfa23018265d7f733a645efbe3d978e8612",
+      "git_blob_sha": "353b498da07ce3935d293648ee26268a4626600d",
       "mode": "100644"
     },
     {
@@ -5674,9 +5688,9 @@
     },
     {
       "path": "Sources/App.swift",
-      "bytes": 64874,
-      "sha256": "64b3599394d52430e2cc5ad27e4ac2d94fcbea2a03487b17fa17ce495fded4c5",
-      "git_blob_sha": "078e39eeb11b19edc360c99e3bda32a76cd2d9a1",
+      "bytes": 67774,
+      "sha256": "663b2dc4d3452a7ee7274f0b774bc75e7ba12100ce1581933b599d984745ca9f",
+      "git_blob_sha": "ce64ed0daa92a89fabbb02e182aa70294c8f0186",
       "mode": "100644"
     },
     {
@@ -5723,9 +5737,9 @@
     },
     {
       "path": "Sources/GuestRuntime.swift",
-      "bytes": 10189,
-      "sha256": "704521c8fda6a72adb2bab7939f764ce60d9c4fc5febc5ecdac00ee290e777dd",
-      "git_blob_sha": "4d459b59b1f100738051f1ef2e12f352d6e41a41",
+      "bytes": 10966,
+      "sha256": "1232fc041b05f02024c3d4fee94aa2958168df1c177cce38f3815b36326aedb4",
+      "git_blob_sha": "bffebde719d3fc864590866c4f6f69fef074a0ea",
       "mode": "100644"
     },
     {
@@ -5765,9 +5779,9 @@
     },
     {
       "path": "Sources/ModComposition.swift",
-      "bytes": 58338,
-      "sha256": "7d208d48539b87f5ee28d24f13bfdb7b5fa44d3d3f762e0eaf94e81f5133b1cf",
-      "git_blob_sha": "4238135f7a83e48d1960ba528b4fe96ff17f58dd",
+      "bytes": 59252,
+      "sha256": "8663fd96b0454db3460f18d1036fda520c63abcca5f44f0402127d55e66a2e6b",
+      "git_blob_sha": "89aae60600cd86a35d615aaf39ffdf9d8a05203b",
       "mode": "100644"
     },
     {
@@ -5905,9 +5919,9 @@
     },
     {
       "path": "Sources/XCIImport.swift",
-      "bytes": 23218,
-      "sha256": "368e6c50df222e3824e5137a8c25b496d1af728597967540fa3da099bc766b18",
-      "git_blob_sha": "be578e3f808631ef77a708f33b10955e7799f6a0",
+      "bytes": 23253,
+      "sha256": "619a6fe753a8257b06bbcf4b35c43bd4cacf073333328dfa3806d453190f2eb2",
+      "git_blob_sha": "4fa4845e7a1eead11efcc0cadb1b963ddc5a0f3b",
       "mode": "100644"
     },
     {
@@ -5996,9 +6010,9 @@
     },
     {
       "path": "Tests/ImportVariants/ContentTests.swift",
-      "bytes": 10899,
-      "sha256": "0ff0b873745e9beaf2bb73679e804e1953998e3eb0da918d87569eead2873a66",
-      "git_blob_sha": "eec9b1e10a44b424a775f545bdbf2a1dbf159bb9",
+      "bytes": 12023,
+      "sha256": "c620a2e97125ba7578ec284328d31d74e8b428fd12801ae226491651c6cc6335",
+      "git_blob_sha": "c9587bb691e11dbba90b3ba2fea54dda1a20a365",
       "mode": "100644"
     },
     {
@@ -6031,9 +6045,9 @@
     },
     {
       "path": "Tests/ModComposition/main.swift",
-      "bytes": 16665,
-      "sha256": "4a380e759e11481ceb6c7e29d55f01bf434d5dbb5b658bf3f3811ff2023815a6",
-      "git_blob_sha": "77c96b09c70c6b72bcf36e173ddbfca29c29ef09",
+      "bytes": 18490,
+      "sha256": "937b3c66dc5277762b9f8c26e52cedafbf78ab0bc924eb939eeddd0ab85c08a6",
+      "git_blob_sha": "64f64467a9e585994d1aa2d435cdadcc0f22262f",
       "mode": "100644"
     },
     {
@@ -6121,6 +6135,13 @@
       "mode": "100644"
     },
     {
+      "path": "Tests/PresentHotSwitch/lifecycle.m",
+      "bytes": 5232,
+      "sha256": "e80d13eb451e63861e54d38d2af45775fca7a353b9844d8cd8aceaaee1da3df0",
+      "git_blob_sha": "f280dde3d019dfc760d6490168fd96e62f216ccb",
+      "mode": "100644"
+    },
+    {
       "path": "Tests/PresentHotSwitch/main.m",
       "bytes": 3287,
       "sha256": "99217a64cde690e0f4c29197e0a628efb8497e274d4519723c5b850500dabba4",
@@ -6129,9 +6150,23 @@
     },
     {
       "path": "Tests/PresentHotSwitch/run.py",
-      "bytes": 1446,
-      "sha256": "2369cb2ecdecbfe7111f7d013a89779a46cded9289185cc9795734721001f525",
-      "git_blob_sha": "0d5a64802cf7efb417b13d6b0e9adb300e8b2aac",
+      "bytes": 2261,
+      "sha256": "e0b66ea44dd9015956f0e2fc6687dd4897139f3a6d0e7240eeef40304e7b5555",
+      "git_blob_sha": "525e631be188373322cc745e9bdf399b58ac987f",
+      "mode": "100644"
+    },
+    {
+      "path": "Tests/PresentHotSwitch/slots.m",
+      "bytes": 6006,
+      "sha256": "92cea8b9b7d70fa83e6fc06161e8dbd5340e1bf72559dc0ae79f33964092bbe3",
+      "git_blob_sha": "00d807513bfec276c740cf6a3b10e85a0f0dfb0d",
+      "mode": "100644"
+    },
+    {
+      "path": "Tests/PresentHotSwitch/test_slots.py",
+      "bytes": 1416,
+      "sha256": "6c55e1fe29b235106346a0dd9ff2dadbca60e5854797b97a45395702b1d3a0ce",
+      "git_blob_sha": "c8f4c2f01895f3d874652def8bb32c16210b6f01",
       "mode": "100644"
     },
     {
@@ -6153,6 +6188,27 @@
       "bytes": 10695,
       "sha256": "3b1a8079f9de56a45f85b6548d98ca5cbd98bd794ab340ff60cb886dd790793c",
       "git_blob_sha": "71221356569713cc07ad68952de6bfa9e7ae99e0",
+      "mode": "100644"
+    },
+    {
+      "path": "Tests/SessionOwnership/check.swift",
+      "bytes": 5829,
+      "sha256": "5b2c489d761bfdc442049265ee814ba00d399e310f1c91487b8ca5586b422794",
+      "git_blob_sha": "ebd87544f8293e22a6bda4a9d2979244ffcdca67",
+      "mode": "100644"
+    },
+    {
+      "path": "Tests/SessionOwnership/native.c",
+      "bytes": 1708,
+      "sha256": "fa6278502752a6a612c500c4c11008dab03dac9028b55cd24cdb18bfdcddc01b",
+      "git_blob_sha": "f03f6486a44404b7a5effb6fe61b80a418835243",
+      "mode": "100644"
+    },
+    {
+      "path": "Tests/SessionOwnership/run.py",
+      "bytes": 1753,
+      "sha256": "e453d64a21a8e206f664ad632ee81e673e52dc4edbd1d2b235826b9f1f24bb08",
+      "git_blob_sha": "53ad5deddf584c495bc9e4b91850f809b936d71e",
       "mode": "100644"
     },
     {
@@ -6192,9 +6248,9 @@
     },
     {
       "path": "Tests/test_npad_contract.c",
-      "bytes": 3810,
-      "sha256": "33e252dfdeb2663c8f085981a4924bb211b4a6c532a0f801d7259d06b8dc5706",
-      "git_blob_sha": "1d77789ee69c87c63e93dc42e724d94202a0ab5e",
+      "bytes": 5114,
+      "sha256": "06ef49586df1eecd04d59fb7dacc47d30f210ca4e46a10b3de58e65c8310b1fa",
+      "git_blob_sha": "0c6b6537e1ca51b77777a833a0a20670a8135e93",
       "mode": "100644"
     },
     {
@@ -15238,5 +15294,13 @@
   "bundled_shader_preflight_reuse": true,
   "launcher_redesign": true,
   "launcher_visual_interaction_acceptance": false,
-  "new_gameplay_or_performance_acceptance": false
+  "concurrency_release_QA": {
+    "build": 25,
+    "session_zh": "修复了并发检查发现的双窗口启动问题。一个窗口准备游戏时，另一个窗口不能接管它的输入和临时存档。原生线程创建失败后可以重试。",
+    "session_en": "Fixed the concurrent launch issue found in the source audit. While one window prepares a game, another window cannot take over its input or clear its temporary save. Launch can be retried if the native thread fails to start.",
+    "gameplay_zh": "Mac 真机从资源主页两次进入游戏。首轮运行中将输出从 2048 × 1152 切至 1280 × 720，提交帧数从 428 增至 761。结束进程后重新启动，720p 设置保留，并提交了 357 帧。两轮均进入 nnMain 并启动 48 kHz 双声道音频引擎。\n\niPad Pro 11 英寸（M5）模拟器用独立 AutoPlay 存档跑完《愛言葉》街机模式 NORMAL。结算为 PERFECT、296/296 COOL、100.71%。打歌中切换原生 60 → 30 → 60 FPS 和 1080p → 720p → 1080p 后，音符、舞台和歌词持续推进，Core Audio 持续收到非零音频块。普通存档目录测试前后均为空。 从游戏菜单确认保存并退出后返回启动页，音频渲染器、音频输出、打开的文件与目录及挂载数量均归零。同一进程再次进入游戏，版权画面和非零音频输出恢复。",
+    "gameplay_en": "On an Apple Silicon Mac, the game started twice from the resource screen. During the first run, output switched from 2048 × 1152 to 1280 × 720 as submitted frames increased from 428 to 761. After process termination and relaunch, the game retained 720p and submitted 357 frames. Both runs entered nnMain and started the 48 kHz stereo audio engine.\n\nOn the 11-inch iPad Pro (M5) simulator, AutoPlay completed “愛言葉” in Arcade mode on NORMAL using an isolated save. The result was PERFECT with 296/296 COOL and 100.71% completion. Notes, stage and lyrics continued through mid-song native 60 → 30 → 60 FPS and 1080p → 720p → 1080p switches, with nonzero Core Audio buffers. The ordinary save directory was empty before and after the song. Confirming save and exit in the game menu returned to the launcher. Audio renderer, audio output, open file, directory and mount counts returned to zero. Starting again in the same process restored the copyright screen and nonzero audio output.",
+    "limits_zh": "本次完整打歌在模拟器上使用 AutoPlay。iPhone／iPad 真机的触屏判定、音画同步、长时间帧率及温升仍需实测；音频以缓冲区数据验证。",
+    "limits_en": "The full song was played by AutoPlay on the simulator. Physical iPhone and iPad touch judgement, audio/video sync, sustained frame rate and thermals still need device testing. Audio was checked through buffer data."
+  }
 }

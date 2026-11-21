@@ -109,20 +109,21 @@ static void *guest_boot_thread(void *opaque){
     extern int pjdv_thread_scope(void (*)(void *),void *);extern void pjdv_thread_main_finished(void);
     pjdv_thread_scope(guest_boot_body,opaque);boot_args_free(opaque);pjdv_thread_main_finished();return NULL;
 }
-void pjdv_guest_boot(const char *rom,const char *dlc,const char *save,const char *temp,const char *log){
-    int idle=0;if(!atomic_compare_exchange_strong(&session_phase,&idle,1))return;
+int pjdv_guest_boot(const char *rom,const char *dlc,const char *save,const char *temp,const char *log){
+    int idle=0;if(!atomic_compare_exchange_strong(&session_phase,&idle,1))return 0;
     // The title's NPDM requests a 2 MiB main stack. Its save initializer alone
     // reserves 0x1526c0 bytes; a libdispatch worker's stack is insufficient.
     // Reserve additional room for the host bridge and diagnostics on a pthread.
     guest_boot_args *a=calloc(1,sizeof(*a));
-    if(!a){stage("Guest startup allocation failed");atomic_store(&session_phase,6);return;}
+    if(!a){stage("Guest startup allocation failed");atomic_store(&session_phase,0);return 0;}
     const char *paths[]={rom,dlc,save,temp,log};
-    for(int i=0;i<5;i++)if(!(a->path[i]=strdup(paths[i]))){boot_args_free(a);stage("Guest startup allocation failed");atomic_store(&session_phase,6);return;}
+    for(int i=0;i<5;i++)if(!(a->path[i]=strdup(paths[i]))){boot_args_free(a);stage("Guest startup allocation failed");atomic_store(&session_phase,0);return 0;}
     pthread_attr_t attr;pthread_attr_init(&attr);
     int result=pthread_attr_setstacksize(&attr,8*1024*1024);
     pthread_t thread;
     if(!result)result=pthread_create(&thread,&attr,guest_boot_thread,a);
     pthread_attr_destroy(&attr);
-    if(result){boot_args_free(a);stage("Guest main thread creation failed");atomic_store(&session_phase,6);return;}
+    if(result){boot_args_free(a);stage("Guest main thread creation failed");atomic_store(&session_phase,0);return 0;}
     pthread_detach(thread);
+    return 1;
 }

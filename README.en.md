@@ -2,6 +2,21 @@
 
 [简体中文](README.md) | **English**
 
+**0.1.5 build25 lightweight preview · November 21, 2026**
+
+- When two windows import an XCI into the same destination, the second import reports that the directory is busy. Concurrent requests for the same Mod combination reuse the completed cache.
+- Fixed missed wakeups and premature worker startup when resuming after a failed exit. Controller snapshots now have unique sample numbers across concurrent readers.
+- Metal now waits for the relevant presentation callback before releasing frame resources during display pacing changes, shutdown and frame drops. Late callbacks preserve newer frame timestamps.
+- Fixed the concurrent launch issue found in the source audit. While one window prepares a game, another window cannot take over its input or clear its temporary save. Launch can be retried if the native thread fails to start.
+
+On an Apple Silicon Mac, the game started twice from the resource screen. During the first run, output switched from 2048 × 1152 to 1280 × 720 as submitted frames increased from 428 to 761. After process termination and relaunch, the game retained 720p and submitted 357 frames. Both runs entered nnMain and started the 48 kHz stereo audio engine.
+
+On the 11-inch iPad Pro (M5) simulator, AutoPlay completed “愛言葉” in Arcade mode on NORMAL using an isolated save. The result was PERFECT with 296/296 COOL and 100.71% completion. Notes, stage and lyrics continued through mid-song native 60 → 30 → 60 FPS and 1080p → 720p → 1080p switches, with nonzero Core Audio buffers. The ordinary save directory was empty before and after the song. Confirming save and exit in the game menu returned to the launcher. Audio renderer, audio output, open file, directory and mount counts returned to zero. Starting again in the same process restored the copyright screen and nonzero audio output.
+
+The full song was played by AutoPlay on the simulator. Physical iPhone and iPad touch judgement, audio/video sync, sustained frame rate and thermals still need device testing. Audio was checked through buffer data.
+
+[Download build25](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b25) · [Test results and known issues](https://github.com/HachiMiku39/pjdv_mega39s_ios/blob/v0.1.5b25/Reports/RELEASE-build25-20261121.md)
+
 **0.1.5 build24 lightweight preview — November 19, 2026**
 
 - Redesigned launcher: a wide-window sidebar, character artwork and start action, resource status, grouped game settings and experiments. Narrow windows use one column. System light/dark appearance and five UI languages are supported.

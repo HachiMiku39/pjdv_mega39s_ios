@@ -38,14 +38,38 @@ enum AutoPlaySession {
 }
 
 @_silgen_name("pjdv_attach_metal_layer")
-func attachGuestMetalLayer(_ layer: UnsafeMutableRawPointer)
+func attachGuestMetalLayer(_ layer: UnsafeMutableRawPointer?)
 
 @_silgen_name("pjdv_guest_boot")
-private func bootGuest(_ rom: UnsafePointer<CChar>, _ dlc: UnsafePointer<CChar>, _ save: UnsafePointer<CChar>, _ temp: UnsafePointer<CChar>, _ log: UnsafePointer<CChar>)
+private func bootGuest(_ rom: UnsafePointer<CChar>, _ dlc: UnsafePointer<CChar>, _ save: UnsafePointer<CChar>, _ temp: UnsafePointer<CChar>, _ log: UnsafePointer<CChar>) -> Int32
 @_silgen_name("pjdv_guest_state")
 private func readGuestState(_ out: UnsafeMutablePointer<CChar>, _ capacity: UInt)
 
+// UIKit scenes share one native runtime. Retain its owner even if the
+// presenting window disconnects while the preparation worker is running.
+@MainActor final class GameSessionOwnership<Owner: AnyObject> {
+    private(set) var current: Owner?
+
+    func claim(_ candidate: Owner) -> Bool {
+        guard current == nil else { return false }
+        current = candidate
+        return true
+    }
+
+    func finish(_ candidate: Owner, cleanup: () -> Void) -> Bool {
+        guard current === candidate else { return false }
+        cleanup()
+        current = nil
+        return true
+    }
+}
+
 enum GuestRuntime {
+    enum LaunchEvent {
+        case status(String)
+        case started
+        case failed(String)
+    }
     private static var resources: ResourceAccess?
     private static let initialOverlay = ProcessInfo.processInfo.environment["DM_ROMFS_OVERLAY"]
     private static var modMenuRoot: URL?
@@ -59,7 +83,7 @@ enum GuestRuntime {
         value.withUnsafeMutableBufferPointer { readGuestState($0.baseAddress!, UInt($0.count)) }
         return String(cString: value)
     }
-    static func validateMapping(completion: @escaping (String) -> Void) {
+    static func validateMapping(completion: @escaping (LaunchEvent) -> Void) {
         let autoplay = AutoPlaySession.enabled
         let launchOverlay = initialOverlay
         DispatchQueue.global(qos: .userInitiated).async {
@@ -68,16 +92,16 @@ enum GuestRuntime {
             let loaded = error.withUnsafeMutableBufferPointer {
                 loadGuestImages($0.baseAddress!, UInt($0.count))
             }
-            let message: String
-            if loaded == 0 {
-                message = "Guest mapping failed: " + String(cString: error)
-            } else if guestMathProbe() == 0 {
-                message = "Guest native SDK probe failed"
-            } else {
-                message = "Guest images mapped • SDK probe passed\nGame initialization pending"
+            guard loaded != 0 else {
+                let message = "Guest mapping failed: " + String(cString: error)
+                DispatchQueue.main.async { completion(.failed(message)) }
+                return
             }
-            DispatchQueue.main.async { completion(message) }
-            guard loaded != 0, guestMathProbe() != 0 else { return }
+            guard guestMathProbe() != 0 else {
+                DispatchQueue.main.async { completion(.failed("Guest native SDK probe failed")) }
+                return
+            }
+            DispatchQueue.main.async { completion(.status("Guest images mapped • SDK probe passed\nGame initialization pending")) }
             do {
                 let audio = AVAudioSession.sharedInstance()
                 try audio.setCategory(.playback, mode: .default)
@@ -135,19 +159,18 @@ enum GuestRuntime {
                 let dlc = layout.dlc.path
                 guard let menuRoot = Bundle.main.url(forResource: "ExitMenu", withExtension: nil),
                       FileManager.default.fileExists(atPath: menuRoot.appendingPathComponent("manifest.json").path) else {
-                    DispatchQueue.main.async { completion("Exit menu resources unavailable") };return
+                    DispatchQueue.main.async { completion(.failed("Exit menu resources unavailable")) };return
                 }
                 let sessionMenu = try ModSessionUI.prepare(bundle:menuRoot,layers:modLayers,temp:temp,language:AppLanguage.current)
                 if sessionMenu != menuRoot { modMenuRoot = sessionMenu }
                 setenv("PJDV_EXIT_MENU_ROOT", sessionMenu.path, 1)
-                rom.withCString { r in dlc.withCString { d in save.path.withCString { s in temp.path.withCString { t in
+                let started = rom.withCString { r in dlc.withCString { d in save.path.withCString { s in temp.path.withCString { t in
                     documents.appendingPathComponent("PJDV-runtime.log").path.withCString { log in bootGuest(r, d, s, t, log) }
                 } } } }
+                let event: LaunchEvent = started != 0 ? .started : .failed(currentStatus())
+                DispatchQueue.main.async { completion(event) }
             } catch {
-                AutoPlaySession.end()
-                if let root = modMenuRoot { try? FileManager.default.removeItem(at:root) }
-                modMenuRoot = nil
-                DispatchQueue.main.async { completion(ModImportController.userMessage(error)) }
+                DispatchQueue.main.async { completion(.failed(ModImportController.userMessage(error))) }
             }
         }
     }

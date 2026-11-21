@@ -221,6 +221,15 @@ final class XCIResourceImporter {
     func run() throws {
         let fm=FileManager.default
         try update("正在检查保存位置与已有资源…",force:true)
+        // A second window can import into the same root. Protect destination
+        // validation and publication with the same lock, including on resume.
+        try fm.createDirectory(at:root,withIntermediateDirectories:true)
+        let lockURL=root.appendingPathComponent(".pjdv-import.lock")
+        let lockFD=Darwin.open(lockURL.path,O_RDWR|O_CREAT|O_NOFOLLOW|O_CLOEXEC,0o600)
+        try importCheck(lockFD>=0,"无法锁定目标资源目录；请选择可写的位置")
+        defer {Darwin.close(lockFD)}
+        try importCheck(flock(lockFD,LOCK_EX|LOCK_NB)==0,"此资源目录正在被另一个导入任务使用")
+        defer {flock(lockFD,LOCK_UN)}
         // Preflight all identities before touching any old payload or metadata.
         var missing=0
         for v in plan.volumes {
@@ -242,18 +251,9 @@ final class XCIResourceImporter {
                 }
             }
         }
-        var parent=root
-        while !fm.fileExists(atPath:parent.path) && parent.path != "/" {parent.deleteLastPathComponent()}
         try importCheck(missing<=Int.max-512*1024*1024,"资源大小超出导入范围")
-        let space=try fm.attributesOfFileSystem(forPath:parent.path)[.systemFreeSize] as? NSNumber
+        let space=try fm.attributesOfFileSystem(forPath:root.path)[.systemFreeSize] as? NSNumber
         try importCheck((space?.int64Value ?? 0)>=Int64(missing)+512*1024*1024,"空间不足：还需约 \(ByteCountFormatter.string(fromByteCount:Int64(missing)+512*1024*1024,countStyle:.file))。XCI 不会被复制。")
-        try fm.createDirectory(at:root,withIntermediateDirectories:true)
-        let lockURL=root.appendingPathComponent(".pjdv-import.lock")
-        let lockFD=Darwin.open(lockURL.path,O_RDWR|O_CREAT|O_NOFOLLOW,0o600)
-        try importCheck(lockFD>=0,"无法锁定目标资源目录；请选择可写的位置")
-        defer {Darwin.close(lockFD)}
-        try importCheck(flock(lockFD,LOCK_EX|LOCK_NB)==0,"此资源目录正在被另一个导入任务使用")
-        defer {flock(lockFD,LOCK_UN)}
         let pending=root.appendingPathComponent(".pjdv-import-in-progress")
         let pendingData=Data("pjdv-import-session-v1".utf8)
         if fm.fileExists(atPath:pending.path) {try importCheck(try Data(contentsOf:pending)==pendingData,"目标目录含未知导入标记，原文件已保留")}
