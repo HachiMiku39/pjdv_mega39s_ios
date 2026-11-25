@@ -33,43 +33,181 @@ final class ResourceImportController:UIViewController,UIDocumentPickerDelegate {
     private var inboxSignature:String?
     var onClose:(()->Void)?
     override var supportedInterfaceOrientations:UIInterfaceOrientationMask {.landscape}
+    private let scroll = UIScrollView()
+    private let statusPanel = UIStackView()
+    private var actionRows = [UIStackView]()
+
     override func viewDidLoad() {
-        super.viewDidLoad();view.backgroundColor = .systemBackground
-        preferredContentSize=CGSize(width:720,height:640)
-        let title=UILabel();title.text=L("游戏资源");title.font = .boldSystemFont(ofSize:26)
-        let version=UILabel();version.font = .monospacedSystemFont(ofSize:12,weight:.regular)
-        version.text="PJDV M39 "+(Bundle.main.object(forInfoDictionaryKey:"CFBundleShortVersionString") as? String ?? "")+" ("+(Bundle.main.object(forInfoDictionaryKey:"CFBundleVersion") as? String ?? "")+")"
-        version.accessibilityIdentifier="resources.version"
-        let info=UILabel();info.numberOfLines=0;info.text=L("导入 MEGA39’s XCI。自动识别包内更新、DLC 与完整语言资源。导入时请保持 App 在前台。");info.font = .systemFont(ofSize:15)
-        detail.numberOfLines=0;detail.text=L("按包内实际内容计算所需空间。外置 XCI 可直接读取，不会先复制整个源文件。");detail.font = .systemFont(ofSize:14);detail.accessibilityIdentifier="resources.status"
-        func button(_ text:String,_ id:String,_ selector:Selector)->UIButton {
-            let b=UIButton(type:.system);b.setTitle(text,for:.normal);b.titleLabel?.font = .systemFont(ofSize:18,weight:.medium);b.accessibilityIdentifier=id;b.addTarget(self,action:selector,for:.touchUpInside);actions.append(b);return b
-        }
-        let xci=button(L("导入 XCI"),"resources.importXCI",#selector(pickXCI))
-        let folder=button(L("连接已提取资源文件夹"),"resources.connectFolder",#selector(pickFolder))
-        let keys=button(L("选择／更换 prod.keys"),"resources.chooseKeys",#selector(pickKeys))
-        let local=button(L("使用已拷入本机的资源"),"resources.useLocal",#selector(useLocal))
-        let close=button(L("完成"),"resources.done",#selector(closePanel))
-        cancel.setTitle(L("取消导入（保留已完成部分）"),for:.normal);cancel.addTarget(self,action:#selector(cancelWork),for:.touchUpInside);cancel.isHidden=true
-        let row1=UIStackView(arrangedSubviews:[xci,folder]);row1.distribution = .fillEqually;row1.spacing=16
-        let row2=UIStackView(arrangedSubviews:[keys,local]);row2.distribution = .fillEqually;row2.spacing=16
-        let help=UILabel();help.numberOfLines=0;help.font = .systemFont(ofSize:13);help.text=L("本体导入只需 XCI 和 prod.keys；包内 DLC 随本体导入，MOD 请使用单独入口。\nXCI 放在 PJDVM39 根目录后点“检测 App 根目录中的 XCI／密钥”，或直接点“导入 XCI”。\n“使用已拷入本机的资源”仅连接已导入成功的完整 GameResources，不会解压 XCI。")
-        activity.hidesWhenStopped=true;bar.isHidden=true
-        transfer.numberOfLines=0;transfer.font = .monospacedDigitSystemFont(ofSize:13,weight:.regular);transfer.isHidden=true;transfer.accessibilityIdentifier="resources.transferRates"
-        var rows:[UIView]=[title,version,info,row1,row2]
+        super.viewDidLoad()
+        preferredContentSize = CGSize(width: 720, height: 640)
+        view.backgroundColor = .systemGroupedBackground
+        view.tintColor = LauncherInterface.accent
+
+        let title = label(L("游戏资源"), style: .title1)
+        title.accessibilityTraits.insert(.header)
+        let version = label("PJDV M39 · " + AppReleaseVersion.current.label, style: .caption1, color: .secondaryLabel)
+        version.accessibilityIdentifier = "resources.version"
+        let heading = UIStackView(arrangedSubviews: [title, version])
+        heading.axis = .vertical
+        heading.spacing = 2
+        let close = action(L("完成"), id: "resources.done", symbol: "checkmark", selector: #selector(closePanel))
+        close.setContentCompressionResistancePriority(.required, for: .horizontal)
+        close.setContentHuggingPriority(.required, for: .horizontal)
+        let header = UIStackView(arrangedSubviews: [heading, close])
+        header.alignment = .center
+        header.spacing = 12
+        header.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(header)
+
+        let xci = action(L("导入 XCI"), id: "resources.importXCI", symbol: "square.and.arrow.down",
+                         selector: #selector(pickXCI), primary: true)
+        let keys = action(L("选择／更换 prod.keys"), id: "resources.chooseKeys", symbol: "key",
+                          selector: #selector(pickKeys))
+        let inbox = action(L("检测 App 根目录中的 XCI／密钥"), id: "resources.scanInbox",
+                           symbol: "tray.and.arrow.down", selector: #selector(scanInbox))
+        let intro = label(L("从本地选择 prod.keys 和 MEGA39’s 的 XCI。包内更新与 DLC 会一并导入。导入时请保持 App 在前台。"),
+                          style: .subheadline, color: .secondaryLabel)
+        let fromXCI = panel(title: L("游戏本体"), contents: [intro, pair(xci, keys), inbox])
+
+        let folder = action(L("连接已提取资源文件夹"), id: "resources.connectFolder",
+                            symbol: "folder", selector: #selector(pickFolder))
+        let local = action(L("使用已拷入本机的资源"), id: "resources.useLocal",
+                           symbol: "internaldrive", selector: #selector(useLocal))
+        let existingHelp = label(L("选择已成功导入的完整 GameResources 文件夹，可直接使用其中的游戏数据。"),
+                                 style: .subheadline, color: .secondaryLabel)
+        let existing = panel(title: L("已有游戏数据"), contents: [existingHelp, pair(folder, local)])
+
+        detail.numberOfLines = 0
+        detail.font = .preferredFont(forTextStyle: .subheadline)
+        detail.adjustsFontForContentSizeCategory = true
+        detail.accessibilityIdentifier = "resources.status"
+        transfer.font = UIFontMetrics(forTextStyle: .footnote).scaledFont(for: .monospacedDigitSystemFont(ofSize: 13, weight: .regular))
+        transfer.adjustsFontForContentSizeCategory = true
+        transfer.numberOfLines = 0
+        transfer.textColor = .secondaryLabel
+        transfer.isHidden = true
+        transfer.accessibilityIdentifier = "resources.transferRates"
+        bar.progressTintColor = LauncherInterface.accent
+        bar.isHidden = true
+        bar.accessibilityLabel = L("导入状态")
+        activity.hidesWhenStopped = true
+        activity.color = LauncherInterface.accent
+        activity.setContentHuggingPriority(.required, for: .horizontal)
+        let feedback = UIStackView(arrangedSubviews: [activity, detail])
+        feedback.alignment = .top
+        feedback.spacing = 8
+        cancel.setTitle(L("取消导入（保留已完成部分）"), for: .normal)
+        LauncherInterface.style(cancel, symbol: "stop.circle")
+        cancel.addTarget(self, action: #selector(cancelWork), for: .touchUpInside)
+        cancel.isHidden = true
+        cancel.accessibilityIdentifier = "resources.cancel"
+        configurePanel(statusPanel, title: L("导入状态"), contents: [feedback, bar, transfer, cancel])
+        statusPanel.isHidden = true
+
+        let content = UIStackView(arrangedSubviews: [statusPanel, fromXCI, existing])
+        content.axis = .vertical
+        content.spacing = 12
         #if !targetEnvironment(macCatalyst)
-        let folderXCI=button(L("备用：从文件夹选择 XCI"),"resources.xciFolder",#selector(pickXCIFolder))
-        let folderKeys=button(L("备用：从文件夹选择密钥"),"resources.keysFolder",#selector(pickKeysFolder))
-        let fallback=UIStackView(arrangedSubviews:[folderXCI,folderKeys]);fallback.distribution = .fillEqually;fallback.spacing=16
-        rows.append(fallback)
+        let folderXCI = action(L("备用：从文件夹选择 XCI"), id: "resources.xciFolder",
+                               symbol: "folder", selector: #selector(pickXCIFolder))
+        let folderKeys = action(L("备用：从文件夹选择密钥"), id: "resources.keysFolder",
+                                symbol: "key", selector: #selector(pickKeysFolder))
+        content.addArrangedSubview(panel(title: L("文件选择备选方式"), contents: [pair(folderXCI, folderKeys)]))
         #endif
-        let inbox=button(L("检测 App 根目录中的 XCI／密钥"),"resources.scanInbox",#selector(scanInbox))
-        let mods=button(L("MOD 管理／下载（实验）"),"resources.mods",#selector(openMods))
-        rows += [inbox,mods,detail,activity,bar,transfer,cancel,help,close]
-        let stack=UIStackView(arrangedSubviews:rows);stack.axis = .vertical;stack.spacing=14
-        let scroll=UIScrollView();scroll.translatesAutoresizingMaskIntoConstraints=false;view.addSubview(scroll);stack.translatesAutoresizingMaskIntoConstraints=false;scroll.addSubview(stack)
-        NSLayoutConstraint.activate([scroll.leadingAnchor.constraint(equalTo:view.safeAreaLayoutGuide.leadingAnchor),scroll.trailingAnchor.constraint(equalTo:view.safeAreaLayoutGuide.trailingAnchor),scroll.topAnchor.constraint(equalTo:view.safeAreaLayoutGuide.topAnchor),scroll.bottomAnchor.constraint(equalTo:view.safeAreaLayoutGuide.bottomAnchor),stack.leadingAnchor.constraint(equalTo:scroll.contentLayoutGuide.leadingAnchor,constant:24),stack.trailingAnchor.constraint(equalTo:scroll.contentLayoutGuide.trailingAnchor,constant:-24),stack.topAnchor.constraint(equalTo:scroll.contentLayoutGuide.topAnchor,constant:24),stack.bottomAnchor.constraint(equalTo:scroll.contentLayoutGuide.bottomAnchor,constant:-24),stack.widthAnchor.constraint(equalTo:scroll.frameLayoutGuide.widthAnchor,constant:-48)])
+        let mods = action(L("MOD 管理／下载（实验）"), id: "resources.mods",
+                          symbol: "square.stack.3d.up", selector: #selector(openMods))
+        content.addArrangedSubview(mods)
+        scroll.keyboardDismissMode = .onDrag
+        scroll.accessibilityIdentifier = "resources.scroll"
+        scroll.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(scroll)
+        content.translatesAutoresizingMaskIntoConstraints = false
+        scroll.addSubview(content)
+        let safe = view.safeAreaLayoutGuide
+        NSLayoutConstraint.activate([
+            header.leadingAnchor.constraint(equalTo: safe.leadingAnchor, constant: 22),
+            header.trailingAnchor.constraint(equalTo: safe.trailingAnchor, constant: -22),
+            header.topAnchor.constraint(equalTo: safe.topAnchor, constant: 12),
+            scroll.topAnchor.constraint(equalTo: header.bottomAnchor, constant: 8),
+            scroll.leadingAnchor.constraint(equalTo: safe.leadingAnchor),
+            scroll.trailingAnchor.constraint(equalTo: safe.trailingAnchor),
+            scroll.bottomAnchor.constraint(equalTo: safe.bottomAnchor),
+            content.leadingAnchor.constraint(equalTo: scroll.contentLayoutGuide.leadingAnchor, constant: 16),
+            content.trailingAnchor.constraint(equalTo: scroll.contentLayoutGuide.trailingAnchor, constant: -16),
+            content.topAnchor.constraint(equalTo: scroll.contentLayoutGuide.topAnchor, constant: 6),
+            content.bottomAnchor.constraint(equalTo: scroll.contentLayoutGuide.bottomAnchor, constant: -16),
+            content.widthAnchor.constraint(equalTo: scroll.frameLayoutGuide.widthAnchor, constant: -32)
+        ])
     }
+
+    override func viewWillLayoutSubviews() {
+        super.viewWillLayoutSubviews()
+        let narrow = view.safeAreaLayoutGuide.layoutFrame.width < 560 || traitCollection.preferredContentSizeCategory.isAccessibilityCategory
+        for row in actionRows {
+            row.axis = narrow ? .vertical : .horizontal
+            row.distribution = narrow ? .fill : .fillEqually
+        }
+    }
+
+    private func label(_ text: String, style: UIFont.TextStyle, color: UIColor = .label) -> UILabel {
+        let result = UILabel()
+        result.text = text
+        result.font = .preferredFont(forTextStyle: style)
+        result.adjustsFontForContentSizeCategory = true
+        result.textColor = color
+        result.numberOfLines = 0
+        return result
+    }
+
+    private func action(_ title: String, id: String, symbol: String, selector: Selector, primary: Bool = false) -> UIButton {
+        let button = UIButton(type: .system)
+        button.setTitle(title, for: .normal)
+        button.accessibilityIdentifier = id
+        LauncherInterface.style(button, symbol: symbol, primary: primary)
+        button.addTarget(self, action: selector, for: .touchUpInside)
+        actions.append(button)
+        return button
+    }
+
+    private func pair(_ first: UIView, _ second: UIView) -> UIStackView {
+        let row = UIStackView(arrangedSubviews: [first, second])
+        row.spacing = 8
+        actionRows.append(row)
+        return row
+    }
+
+    private func panel(title: String, contents: [UIView]) -> UIStackView {
+        let panel = UIStackView()
+        configurePanel(panel, title: title, contents: contents)
+        return panel
+    }
+
+    private func configurePanel(_ panel: UIStackView, title: String, contents: [UIView]) {
+        panel.axis = .vertical
+        panel.spacing = 8
+        panel.isLayoutMarginsRelativeArrangement = true
+        panel.directionalLayoutMargins = NSDirectionalEdgeInsets(top: 14, leading: 16, bottom: 14, trailing: 16)
+        panel.backgroundColor = .secondarySystemGroupedBackground
+        panel.layer.cornerRadius = 18
+        panel.layer.cornerCurve = .continuous
+        let heading = label(title, style: .headline)
+        heading.accessibilityTraits.insert(.header)
+        panel.addArrangedSubview(heading)
+        contents.forEach(panel.addArrangedSubview)
+    }
+
+    private func setStatus(_ text: String?, error: Bool = false, reveal: Bool = false) {
+        detail.text = text
+        detail.textColor = error ? .systemRed : .label
+        let show = statusPanel.isHidden || reveal || error
+        statusPanel.isHidden = false
+        if show {
+            view.layoutIfNeeded()
+            scroll.setContentOffset(CGPoint(x: 0, y: -scroll.adjustedContentInset.top), animated: false)
+        }
+        if error { UIAccessibility.post(notification: .announcement, argument: text) }
+    }
+
     @objc private func openMods() {
         guard operation==nil && !selecting else{return}
         let panel=UINavigationController(rootViewController:ModImportController(style:.insetGrouped))
@@ -83,7 +221,7 @@ final class ResourceImportController:UIViewController,UIDocumentPickerDelegate {
         guard operation==nil && !selecting else{return}
         do {
             let snapshot=try AppImportInbox.Snapshot.read(ResourceLibrary.appDataRoot)
-            guard !snapshot.isEmpty else {detail.text=L("请将 .xci 和 .keys 拷入“文件”App 中的 PJDVM39 根目录。");return}
+            guard !snapshot.isEmpty else {setStatus(L("请将 .xci 和 .keys 拷入“文件”App 中的 PJDVM39 根目录。"), reveal: true);return}
             importInbox(snapshot)
         } catch {show(error)}
     }
@@ -91,7 +229,7 @@ final class ResourceImportController:UIViewController,UIDocumentPickerDelegate {
         inboxSignature=snapshot.signature;pendingInboxXCI=snapshot.xcis
         if snapshot.keys.count>1 {showFolderFiles(ResourceAccess(ResourceLibrary.appDataRoot),purpose:.keys);return}
         if let keys=snapshot.keys.first {
-            do {try ResourceLibrary.storeKeys(keys);detail.text=L("密钥已保存在本机，仅用于本地导入。")}
+            do {try ResourceLibrary.storeKeys(keys);setStatus(L("密钥已保存在本机，仅用于本地导入。"), reveal: true)}
             catch {pendingInboxXCI=nil;show(error);return}
         }
         continueInboxImport()
@@ -107,7 +245,7 @@ final class ResourceImportController:UIViewController,UIDocumentPickerDelegate {
         if purpose != .destination {pendingInboxXCI=nil;inboxSignature=nil}
         selecting=true;isModalInPresentation=true;bar.isHidden=true
         transfer.isHidden=true
-        detail.text=purpose == .xciFolder || purpose == .keysFolder ? L("选择文件所在的文件夹并点“打开”，再在 App 内点选文件。") : purpose == .destination ? L("已选择 XCI，接下来选择资源保存位置。") : L("请选择文件或文件夹；取消不会开始导入。")
+        setStatus(purpose == .xciFolder || purpose == .keysFolder ? L("选择文件所在的文件夹并点“打开”，再在 App 内点选文件。") : purpose == .destination ? L("已选择 XCI，接下来选择资源保存位置。") : L("请选择文件或文件夹；取消不会开始导入。"), reveal: true)
         let title=purpose == .destination ? L("选择资源保存位置（可选外置 SSD）"):L("选择本地文件")
         #if targetEnvironment(macCatalyst)
         guard let url=Bundle.main.builtInPlugInsURL?.appendingPathComponent("PJDVMacLifecycle.bundle"),
@@ -141,8 +279,8 @@ final class ResourceImportController:UIViewController,UIDocumentPickerDelegate {
     @objc private func pickKeysFolder(){picker(.keysFolder)}
     @objc private func pickKeys(){picker(.keys)}
     @objc private func closePanel(){guard operation==nil && !selecting else{return};dismiss(animated:true,completion:onClose)}
-    @objc private func cancelWork(){operation?.cancel();cancel.isEnabled=false;detail.text=L("正在安全停止，源 XCI 与现有存档保留…")}
-    @objc private func useLocal(){do{try ResourceLibrary.useLocal();detail.text=L("已使用本机 GameResources。");onClose?()}catch{show(error)}}
+    @objc private func cancelWork(){operation?.cancel();cancel.isEnabled=false;setStatus(L("正在安全停止，源 XCI 与现有存档保留…"))}
+    @objc private func useLocal(){do{try ResourceLibrary.useLocal();setStatus(L("已使用本机 GameResources。"), reveal: true);onClose?()}catch{show(error)}}
     func documentPickerWasCancelled(_ controller:UIDocumentPickerViewController) {
         completeDocumentSelection(controller,url:nil)
     }
@@ -165,10 +303,10 @@ final class ResourceImportController:UIViewController,UIDocumentPickerDelegate {
         guard let url else {
             if purpose == .xci || purpose == .destination {source=nil;destination=nil}
             pendingInboxXCI=nil;inboxSignature=nil
-            detail.text=L("已取消选择；没有开始导入，原文件保持不变。")
+            setStatus(L("已取消选择；没有开始导入，原文件保持不变。"))
             return
         }
-        detail.text=L("已选择：")+url.lastPathComponent
+        setStatus(L("已选择：") + url.lastPathComponent)
         switch purpose {
         case .xci:
             guard url.pathExtension.lowercased()=="xci" else {show(ImportFailure.invalid(L("请选择 .xci 文件；ZIP／7z 请先解压。")));return}
@@ -186,12 +324,12 @@ final class ResourceImportController:UIViewController,UIDocumentPickerDelegate {
             beginImport(root:existing ? url:url.appendingPathComponent("PJDVM39-Resources",isDirectory:true))
         case .folder:
             let access=ResourceAccess(url)
-            do{_=try ResourceLayout.locate(access.root);try ResourceLibrary.select(access.root);detail.text=L("已连接：")+url.lastPathComponent+L("。外置盘需保持连接。");onClose?()}catch{show(error)}
+            do{_=try ResourceLayout.locate(access.root);try ResourceLibrary.select(access.root);setStatus(L("已连接：") + url.lastPathComponent + L("。外置盘需保持连接。"), reveal: true);onClose?()}catch{show(error)}
         case .xciFolder,.keysFolder:
             showFolderFiles(ResourceAccess(url),purpose:purpose == .xciFolder ? .xci:.keys)
         case .keys:
             let access=ResourceAccess(url,retaining:containingFolder)
-            do{try ResourceLibrary.storeKeys(access.root);detail.text=L("密钥已保存在本机，仅用于本地导入。");continueInboxImport()}catch{pendingInboxXCI=nil;show(error)}
+            do{try ResourceLibrary.storeKeys(access.root);setStatus(L("密钥已保存在本机，仅用于本地导入。"), reveal: true);continueInboxImport()}catch{pendingInboxXCI=nil;show(error)}
         }
     }
     private func showFolderFiles(_ folder:ResourceAccess,purpose:Purpose) {
@@ -261,7 +399,7 @@ final class ResourceImportController:UIViewController,UIDocumentPickerDelegate {
         let memory=PerformanceMonitor.memoryBytes().map{L("内存")+" "+bytes(Int64($0))+"  ·  "+L("峰值")+" "+bytes(Int64(memoryPeak))} ?? ""
         transfer.text=L("读取")+" "+rate(readRate)+"  ·  "+L("写入")+" "+rate(writeRate)+"\n"+L("累计读取")+" "+bytes(sample.readBytes)+"  ·  "+L("累计写入")+" "+bytes(sample.writtenBytes)+"  ·  "+L("已耗时")+String(format:" %02d:%02d",elapsed/60,elapsed%60)+"\n"+memory+"\n"+L("应用层读写量，含缓存；不是物理硬盘测速。")
     }
-    private func show(_ error:Error){detail.text=L("操作未完成：")+error.localizedDescription}
+    private func show(_ error:Error){setStatus(L("操作未完成：") + error.localizedDescription, error: true)}
     deinit {transferTimer?.invalidate();try?memoryLog?.close()}
     private func beginImport(root:URL) {
         guard let source else{return}
@@ -273,7 +411,7 @@ final class ResourceImportController:UIViewController,UIDocumentPickerDelegate {
         transferTimer=timer;RunLoop.main.add(timer,forMode:.common)
         let destination=self.destination
         actions.forEach{$0.isEnabled=false};cancel.isHidden=false;cancel.isEnabled=true;isModalInPresentation=true;bar.progress=0;bar.isHidden=true;activity.startAnimating()
-        detail.text=L("检查 XCI、密钥与更新映射…")
+        setStatus(L("检查 XCI、密钥与更新映射…"), reveal: true)
         UIApplication.shared.isIdleTimerDisabled=true
         backgroundTask=UIApplication.shared.beginBackgroundTask(withName:"PJDV resource import"){progress.cancel()}
         DispatchQueue.global(qos:.userInitiated).async {[weak self] in
@@ -304,7 +442,7 @@ final class ResourceImportController:UIViewController,UIDocumentPickerDelegate {
                 self.operation=nil;self.source=nil;self.destination=nil;self.actions.forEach{$0.isEnabled=true};self.cancel.isHidden=true;self.isModalInPresentation=false;self.activity.stopAnimating()
                 UIApplication.shared.isIdleTimerDisabled=false
                 if self.backgroundTask != .invalid {UIApplication.shared.endBackgroundTask(self.backgroundTask);self.backgroundTask = .invalid}
-                switch final {case .success:if let signature=self.inboxSignature {AppImportInbox.markCompleted(signature)};self.bar.isHidden=false;self.bar.progress=1;self.detail.text=L("导入完成，包内曲库、DLC 与语言已识别。可以启动游戏测试。");self.onClose?();case .failure(let error):self.show(error)}
+                switch final {case .success:if let signature=self.inboxSignature {AppImportInbox.markCompleted(signature)};self.bar.isHidden=false;self.bar.progress=1;self.setStatus(L("导入完成，包内曲库、DLC 与语言已识别。可以启动游戏测试。"), reveal: true);self.onClose?();case .failure(let error):self.show(error)}
             }
         }
     }

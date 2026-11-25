@@ -228,3 +228,24 @@ let opaqueChange=try moviePackage("Changed opaque",[nativeSong,movieB],extra:Dat
 for bad in [clash,removed,altered,opaqueChange] {reject{_=try ModComposition.prepare([pa,bad],catalog:catalog,base:base,dlc:dlc,root:cache)}}
 require(try Data(contentsOf:base.appendingPathComponent(playlistPath))==playlist([nativeSong]))
 print("PASS: independent movie playlists merged by stable song ID; reverse selection and duplicates; native/opaque preservation; collision/deletion/unknown-member rejection")
+
+// Prepared full-song packs also carry a PV database. Their playlist must
+// preserve native rows and opaque data when combined with a converted pack.
+func preparedSong(_ playlistRows:[[String:String]]) throws -> RuntimeMod {
+    let seed = try packageBytes("Prepared song", playlistPath, playlist(playlistRows))
+    let pv = Data("pv_800.song_name=Prepared\n".utf8)
+    let file = RuntimeMod.Check(path:"0/rom_switch/rom/pv_db.txt",bytes:UInt64(pv.count),sha256:F.sha(pv))
+    try put(catalog.directory(seed).appendingPathComponent(file.path),pv)
+    let item = RuntimeMod(format:seed.format,id:seed.id,name:seed.name,notes:seed.notes,layers:seed.layers,
+                          baseChecks:seed.baseChecks,files:seed.files+[file])
+    try JSONEncoder().encode(item).write(to:catalog.directory(seed).appendingPathComponent("runtime.json"))
+    return item
+}
+let mixedSong = try preparedSong([nativeSong,movieA])
+let mixedSession = try ModComposition.prepare([mixedSong,pb],catalog:catalog,base:base,dlc:dlc,root:cache)
+let mixedArchive = try F.archive(Data(contentsOf:URL(fileURLWithPath:mixedSession.paths[0]).appendingPathComponent(playlistPath)))
+require(try F.group(F.properties(mixedArchive.first{$0.name=="gm_pv_list.bin"}!.data),"pv_list") == [nativeSong,movieA,movieB])
+require(mixedArchive.first{$0.name=="opaque.bin"}!.data == Data([7,8]))
+let missingOriginal = try preparedSong([movieA])
+reject { _ = try ModComposition.prepare([missingOriginal,pb],catalog:catalog,base:base,dlc:dlc,root:cache) }
+print("PASS: prepared and converted song packs retain both playlists and reject removed native entries")

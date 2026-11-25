@@ -2,13 +2,31 @@
 
 [简体中文](README.md) | **English**
 
-## 0.2.0 release · build 1
+## 0.2.0 · build 6
 
-This release updates mod import, costume combinations and in-game fonts. It also fixes the upside-down scene in “Calc.” with the adapted X Song Pack. Existing players can update in place and keep their imported game and saves. [Download the iOS/iPadOS IPA or Apple Silicon Mac DMG](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.2.0b1)
+Large mod combinations can now keep both song lists and their cover art while adding more costumes. An M3 Max Mac loaded **13 model packs and 2 song packs** together. The combined game data contained **49 added costumes and 34 added songs**. [Build 6 release](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.2.0b6) · [Validation and wardrobe screenshot](Reports/RELEASE-0.2.0b6.md#english)
 
-- **Models.** Five of the six original GameBanana model archives passed import. Install Racing Miku 2024 and 2025 directly from their authors’ ZIPs and enable them together. Each keeps its own costume and hair. Rekka Kohane from Sekai Mini Pack 7 appeared on stage in “Ai Kotoba” in the iPhone simulator.
-- **Songs.** The three original song archives tested still require adaptation. A developer sample played the Wonderlands×Showtime cover of “Miracle Paint”. “Hajimari no Mirai (Ergo ver.)” completed its full 4:20 HARD chart. The report lists the original import results, missing resources and authors’ download pages. [Nine-archive test report and screenshots](Reports/RELEASE-0.2.0b1.md#english)
-- **Fonts.** Select **Game Settings → Game font → Google Sans** for lyrics, costume names and song titles. Regional Noto Sans CJK glyphs supply Chinese, Japanese and Korean characters. The original game font is the default. [Missing-glyph comparison in “Calc.”](Reports/images/release-0.2.0b1/calc-lyrics.png)
+- Hinomori Shizuku was equipped in the “Ghost Rule” wardrobe and still appeared at song select after a normal restart. The combination used its own save, and the original save checksums were unchanged.
+- The adapted X Song Pack 1.21 and Tonny’s pack contributed 32 and 2 songs respectively. All five cover indexes retained entries from both packs. The full set of 34 songs was verified in the database. The hands-on test sampled the wardrobe and song select.
+- With Google Sans enabled in Simplified Chinese, the last character in 日野森雫 still appears as a square. The model and portrait render correctly. Testing this 15-pack combination on physical iPhones and iPads is still pending.
+
+### Updating to build 6
+
+The offline updates require an original **0.2.0 build 1** package. Build 1’s update checker looks for direct IPA or DMG assets, so download the ZIP for your platform manually. Back up your saves before updating an existing installation. [Build 6 release](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.2.0b6)
+
+**Apple Silicon Mac.** Extract `PJDVM39-0.2.0b6-macOS-update-from-b1.zip`, open `Update-PJDVM39-Mac.command`, then select your original build 1 DMG and an output folder. The updater uses Python 3.9 or later and creates a separate `PJDVM39-build6.app`. Alternatively, run the command below from the extracted directory. The original build 1 `.app` also works as the first argument. Choose an output path that does not yet exist.
+
+```sh
+python3 pjdv_macos_update.py "/path/to/PJDVM39-0.2.0b1-macOS.dmg" "/path/to/PJDVM39-build6.app"
+```
+
+**iPhone and iPad.** Have your original unsigned build 1 IPA ready. Download and extract `PJDVM39-0.2.0b6-iOS-update-from-b1.zip`. Run this command from the extracted directory, leaving the inner ZIP intact. Sign the resulting IPA with your own identity before installation. IPA generation works offline with Python 3.9 or later on macOS, Windows or Linux. Allow at least 0.6 GB of free space. A re-signed or otherwise modified base IPA will fail verification.
+
+```sh
+python3 pjdv_ios_update.py "/path/to/local-build1-unsigned.ipa" PJDVM39-0.2.0b1-to-b6-iOS-host-update.zip "/path/to/PJDVM39-0.2.0b6-iOS-unsigned.ipa"
+```
+
+**First installation or a different base package.** Build from source with the program and rendering inputs prepared from your own game copy. Once built, the app can import your XCI and keys. [Local build requirements](BUILDING.md)
 
 ### Importing mods
 
@@ -16,7 +34,21 @@ Import the MEGA39’s base game first. In **MOD Manager**, choose **Add ZIP or R
 
 The app checks the files and converts supported resources locally. Select one or more ready packages and tap **Load**. Supported inputs include data-only RomFS overlays for the Japanese game, prepared packages, and supported PC costume and song formats. The manager names required Windows plug-ins. Single-volume ZIP, RAR4 and RAR5 archives are supported. For 7z, split or encrypted archives, extract the files first and select the main mod folder.
 
+Open **MOD Manager → GameBanana**, visit the author's page and choose **Manual Download → Download** or **Diva Mod Manager · 1-Click Install** when the author offers it. The app saves the archive and tries to install it. Select the ready mod and tap **Load** to enable it. Open **MOD Manager → Mod Files** to see each archive's name, size and download date, reinstall it, export it, or delete the download. Installed mods remain playable after you delete their archives. [Download and installation tests](Reports/RELEASE-0.2.0b6.md#downloads-and-display)
+
+**On Mac**, the app opens a centered window with a 1920×1080-pixel content area. On a 2× Retina display this is 960×540 points, plus the title bar. The window scales down at 16:9 if the desktop has less room.
+
+Final game output is capped to the current display’s physical pixels for standard scaling, MetalFX, and desktop matching. Moving the game to a smaller display updates the effective size in the quality menu and the on-screen output indicator. Moving it back restores the selected preset. A 3840×2400 display can show up to 3840×2160 of 16:9 game content. The default remains 1920×1080.
+
 ### Previous releases
+
+**0.2.0 build 1 · November 25, 2026**
+
+This release updates mod import, costume combinations and in-game fonts. It also fixes the upside-down scene in “Calc.” with the adapted X Song Pack.
+
+- **Models.** Five of the six original GameBanana model archives passed import. Install Racing Miku 2024 and 2025 directly from their authors’ ZIPs and enable them together. Each keeps its own costume and hair. Rekka Kohane from Sekai Mini Pack 7 appeared on stage in “Ai Kotoba” in the iPhone simulator.
+- **Songs.** The three original song archives tested still require adaptation. A developer sample played the Wonderlands×Showtime cover of “Miracle Paint”. “Hajimari no Mirai (Ergo ver.)” completed its full 4:20 HARD chart. The report lists the original import results, missing resources and authors’ download pages. [Nine-archive test report and screenshots](Reports/RELEASE-0.2.0b1.md#english)
+- **Fonts.** Select **Game Settings → Game font → Google Sans** for lyrics, costume names and song titles. Regional Noto Sans CJK glyphs supply Chinese, Japanese and Korean characters. The original game font is the default. [Missing-glyph comparison in “Calc.”](Reports/images/release-0.2.0b1/calc-lyrics.png)
 
 **0.1.5 build27 lightweight preview · November 25, 2026**
 
@@ -90,7 +122,7 @@ Raw Kimagure Mercy model and Tonny’s movie-song ZIPs received Mac samples. Com
 
 **Complete Eden pack sampling and cleanup, November 1, 2026 — unpublished source candidate:** Complete developer-adapted Heavy Metal (14 songs / 37 charts) and Rock (19 / 35) folders were independently imported and combined inside the App. Four preselected random EXTREME songs completed. Fixed Cosmos' 1916-pixel client-video layout crash and an incorrectly rejected valid IVF timebase; all three platform targets built. **Developer ID preparation remains necessary; direct raw Eden-pack import is not complete.** Generated trial copies from this and the previous Eden round were deleted as requested, measuring about 38.22 GB reclaimed while retaining original Mods, XCI, saves and evidence. [Bilingual results, screenshots and cleanup scope](Reports/EDEN-FULL-PACKS-20261101.md)
 
-The following entries retain their original dated version status. “Local candidate / public installer remains build19” describes that historical stage; the 0.2.0 build 1 summary at the top describes the current release.
+The following entries retain their original dated version status. “Local candidate / public installer remains build19” describes that historical stage; the 0.2.0 build 6 section above describes the current release.
 
 **Eden single-song composition, November 1, 2026 — unpublished source candidate:** One developer subset each from Beginner, Catchy Pop and Vibes was independently converted inside the App and enabled together. HARD/HARD/EXTREME completed with 686/607/665 COOL in disposable AutoPlay saves. Missing Chinese glyphs and independent playlist collisions were corrected; jackets, sampled subtitles and cold-launch selection were checked, and ordinary-save hashes stayed unchanged. **Temporary IDs 800–802 do not establish complete raw Eden import; persistent IDs, Core, module and 3D/Edit adapters remain pending.** [Bilingual evidence, screenshots and timing limits](Reports/EDEN-PLAYBACK-20261101.md)
 
@@ -130,7 +162,7 @@ An Apple Silicon compatibility-port research project for the **Japanese Switch v
 
 The runtime still uses the adapted JP v1.0.9 program; it does not execute arbitrary NSOs from a newly imported XCI. Removing import version restrictions does **not** establish runtime compatibility with every resource version or other regional executables. The launcher flags unknown resource versions as unverified. New imports record their contents in `game-content.json`; existing v1.0.9 folders remain supported. Separate ticket/TitleKey encryption needs further work. Missing required keys, conflicting updates and incomplete packages stop the import without modifying the source XCI.
 
-[Historical build 19 preview](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b19) · [Build 18](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b18) · [Build 17](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b17) · [Build 14](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b14) · [Build 10](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b10) · [Original build 7](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5) · [Installation guide](#choosing-an-installer)
+[Historical build 19 preview](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b19) · [Build 18](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b18) · [Build 17](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b17) · [Build 14](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b14) · [Build 10](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b10) · [Original build 7](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5) · [Installation guide](#installing-build-6)
 
 [Demo video on bilibili](https://www.bilibili.com/video/BV1KGni6YEZd/)
 
@@ -177,14 +209,13 @@ The runtime still uses the adapted JP v1.0.9 program; it does not execute arbitr
 
 The public build 7 baseline is **JP v1.0.9 / 589824, Title ID 0100F3100DA46000, one base game + one update + 27 DLC**. Build 10 removes filename, version-number and DLC-count restrictions for imports with the same Title ID; other regional programs and resource versions require separate runtime validation. Full visual fidelity across every song/costume, audiovisual synchronization and sustained real 60 FPS remain under investigation.
 
-## Choosing an installer
+## Installing build 6
 
-| Package | Purpose |
+| What you already have | How to install |
 | --- | --- |
-| GitHub iOS IPA, iPad/iPhone | Lightweight and unsigned. Sign it with your own valid identity and import your own game and keys. |
-| GitHub Mac DMG | Lightweight arm64 application, ad hoc signed and not notarized. Import your own resources before playing. |
-
-Public packages contain no XCI, extracted game payload, `prod.keys`, personal saves or local development-signing configuration. Select your own keys locally during import. Following the October 24 cleanup request, this working project's obsolete large integrated archives and full-package staging directories have been removed. The original XCI, current extracted resources, save backups and lightweight installers were retained. Future automatic packaging is lightweight only.
+| Matching original Mac build 1 package | Apply the Mac offline update to generate a separate build 6 app. |
+| Matching original iOS/iPadOS build 1 package | Apply the iOS offline update locally, sign the resulting IPA and install it on an authorized device. |
+| First installation or a different base package | Build the app from source with the program, rendering inputs and game resources you supply locally. [Build requirements](BUILDING.md) |
 
 ### Optional game font
 
@@ -194,7 +225,7 @@ Latin text uses Google Sans. Chinese, Japanese and Korean text uses the correspo
 
 ## Installing on iPad and launching for the first time
 
-1. Sign the IPA with your own valid development identity and install it on an authorized iPad/iPhone. The public IPA is unsigned; copying it into Files does not install the application.
+1. Sign the locally generated IPA with your own valid development identity and install it on an authorized iPad or iPhone.
 2. Enable [Developer Mode](https://developer.apple.com/documentation/xcode/enabling-developer-mode-on-a-device) when required by the OS. If asked to trust a developer, use **Settings → General → VPN & Device Management** for the corresponding identity.
 3. Open PJDV M39 and import an XCI or connect prepared resources using the methods below. **Start game** stays disabled until resources are ready.
 4. Select **Start game**. Use virtual A, keyboard D or the physical controller's confirm button. A can skip the opening movie.
@@ -288,7 +319,7 @@ If the app still exits, retain both small logs and the corresponding `JetsamEven
 
 ## Mac installation and import
 
-- Open the lightweight DMG and drag PJDV M39 into Applications or another permanent location. Import game resources separately.
+- Place the locally generated PJDV M39 app in Applications or another permanent location. A first installation needs your own game resources. An existing installation can keep using its imported data.
 - The app is ad hoc signed and not Apple-notarized. Review and approve this app according to [Apple's instructions for unnotarized applications](https://support.apple.com/102445).
 - In resource management, choose your own `prod.keys`, then the XCI, then the resource destination. An external SSD is supported; the app remembers the location after import.
 - To use existing resources, select **Connect extracted resource folder** and choose the parent containing both `romfs` (or `MEGA39-v1.0.9`) and `DLC`.

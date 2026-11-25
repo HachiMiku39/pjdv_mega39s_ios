@@ -22,7 +22,7 @@ enum ModComposition {
         init(_ item:RuntimeMod,_ files:[String:File]){self.item=item;self.files=files}
     }
     struct Receipt:Codable {let key:String;let files:[RuntimeMod.Check];let generated:[String]}
-    static let revision="native-composition-9"
+    static let revision="native-composition-10"
     static func identity(_ items:[RuntimeMod])->String {
         let raw=items.map{$0.id.uuidString}.sorted().joined(separator:"\n")
         let h=F.sha(Data(raw.utf8));return String(h.prefix(32))
@@ -116,6 +116,7 @@ enum ModComposition {
         var objectBase=[String:[F.ObjectSet]](),textureBase=[String:[F.Named]](),spriteBase=[String:[F.SpriteSet]]()
         var archives=[String:[F.Block]]()
         var costumeBase=[String:[Props]](),moduleBase=[String:[Props]]()
+        var moduleResourceDirectories = [URL](), extendedModuleIDs = Set<Int>()
         init(packs:[Pack],base:URL,dlc:URL,output:URL,progress:Progress)throws {
             // Stage registries carry references to object/texture IDs. Process
             // them before model packs, then rewrite all affected references.
@@ -132,6 +133,7 @@ enum ModComposition {
                     // DLC layout may insert its dlcNN directory after rom_*.
                     for sub in (try? fm.contentsOfDirectory(at:folder,includingPropertiesForKeys:nil,options:.skipsHiddenFiles)) ?? [] where sub.lastPathComponent.hasPrefix("dlc") {roms.append(sub.appendingPathComponent("rom"))}
                 }
+                moduleResourceDirectories.append(contentsOf:roms)
                 for rom in roms {
                     var paths=(try? fm.contentsOfDirectory(at:rom,includingPropertiesForKeys:nil,options:.skipsHiddenFiles)) ?? []
                     paths += ((try? fm.contentsOfDirectory(at:rom.appendingPathComponent("objset"),includingPropertiesForKeys:nil,options:.skipsHiddenFiles)) ?? [])
@@ -414,6 +416,103 @@ enum ModComposition {
                 try write(rel,F.archiveData(blocks));handled.insert(rel)
             }
         }
+        // JP v1.0.9 stores two bytes per outfit in a 1,024-entry save array.
+        // Only three-digit IDs also follow the stock portrait filename convention.
+        // The two shipped JP tables place outfits and accessories in different
+        // string segments. Reuse a slot only if all six stock tables and every
+        // selected overlay leave its native string and both portraits available.
+        private func extraModuleSlots(after last: Int) throws -> [Int] {
+            guard last == 660 else { return [] }
+            let namespaces = [("rom_switch", 220, 881, ["jp", "cn", "tw", "kr", "en"]),
+                              ("rom_ps4", 136, 612, ["jp"])]
+            var candidates = Set((last + 1)...999)
+            var reserved = Set<Int>(), accessoryNames = Set<Int>()
+            var inputs = Set<URL>()
+            for (directory, moduleOffset, accessoryOffset, languages) in namespaces {
+                let rom = base.appendingPathComponent(directory + "/rom")
+                let jp = try F.strings(F.read(rom.appendingPathComponent("lang2/jp/str_array.bin")))
+                // Verify the layout against the native outfit names on this
+                // resource version before relying on any numerical string offset.
+                guard let known = moduleBase[directory + "/rom/gm_module_tbl.farc"],
+                      !known.isEmpty, known.allSatisfy({ row in
+                          guard let id = Int(row["id"] ?? ""), jp.indices.contains(id + moduleOffset) else { return false }
+                          return jp[id + moduleOffset] == row["name"]
+                      }) else { return [] }
+                let itemRows = try readArchive(directory + "/rom/gm_customize_item_tbl.farc").flatMap {
+                    try F.group(F.properties($0.data), "cstm_item")
+                }
+                // A few PS4 accessory names differ from their localized text.
+                guard itemRows.filter({ row in
+                    guard let id = Int(row["id"] ?? ""), jp.indices.contains(id + accessoryOffset) else { return false }
+                    return jp[id + accessoryOffset] == row["name"]
+                }).count >= max(3, itemRows.count * 9 / 10) else { return [] }
+                for lang in languages {
+                    let rel = directory + "/rom/lang2/" + lang + "/str_array.bin"
+                    var files = [base.appendingPathComponent(rel)]
+                    files += packs.compactMap { $0.files[rel]?.url }
+                    for url in Set(files) {
+                        try check()
+                        let values = try F.strings(F.read(url))
+                        candidates = candidates.filter { id in
+                            let index = id + moduleOffset
+                            return values.indices.contains(index) && values[index] == "BLANK"
+                        }
+                    }
+                }
+            }
+            for rom in moduleResourceDirectories {
+                let children = (try? fm.contentsOfDirectory(at: rom, includingPropertiesForKeys:nil, options:.skipsHiddenFiles)) ?? []
+                inputs.formUnion(children)
+                let art = rom.appendingPathComponent("2d")
+                inputs.formUnion((try? fm.contentsOfDirectory(at:art,includingPropertiesForKeys:nil,options:.skipsHiddenFiles)) ?? [])
+            }
+            for pack in packs { inputs.formUnion(pack.files.values.map(\.url)) }
+            func reservePortrait(_ name: String) {
+                let key = name.uppercased()
+                for prefix in ["SPR_SEL_MD", "SPR_CMNITM_THMB"] where key.hasPrefix(prefix) {
+                    let digits = key.dropFirst(prefix.count).prefix(while: { $0.isASCII && $0.isNumber })
+                    if let id = Int(digits) { reserved.insert(id) }
+                }
+            }
+            var checked = Set<String>()
+            for url in inputs {
+                let file = url.lastPathComponent
+                guard file == "spr_db.bin" || file.hasSuffix("module_tbl.farc") || file == "gm_customize_item_tbl.farc" ||
+                    file.hasSuffix("_module_info.txt") || file.hasSuffix("_customize_item_info.txt") ||
+                    (file.contains("pv_db") && file.hasSuffix(".txt")) else { reservePortrait(file); continue }
+                try check()
+                let bytes = try F.read(url)
+                // Identical tables often appear in multiple layers and languages.
+                let ps4 = url.pathComponents.contains("rom_ps4")
+                guard checked.insert((ps4 ? "PS4/" : "Switch/") + file + "/" + F.sha(bytes)).inserted else { continue }
+                if file == "spr_db.bin" {
+                    for row in try F.sprites(bytes) { reservePortrait(row.name); for member in row.members {reservePortrait(member.name)} }
+                } else if file.hasSuffix(".farc") {
+                    let accessory = file == "gm_customize_item_tbl.farc"
+                    for block in try F.archive(bytes) {
+                        for row in F.group(try F.properties(block.data), accessory ? "cstm_item" : "module") {
+                            let id = try number(row,"id")
+                            reserved.insert(id)
+                            if accessory {
+                                accessoryNames.insert(id + (ps4 ? 612 - 136 : 881 - 220))
+                                if let bound = Int(row["bind_module"] ?? ""), bound >= 0 { reserved.insert(bound) }
+                            }
+                        }
+                    }
+                } else {
+                    guard let text = String(data: bytes,encoding:.utf8) else { return [] }
+                    for line in text.split(whereSeparator: \.isNewline) where !line.hasPrefix("#") {
+                        let parts = line.split(separator:"=", maxSplits:1)
+                        guard parts.count == 2, let id=Int(parts[1]) else {continue}
+                        if parts[0].hasPrefix("module.") || parts[0].hasSuffix(".module_id") { reserved.insert(id) }
+                        if parts[0].hasPrefix("customize_item.") {
+                            reserved.insert(id); accessoryNames.insert(id + (ps4 ? 612 - 136 : 881 - 220))
+                        }
+                    }
+                }
+            }
+            return candidates.subtracting(reserved).subtracting(accessoryNames).sorted()
+        }
         func modules()throws {
             let paths=originals.keys.filter{$0.hasSuffix("module_tbl.farc")}.sorted()
             var used=Set<Int>(),prior=[Int:[Props]]()
@@ -436,6 +535,10 @@ enum ModComposition {
                     }
                 }
                 for old in delta.keys.sorted() {
+                    if holes.isEmpty && extendedModuleIDs.isEmpty {
+                        holes = try extraModuleSlots(after: used.max() ?? 0)
+                        extendedModuleIDs = Set(holes)
+                    }
                     guard !holes.isEmpty else {throw ModLoadError.limit};let id=holes.removeFirst();var v=delta[old]!
                     guard let char=v["chara"],let table=character[char],let costume=v["cos"],costume.hasPrefix("COS_"),let oldCostume=Int(costume.dropFirst(4)),oldCostume>0 else {throw ModLoadError.invalid}
                     let new=pack.costumeMaps[table+"_tbl.txt"]?[oldCostume-1] ?? oldCostume-1
@@ -503,13 +606,26 @@ enum ModComposition {
                     if let old=changes[slot],old != value {try fail(owners[slot] ?? "MOD",pack.item.name)}
                     changes[slot]=value;owners[slot]=pack.item.name
                 }
+                let nativePS4Names = !extendedModuleIDs.isEmpty && rel.hasPrefix("rom_ps4/")
                 for pack in packs {if let file=pack.files[rel] {
                     let values=try F.strings(F.read(file.url));guard values.count==before.count else {throw ModLoadError.unsupported}
                     for (i,value) in values.enumerated() where value != before[i] {
                         if pack.moduleMap[i-220] != nil || accessoryOffset.map({pack.accessoryMap[i-$0] != nil})==true {continue};try set(i,value,pack)
                     }
-                    for (old,new) in pack.moduleMap {guard old+220<values.count else {throw ModLoadError.invalid};try set(new+220,values[old+220],pack)}
-                    if let offset=accessoryOffset {for (old,new) in pack.accessoryMap {guard old+offset<values.count else{throw ModLoadError.invalid};try set(new+offset,values[old+offset],pack)}}
+                    for (old,new) in pack.moduleMap {
+                        guard old+220<values.count else {throw ModLoadError.invalid}
+                        let target = new + (nativePS4Names ? 136 : 220)
+                        guard before.indices.contains(target) else { throw ModLoadError.invalid }
+                        // Several unused low module IDs still have PS4-only labels.
+                        // Keep these intact when composing beyond the original pool.
+                        if !nativePS4Names || before[target] == "BLANK" {
+                            try set(target,values[old+220],pack)
+                        }
+                    }
+                    if let offset=accessoryOffset {for (old,new) in pack.accessoryMap {
+                        guard values.indices.contains(old+offset),before.indices.contains(new+offset) else {throw ModLoadError.invalid}
+                        if !nativePS4Names || before[new+offset] == "BLANK" {try set(new+offset,values[old+offset],pack)}
+                    }}
                 }}
                 try write(rel,F.changeStrings(raw,changes));handled.insert(rel)
             }
@@ -595,7 +711,7 @@ enum ModComposition {
                         }
                     }
                     additions[name]=row;additionOwner[name]=pack.item.name
-                    known[name]=row;for member in row.members{members[member.name]=member;memberNamesByID[member.id]=member.name}
+                    known[name]=row;for member in row.members{members[member.name]=member;memberNamesByID[member.id]=member.name;usedMembers.insert(member.id)}
                 }
             }
             nextSet=max(nextSet,(usedSets.max() ?? 0)+1);nextMember=max(nextMember,(usedMembers.max() ?? 0)+1)
@@ -624,13 +740,39 @@ enum ModComposition {
                     }
                 }
             }
+            // A prepared package can supply an already-expanded atlas. Its registered
+            // indices are also used by the game, so retain the complete matching atlas
+            // as the seed before appending individual covers from native song packs.
+            func thumbnailSeed(_ before:F.SpriteSet,registry:String,archive:String)throws->(URL,F.SpriteSet) {
+                guard let stock=try original(archive) else{throw ModLoadError.invalid}
+                guard let expanded=additions[before.name],expanded != before else{return (stock,before)}
+                guard expanded.id==before.id,expanded.file==before.file,
+                      before.members.allSatisfy({expanded.members.contains($0)}) else{throw ModLoadError.unsupported}
+                var seed:File?
+                var owner=""
+                for pack in packs where pack.item.format != "pjdv-runtime-song-v1" {
+                    guard let file=pack.files[archive] else{continue}
+                    guard let db=pack.files[registry],
+                          let declared=try F.sprites(F.read(db.url)).first(where:{$0.name==expanded.name}),
+                          declared.id==expanded.id,declared.file==expanded.file,
+                          declared.members.count==expanded.members.count,
+                          declared.members.allSatisfy({expanded.members.contains($0)}) else{
+                        throw ModLoadError.conflict(pack.item.name)
+                    }
+                    if let seed,seed.check.sha256 != file.check.sha256{try fail(owner,pack.item.name)}
+                    seed=file;owner=pack.item.name
+                }
+                guard let seed else{throw ModLoadError.unsupported}
+                return (seed.url,expanded)
+            }
             var thumbnailRows=[String:F.SpriteSet]()
             for rel in videoThumbnails.keys.sorted() {
                 guard let before=(spriteBase[rel] ?? []).first(where:{$0.name=="SPR_SEL_PVTMB"}) else{throw ModLoadError.invalid}
                 let archive=(rel as NSString).deletingLastPathComponent+"/"+(before.file as NSString).deletingPathExtension+".farc"
-                guard let p=try original(archive) else{throw ModLoadError.invalid}
-                let blocks=try F.archive(F.read(p));guard blocks.count==1 else{throw ModLoadError.unsupported}
-                var payload=try F.SpritePayload(blocks[0].data),row=before
+                let (seed,seedRow)=try thumbnailSeed(before,registry:rel,archive:archive)
+                let blocks=try F.archive(F.read(seed));guard blocks.count==1 else{throw ModLoadError.unsupported}
+                var payload=try F.SpritePayload(blocks[0].data),row=seedRow
+                guard row.members.allSatisfy({$0.texture ? payload.textures.indices.contains($0.index) : payload.sprites.indices.contains($0.index)}) else{throw ModLoadError.invalid}
                 for (pack,sourceRow) in videoThumbnails[rel]! {
                     guard sourceRow.id==before.id,sourceRow.file==before.file,before.members.allSatisfy({sourceRow.members.contains($0)}),let file=pack.files[archive] else{throw ModLoadError.unsupported}
                     let sourceBlocks=try F.archive(F.read(file.url));guard sourceBlocks.count==1 else{throw ModLoadError.unsupported}
@@ -676,9 +818,19 @@ enum ModComposition {
             // Each converted movie pack carries a full baseline playlist plus
             // its additions. Merge by song identity, never by row position.
             for rel in Set(packs.flatMap{$0.files.keys}).filter({$0.hasSuffix("/gm_pv_list_tbl.farc")}).sorted() {
-                let inputs=packs.compactMap{pack in pack.files[rel].map{(pack,$0)}}
-                guard inputs.count>1,Set(inputs.map{$0.1.check.sha256}).count>1,
-                      inputs.allSatisfy({$0.0.item.format=="pjdv-runtime-song-v1"}) else {continue}
+                var inputs=packs.compactMap{pack in pack.files[rel].map{(pack,$0)}}
+                guard inputs.count>1, Set(inputs.map{$0.1.check.sha256}).count>1 else {continue}
+                if !inputs.allSatisfy({$0.0.item.format=="pjdv-runtime-song-v1"}) {
+                    // Prepared songs can carry the same full playlist as converted songs.
+                    // Leave a single changed archive to the ordinary file overlay.
+                    guard let vanilla = try original(rel) else {continue}
+                    let originalHash = F.sha(try F.read(vanilla))
+                    inputs.removeAll { $0.1.check.sha256 == originalHash }
+                    guard Set(inputs.map{$0.1.check.sha256}).count>1, inputs.allSatisfy({ pack, _ in
+                        pack.item.format=="pjdv-runtime-song-v1" ||
+                            (pack.item.format=="pjdv-runtime-mod-v1" && pack.files["rom_switch/rom/pv_db.txt"] != nil)
+                    }) else {continue}
+                }
                 var blocks=try readArchive(rel)
                 let sources=try inputs.map{($0.0,try F.archive(F.read($0.1.url)))}
                 let names=blocks.map(\.name)

@@ -183,7 +183,7 @@ final class LauncherInterface: UIView {
         stack.setCustomSpacing(8, after: heading)
         return panel(stack, inset: 16)
     }
-    private static func style(_ button: UIButton, symbol: String, primary: Bool = false) {
+    static func style(_ button: UIButton, symbol: String, primary: Bool = false) {
         button.tintColor = accent; button.contentHorizontalAlignment = primary ? .center : .leading
         button.titleLabel?.font = .systemFont(ofSize: primary ? 17 : 14, weight: primary ? .semibold : .medium)
         button.titleLabel?.numberOfLines = 0; button.titleLabel?.lineBreakMode = .byWordWrapping

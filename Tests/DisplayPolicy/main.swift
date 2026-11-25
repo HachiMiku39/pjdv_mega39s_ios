@@ -145,3 +145,47 @@ precondition(GameDisplayPolicy.desktopDrawableSize(pixels:CGSize(width:3456,heig
 precondition(GameDisplayPolicy.desktopDrawableSize(pixels:CGSize(width:CGFloat.infinity,height:2160))==CGSize(width:1920,height:1080))
 precondition(GameDisplayPolicy.desktopDrawableSize(pixels:CGSize(width:20000,height:10000))==CGSize(width:1920,height:1080))
 print("Mac desktop pixels on family7/8/9, 16:9 aspect, invalid dimensions and mobile limits: PASS")
+
+for family in [7, 8, 9] {
+    for metalFX in [false, true] {
+        let hardware = GameHardwarePolicy(family: family)
+        let mode = hardware.defaultOutput(phone: false, metalFX: metalFX, mac: true)
+        check(mode == (family == 9 && metalFX ? "1080fx" : "1080p"), "Unexpected Mac default scaler")
+        for size in [CGSize(width: 960, height: 540), CGSize(width: 1366, height: 768)] {
+            let pixels = GameDisplayPolicy.drawableSize(mode: mode, bounds: CGRect(origin: .zero, size: size), scale: 2)
+            check(pixels == CGSize(width: 1920, height: 1080), "Mac default must keep a physical 1080p drawable")
+        }
+    }
+}
+check(GameHardwarePolicy(family: 9).defaultOutput(phone: false, metalFX: true) == "screenfx", "iPad default must track its display")
+check(GameHardwarePolicy(family: 9).defaultOutput(phone: true, metalFX: true) == "1080fx", "iPhone default must remain 1080p")
+print("Fixed Mac 1080p defaults, GPU scaler choice and independent mobile defaults: PASS")
+
+let fullHD = CGSize(width: 1920, height: 1080)
+let qhd = CGSize(width: 2560, height: 1440)
+let panel4K = CGSize(width: 3840, height: 2400)
+let hdPanel = CGSize(width: 1280, height: 720)
+let rotated = CGSize(width: 1080, height: 1920)
+check(GameDisplayPolicy.orientedPanel(rotated, displayBounds: CGSize(width: 844, height: 390)) == fullHD,
+      "Landscape mobile display must orient native pixels to the active screen")
+check(GameDisplayPolicy.orientedPanel(rotated, displayBounds: CGSize(width: 390, height: 844)) == rotated,
+      "Portrait tabletop or vertical external display must keep its narrow width")
+for panel in [panel4K, hdPanel, CGSize(width: 1366, height: 768), rotated, CGSize(width: 1024, height: 600)] {
+    let largeWindow = CGRect(x: 0, y: 0, width: 3200, height: 1800)
+    for mode in ["720p", "1080p", "1080fx", "1440fx", "screen", "screenfx", "desktop"] {
+        let request = mode == "desktop" ? GameDisplayPolicy.desktopDrawableSize(pixels: largeWindow.size)
+            : GameDisplayPolicy.drawableSize(mode: mode, bounds: largeWindow, scale: 2)
+        let actual = GameDisplayPolicy.fitOutput(request, within: panel)
+        check(actual.width <= panel.width && actual.height <= panel.height, "\(mode) exceeded panel \(panel)")
+        check(actual.width <= request.width && actual.height <= request.height, "Ceiling enlarged a smaller preset")
+        check(abs(actual.height - actual.width * 9 / 16) <= 1, "Aspect changed at an odd panel dimension")
+    }
+}
+check(GameDisplayPolicy.fitOutput(qhd, within: panel4K) == qhd &&
+      GameDisplayPolicy.fitOutput(qhd, within: hdPanel) == hdPanel &&
+      GameDisplayPolicy.fitOutput(qhd, within: panel4K) == qhd, "Moving monitors reduced the requested preset permanently")
+check(GameDisplayPolicy.fitOutput(CGSize(width: 6720, height: 3780), within: panel4K) == CGSize(width: 3840, height: 2160),
+      "Scaled Retina desktop exceeded its physical panel")
+check(GameDisplayPolicy.fitOutput(fullHD, within: panel4K) == fullHD, "Default output changed on the 4K panel")
+check(GameDisplayPolicy.fitOutput(qhd, within: .zero) == CGSize(width: 1, height: 1), "Detached panel has no safe output dimensions")
+print("Physical screen ceiling, Retina scaling, rotation and monitor transitions: PASS")

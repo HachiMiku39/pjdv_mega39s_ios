@@ -10,7 +10,8 @@ struct GameHardwarePolicy {
     var allowsRayTracing: Bool { supported && !conservative }
     func allows120(phone: Bool) -> Bool { supported && !conservative }
     func cappedTo1080(phone: Bool) -> Bool { phone || conservative }
-    func defaultOutput(phone: Bool, metalFX: Bool) -> String {
+    func defaultOutput(phone: Bool, metalFX: Bool, mac: Bool = false) -> String {
+        if mac { return !conservative && metalFX ? "1080fx" : "1080p" }
         if conservative { return "720p" }
         return metalFX ? (phone ? "1080fx" : "screenfx") : "1080p"
     }
@@ -90,6 +91,21 @@ struct GameDisplayPolicy {
     }
     static func usesMetalFX(mode: String) -> Bool {
         ["1080fx", "1440fx", "screenfx"].contains(mode)
+    }
+    static func fitOutput(_ requested: CGSize, within panel: CGSize) -> CGSize {
+        // A detached or reconfiguring display does not yet have a usable limit.
+        let placeholder = CGSize(width: 1, height: 1)
+        guard requested.width.isFinite, requested.height.isFinite, requested.width >= 1, requested.height >= 1,
+              panel.width.isFinite, panel.height.isFinite, panel.width >= 1, panel.height >= 1 else { return placeholder }
+        let width = floor(panel.width), height = floor(panel.height)
+        let ratio = min(1, width / requested.width, height / requested.height)
+        return CGSize(width: min(width, max(1, (requested.width * ratio).rounded())),
+                      height: min(height, max(1, (requested.height * ratio).rounded())))
+    }
+    static func orientedPanel(_ native: CGSize, displayBounds: CGSize) -> CGSize {
+        guard (native.width > native.height) != (displayBounds.width > displayBounds.height),
+              displayBounds.width > 0, displayBounds.height > 0 else { return native }
+        return CGSize(width: native.height, height: native.width)
     }
     static func desktopDrawableSize(pixels: CGSize) -> CGSize {
         guard pixels.width.isFinite, pixels.height.isFinite, pixels.width >= 16, pixels.height >= 9,

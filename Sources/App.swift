@@ -6,7 +6,11 @@ import Darwin
 
 #if targetEnvironment(macCatalyst)
 @objc(PJDVMacHardware) private protocol MacHardwarePlugin { static func hardwareSnapshot() -> [String: NSNumber] }
-@objc(PJDVMacDisplay) private protocol MacDisplayPlugin { static func displaySnapshot() -> [String: NSNumber] }
+@objc(PJDVMacDisplay) private protocol MacDisplayPlugin {
+    static func displaySnapshot() -> [String: NSNumber]
+    @objc(displaySnapshotForSystemFrame:) static func displaySnapshot(forSystemFrame frame: CGRect) -> [String: NSNumber]
+    static func configureLaunchWindow()
+}
 private enum MacDisplay {
     static let plugin: MacDisplayPlugin.Type? = {
         guard let url = Bundle.main.builtInPlugInsURL?.appendingPathComponent("PJDVMacLifecycle.bundle"),
@@ -14,9 +18,55 @@ private enum MacDisplay {
         return bundle.principalClass as? MacDisplayPlugin.Type
     }()
     static var snapshot: [String: NSNumber] { plugin?.displaySnapshot() ?? [:] }
+    static func snapshot(for view: UIView) -> [String: NSNumber] {
+        if #available(macCatalyst 16.0, *), let scene = view.window?.windowScene {
+            let frame = scene.effectiveGeometry.systemFrame
+            if !frame.isEmpty, !frame.isInfinite { return plugin?.displaySnapshot(forSystemFrame: frame) ?? [:] }
+        }
+        return snapshot
+    }
 }
 
 #endif
+@MainActor
+struct GameOutputDisplay {
+    let panel: CGSize
+    let desktop: CGSize
+    let scale: CGFloat
+    @discardableResult
+    func apply(_ requested: CGSize, to canvas: MTKView) -> CGSize {
+        let size = GameDisplayPolicy.fitOutput(requested, within: panel)
+        if canvas.drawableSize != size { canvas.drawableSize = size }
+        // Gameplay pauses MTKView and acquires drawables directly from its layer.
+        if let layer = canvas.layer as? CAMetalLayer, layer.drawableSize != size { layer.drawableSize = size }
+        return size
+    }
+    static var changeNotification: Notification.Name {
+        #if targetEnvironment(macCatalyst)
+        return Notification.Name("PJDVHostDisplayDidChange")
+        #else
+        return UIScreen.modeDidChangeNotification
+        #endif
+    }
+
+    init(for view: UIView) {
+        let screen = view.window?.windowScene?.screen ?? UIScreen.main
+        #if targetEnvironment(macCatalyst)
+        let info = MacDisplay.snapshot(for: view)
+        panel = CGSize(width: info["physicalWidth"]?.doubleValue ?? 0, height: info["physicalHeight"]?.doubleValue ?? 0)
+        desktop = CGSize(width: info["desktopWidth"]?.doubleValue ?? 0, height: info["desktopHeight"]?.doubleValue ?? 0)
+        // Catalyst view coordinates can have a different scale from AppKit points.
+        if let width = view.window?.bounds.width, width > 0, let pixels = info["contentWidth"], pixels.doubleValue > 0 {
+            scale = CGFloat(pixels.doubleValue) / width
+        } else { scale = screen.scale }
+        #else
+        panel = GameDisplayPolicy.orientedPanel(screen.nativeBounds.size, displayBounds: screen.bounds.size)
+        desktop = panel
+        scale = screen.scale
+        #endif
+    }
+}
+
 private enum HostHardware {
     static func sysctlString(_ name: String) -> String? {
         var n = 0
@@ -97,6 +147,13 @@ private enum DeviceGraphicsProfile {
 
 @main
 final class AppDelegate: UIResponder, UIApplicationDelegate {
+    #if targetEnvironment(macCatalyst)
+    static func main() {
+        // AppKit can finish restoring windows before UIKit calls its delegate.
+        MacDisplay.plugin?.configureLaunchWindow()
+        UIApplicationMain(CommandLine.argc, CommandLine.unsafeArgv, nil, NSStringFromClass(AppDelegate.self))
+    }
+    #endif
     func application(_ application: UIApplication, supportedInterfaceOrientationsFor window: UIWindow?) -> UIInterfaceOrientationMask {
         window?.rootViewController?.supportedInterfaceOrientations ?? .landscape
     }
@@ -120,15 +177,26 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         }
         self.window = window
         window.makeKeyAndVisible()
-        if #available(iOS 16.0, macCatalyst 16.0, *) {
+        #if !targetEnvironment(macCatalyst)
+        if #available(iOS 16.0, *) {
             scene.requestGeometryUpdate(.iOS(interfaceOrientations: .landscape)) { error in
                 NSLog("PJDV M39 landscape request: %@", error.localizedDescription)
             }
         }
+        #endif
     }
     func sceneDidDisconnect(_ scene: UIScene) {
         guard let window, let game = window.rootViewController as? LabController else { return }
         game.detach(from: window)
+    }
+
+    func windowScene(_ windowScene: UIWindowScene, didUpdate previousCoordinateSpace: UICoordinateSpace,
+                     interfaceOrientation previousInterfaceOrientation: UIInterfaceOrientation, traitCollection previousTraitCollection: UITraitCollection) {
+        window?.rootViewController?.viewIfLoaded?.setNeedsLayout()
+    }
+    @available(iOS 26.0, macCatalyst 26.0, *)
+    func windowScene(_ windowScene: UIWindowScene, didUpdateEffectiveGeometry previousEffectiveGeometry: UIWindowScene.Geometry) {
+        window?.rootViewController?.viewIfLoaded?.setNeedsLayout()
     }
 }
 
@@ -191,6 +259,8 @@ final class LabController: UIViewController {
     private var pendingExitError: Int32 = 0
     private var backgroundObserver: NSObjectProtocol?
     private var displayObserver: NSObjectProtocol?
+    private var menuPanel: CGSize?
+    private var limitedOutput: CGSize?
     private let performance = PerformanceWindow(frame: .zero)
     private let padToggle = UIButton(type: .system)
     private let outputToggle = UIButton(type: .system)
@@ -386,7 +456,7 @@ final class LabController: UIViewController {
         setNativeFPS(60)
         supportsMetalFX = metalFXSupported(Unmanaged.passUnretained(device as AnyObject).toOpaque()) != 0
         if UserDefaults.standard.string(forKey: outputPreferenceKey) == nil {
-            outputMode = DeviceGraphicsProfile.policy.defaultOutput(phone: isPhone, metalFX: supportsMetalFX)
+            outputMode = DeviceGraphicsProfile.policy.defaultOutput(phone: isPhone, metalFX: supportsMetalFX, mac: isMac)
         }
         outputMode = GameDisplayPolicy.outputMode(outputMode, phone: isPhone, conservative: DeviceGraphicsProfile.policy.conservative, mac: isMac)
         let launchFG = GameFrameGenerationPolicy.launchMode(ProcessInfo.processInfo.environment["PJDV_GAME_FG"], permits120: supportsGame120)
@@ -400,6 +470,8 @@ final class LabController: UIViewController {
         setRTStageMode(supportsRTStage && rtEnabled ? 1 : 0)
         input.onChange = { [weak input, inputSink] in if let input { inputSink.publish(input.snapshot()) } }
         let canvas = TouchMetalView(device: device, input: input)
+        canvas.autoResizeDrawable = false
+        updateDrawable(canvas, display: GameOutputDisplay(for: canvas))
         controllers = ControllerBridge(input: input) { [weak self] count in
             self?.connectedControllers = count
             self?.updatePadVisibility()
@@ -472,9 +544,7 @@ final class LabController: UIViewController {
         outputToggle.showsMenuAsPrimaryAction = true
         view.addSubview(outputToggle)
         applyOutputMode()
-        #if targetEnvironment(macCatalyst)
-        displayObserver = NotificationCenter.default.addObserver(forName: Notification.Name("PJDVHostDisplayDidChange"), object: nil, queue: .main) { [weak self] _ in self?.view.setNeedsLayout() }
-        #endif
+        displayObserver = NotificationCenter.default.addObserver(forName: GameOutputDisplay.changeNotification, object: nil, queue: .main) { [weak self] _ in self?.view.setNeedsLayout() }
         view.addSubview(performance)
         performance.isHidden = !performanceVisible
         autoplayBadge.text = L("AutoPlay 测试 · 不记录成绩")
@@ -519,9 +589,10 @@ final class LabController: UIViewController {
         outputToggle.titleLabel?.minimumScaleFactor = 0.55
         outputToggle.titleLabel?.font = .systemFont(ofSize: isPhone ? 12 : 16)
         status.isHidden = !debugVisible
-        if ["screen", "screenfx", "desktop"].contains(outputMode), let canvas = metalView {
-            let size = outputDrawableSize(canvas)
-            if canvas.drawableSize != size { canvas.drawableSize = size }
+        if let canvas = metalView {
+            let display = GameOutputDisplay(for: canvas)
+            if menuPanel != display.panel { applyOutputMode() }
+            else { updateDrawable(canvas, display: display) }
         }
         performance.place(in: layout.metrics, controlsExpanded: !(virtualPad?.isHidden ?? true) && duoPose != .tabletop, compact: isPhone)
     }
@@ -615,28 +686,15 @@ final class LabController: UIViewController {
         updatePadVisibility()
     }
 
-    // MTKView's own scale can follow an explicitly sized drawable. Match the
-    // window's display backing scale, independent of the previous output mode.
-    private var displayScale: CGFloat {
-        #if targetEnvironment(macCatalyst)
-        let pixels = MacDisplay.snapshot["contentWidth"]?.doubleValue ?? 0
-        if let width = view.window?.bounds.width, width > 0, pixels > 0 { return CGFloat(pixels) / width }
-        #endif
-        return view.window?.screen.scale ?? view.contentScaleFactor
-    }
-    private func outputDrawableSize(_ canvas: MTKView) -> CGSize {
-        #if targetEnvironment(macCatalyst)
-        if outputMode == "desktop" {
-            let info = MacDisplay.snapshot
-            return GameDisplayPolicy.desktopDrawableSize(pixels: CGSize(width: info["desktopWidth"]?.doubleValue ?? 0, height: info["desktopHeight"]?.doubleValue ?? 0))
-        }
-        #endif
-        return GameDisplayPolicy.drawableSize(mode: outputMode, bounds: canvas.bounds, scale: displayScale)
+    private func updateDrawable(_ canvas: MTKView, display: GameOutputDisplay) {
+        let requested = outputMode == "desktop" ? GameDisplayPolicy.desktopDrawableSize(pixels: display.desktop)
+            : GameDisplayPolicy.drawableSize(mode: outputMode, bounds: canvas.bounds, scale: display.scale)
+        let pixels = display.apply(requested, to: canvas)
+        limitedOutput = pixels == requested ? nil : pixels
     }
 
     private func applyOutputMode() {
         guard let canvas = metalView else { return }
-        canvas.autoResizeDrawable = false
         // Explicit developer readback only; normal drawable stays framebuffer-only.
         canvas.framebufferOnly = ProcessInfo.processInfo.environment["PJDV_PRESENT_CAPTURE"] != "1"
         if !DeviceGraphicsProfile.policy.allowsRayTracing { setRTStageMode(0) }
@@ -654,15 +712,22 @@ final class LabController: UIViewController {
                      ("screenfx", L("匹配屏幕（MetalFX 超分）")), ("screen", L(isMac ? "窗口像素 1:1（普通放大）" : "匹配屏幕（普通放大）")),
                      ("desktop", L("桌面像素 1:1（普通放大）"))].filter { GameDisplayPolicy.outputMode($0.0, phone: isPhone, conservative: DeviceGraphicsProfile.policy.conservative, mac: isMac) == $0.0 }
         if !modes.contains(where: { $0.0 == outputMode }) { outputMode = "1080p" }
-        let pixels = outputDrawableSize(canvas)
-        if canvas.drawableSize != pixels { canvas.drawableSize = pixels }
-        NSLog("PJDV output mode=%@ bounds=%.1fx%.1f displayScale=%.2f canvasScale=%.2f drawable=%.0fx%.0f", outputMode,
-              canvas.bounds.width, canvas.bounds.height, displayScale, canvas.contentScaleFactor,
+        let display = GameOutputDisplay(for: canvas)
+        menuPanel = display.panel
+        updateDrawable(canvas, display: display)
+        NSLog("PJDV output mode=%@ panel=%.0fx%.0f bounds=%.1fx%.1f displayScale=%.2f canvasScale=%.2f drawable=%.0fx%.0f", outputMode,
+              display.panel.width, display.panel.height, canvas.bounds.width, canvas.bounds.height, display.scale, canvas.contentScaleFactor,
               canvas.drawableSize.width, canvas.drawableSize.height)
         setUpscaleMode(GameDisplayPolicy.usesMetalFX(mode: outputMode) && supportsMetalFX ? 1 : 0)
         updateOutputLabel()
         let resolutionActions = modes.map { key, title in
-            UIAction(title: L(title), attributes: GameDisplayPolicy.usesMetalFX(mode: key) && !supportsMetalFX ? [.disabled] : [], state: key == outputMode ? .on : .off) { [weak self] _ in
+            var caption = L(title)
+            if ["720p", "1080p", "1080fx", "1440fx"].contains(key) {
+                let requested = GameDisplayPolicy.drawableSize(mode: key, bounds: canvas.bounds, scale: display.scale)
+                let actual = GameDisplayPolicy.fitOutput(requested, within: display.panel)
+                if actual != requested { caption += " → \(Int(actual.width))×\(Int(actual.height))" }
+            }
+            return UIAction(title: caption, attributes: GameDisplayPolicy.usesMetalFX(mode: key) && !supportsMetalFX ? [.disabled] : [], state: key == outputMode ? .on : .off) { [weak self] _ in
                 self?.outputMode = key
                 // Spatial runs after interpolation on real and generated frames.
                 UserDefaults.standard.set(key, forKey: self?.outputPreferenceKey ?? "outputResolution")
@@ -758,7 +823,8 @@ final class LabController: UIViewController {
             shadow += hdrStatus() == 1 ? " · HDR" : hdrStatus() == 4 ? L(" · HDR 错误") : L(" · HDR 待3D")
         }
         let fgLabel = gameFGMode() == 2 ? L(" · 60→120 ProMotion（实验）") : gameFGMode() == 1 ? L(" · 30→60 图像插帧") : ""
-        let title = L("输出：") + label + shadow + fgLabel
+        let actual = limitedOutput.map { " → \(Int($0.width))×\(Int($0.height))" } ?? ""
+        let title = L("输出：") + label + actual + shadow + fgLabel
         if outputToggle.title(for: .normal) != title {
             outputToggle.setTitle(title, for: .normal)
         }

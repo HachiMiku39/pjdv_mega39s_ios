@@ -75,7 +75,7 @@ final class GraphicsExperimentController: UIViewController, MTKViewDelegate {
         guard let device = MTLCreateSystemDefaultDevice() else { return }
         canvas = MTKView(frame: .zero, device: device)
         canvas.autoResizeDrawable = false
-        canvas.drawableSize = CGSize(width: 1280, height: 720)
+        updateOutputSize()
         canvas.colorPixelFormat = mode == .hdr ? .rgba16Float : .bgra8Unorm
         canvas.framebufferOnly = mode != .hdr // HDR test reads back one real floating-point output pixel.
         canvas.preferredFramesPerSecond = mode == .hdr ? 60 : targetRate
@@ -108,6 +108,9 @@ final class GraphicsExperimentController: UIViewController, MTKViewDelegate {
             }
             canvas.delegate = self
         } catch { fail(error.localizedDescription) }
+        observers.append(NotificationCenter.default.addObserver(forName: GameOutputDisplay.changeNotification, object: nil, queue: .main) { [weak self] _ in
+            self?.view.setNeedsLayout()
+        })
         observers.append(NotificationCenter.default.addObserver(forName: UIApplication.willResignActiveNotification, object: nil, queue: .main) { [weak self] _ in
             self?.suspended = true; self?.canvas.isPaused = true; self?.historyValid = false
         })
@@ -119,6 +122,14 @@ final class GraphicsExperimentController: UIViewController, MTKViewDelegate {
             self.canvas.isPaused = self.failed || self.manuallyPaused
             self.historyValid = false; self.realNext = false
         })
+    }
+    private func updateOutputSize() {
+        guard let canvas else { return }
+        GameOutputDisplay(for: canvas).apply(CGSize(width: 1280, height: 720), to: canvas)
+    }
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        updateOutputSize()
     }
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
@@ -282,7 +293,8 @@ final class GraphicsExperimentController: UIViewController, MTKViewDelegate {
             sample = view.device!.makeBuffer(length: 256, options: .storageModeShared)
             let blit = cb.makeBlitCommandEncoder()!
             blit.copy(from: drawable.texture, sourceSlice: 0, sourceLevel: 0,
-                      sourceOrigin: MTLOrigin(x: 1152, y: 432, z: 0), sourceSize: MTLSize(width: 1, height: 1, depth: 1),
+                      sourceOrigin: MTLOrigin(x: drawable.texture.width * 9 / 10, y: drawable.texture.height * 3 / 5, z: 0),
+                      sourceSize: MTLSize(width: 1, height: 1, depth: 1),
                       to: sample!, destinationOffset: 0, destinationBytesPerRow: 256, destinationBytesPerImage: 256)
             blit.endEncoding()
         }
