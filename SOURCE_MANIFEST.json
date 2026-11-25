@@ -1,9 +1,9 @@
 {
   "format": "pjdv-public-source-v1",
-  "date": "2026-11-21",
-  "source_build": "0.1.5 build25",
-  "public_release": "v0.1.5b25",
-  "source_parent_commit": "58e7d3753792924c90c19cea4d4ef503d683dc42",
+  "date": "2026-11-25",
+  "source_build": "0.1.5 build26",
+  "public_release": "v0.1.5b26",
+  "source_parent_commit": "725832d38d6779457b2c332671cf2dba7b9cc47a",
   "native_resource_model_and_movie_song_import": true,
   "Eden_raw_ID_over_999_import": false,
   "universal_PC_Mod_compatibility": false,
@@ -131,15 +131,15 @@
     {
       "path": "BUILDING.md",
       "bytes": 18629,
-      "sha256": "5f165d5d8f89b4c7ed4f87aac2dfb7cba6d4726723473c49a21c406bc5264adb",
-      "git_blob_sha": "a2376fc687f7f7b92900b951256a735ea5bbc6c9",
+      "sha256": "297d4c98d8aca7299fcb275782720f16210c40d65ec37e8c56e8c0db7c10e677",
+      "git_blob_sha": "cd233c690cf8213138078aca84e00521e8dde4e3",
       "mode": "100644"
     },
     {
       "path": "Info.plist",
       "bytes": 2882,
-      "sha256": "74497c4cab347c43470ff469af8b8d64a886075176c33f195069c1e0d10ddccc",
-      "git_blob_sha": "2d5ab2e1641bede164fe3fcfcf1bbfecb3176358",
+      "sha256": "5fc9febf591c65fd1514473da852e52f8b0e02c54cf29e03a8e0c6a96b937ffd",
+      "git_blob_sha": "d6f1347f75ea569098ffa3740971bffc82be76fd",
       "mode": "100644"
     },
     {
@@ -151,16 +151,16 @@
     },
     {
       "path": "README.en.md",
-      "bytes": 67355,
-      "sha256": "d131826dc7fbac2aa845ad503c92e9a226d99a33c8cd4a5403fb74669e4ec0b0",
-      "git_blob_sha": "95dc9d985b316bbac9046e2a32011cb5e4c2cbb8",
+      "bytes": 68444,
+      "sha256": "97ae73186ff7f6445b3a34509c282e54ce4e99a0aa2e11439fbcf48eb1818d4f",
+      "git_blob_sha": "c056b9250beb44522240156044c73c25cc3148cc",
       "mode": "100644"
     },
     {
       "path": "README.md",
-      "bytes": 59379,
-      "sha256": "61601d7a39a164b1d59ea90d2714a7ca9f5fa4c80576b7245e210849ba03e210",
-      "git_blob_sha": "ae5389c653b201965d89fba4a6cd2327a70e234d",
+      "bytes": 60361,
+      "sha256": "706603d00dec0be30b13228b230479afc253c6e516b61b95afbc9e3199de3c07",
+      "git_blob_sha": "6a1dd841ca9858307a6542530a235641a58453b3",
       "mode": "100644"
     },
     {
@@ -346,6 +346,13 @@
       "mode": "100644"
     },
     {
+      "path": "Reports/RELEASE-build26-20261125.md",
+      "bytes": 5342,
+      "sha256": "927283d53338896159604e79be58ef698680cf71e0eaf17926f4515a224e4374",
+      "git_blob_sha": "a9f9b3a92652571371f7c070aa30b6c19383fb29",
+      "mode": "100644"
+    },
+    {
       "path": "Reports/SWITCH-MOD-IMPORT-20261025.md",
       "bytes": 14115,
       "sha256": "c142d7852a4a1d15d085677e10064f35e33dd82936cbf3316fe82daf859bae07",
@@ -364,6 +371,20 @@
       "bytes": 8205,
       "sha256": "571037886097032ed4c82af2fed87f4eae27641471e1f777c450dac2523b4d9b",
       "git_blob_sha": "1721ee804ca937f88187bbe702805f5ad8615603",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/build26-hand-in-hand.png",
+      "bytes": 610341,
+      "sha256": "683b2ca0872d2c21ee242d4d119a508a4342f025a5dbd43327d33196b6c50077",
+      "git_blob_sha": "2d00cb27adb23ea3c2bf25a35ae49304dcd68513",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/build26-love-is-war.jpg",
+      "bytes": 66660,
+      "sha256": "c2359064d515d87c3b49a531ff57a9b2c1cd561ac300c86541dd1370306deb97",
+      "git_blob_sha": "300c2df9362926d92941e9604d40d87cbb2eae0f",
       "mode": "100644"
     },
     {
@@ -2391,9 +2412,9 @@
     },
     {
       "path": "Runtime/dm/host/hle_fs.c",
-      "bytes": 87889,
-      "sha256": "d256bbe2b55ad83b86eb03414094b7dfc222c21419edd3322915af0c9db1319e",
-      "git_blob_sha": "75b92a98656c0de49692533c9863e4ec52d66d8c",
+      "bytes": 88993,
+      "sha256": "a55476b3c1d98769b28e458d6e556daf07b402fd5ff6268841a482039eb87bf0",
+      "git_blob_sha": "e4b0c65c7c929f83245ddc060f66655503fa256e",
       "mode": "100644"
     },
     {
@@ -2818,9 +2839,9 @@
     },
     {
       "path": "Runtime/dm/host/tests/t_fs.c",
-      "bytes": 16812,
-      "sha256": "0c10b172b4d4e99125973d1d35e5f74b8edfd451a453e35ca336538e9dec1524",
-      "git_blob_sha": "6e7f43c5e748f1dc2e2c6fe1f8be7ce4bc0136cd",
+      "bytes": 19312,
+      "sha256": "7a63be24b5c1a54011ebba1f5579bebbf4a4402f3f7f1bfd567c4c80d6c85a04",
+      "git_blob_sha": "fe0db98fb28f1e72062cb146925188708cb7e380",
       "mode": "100644"
     },
     {
@@ -5688,9 +5709,9 @@
     },
     {
       "path": "Sources/App.swift",
-      "bytes": 67774,
-      "sha256": "663b2dc4d3452a7ee7274f0b774bc75e7ba12100ce1581933b599d984745ca9f",
-      "git_blob_sha": "ce64ed0daa92a89fabbb02e182aa70294c8f0186",
+      "bytes": 68542,
+      "sha256": "220b3154853e3646987917a0adf08f1b17fc3fc15b9daab6a4df9427d3bd7542",
+      "git_blob_sha": "e11906f685497764030711dc9d53bd35d41125bd",
       "mode": "100644"
     },
     {
@@ -5737,9 +5758,9 @@
     },
     {
       "path": "Sources/GuestRuntime.swift",
-      "bytes": 10966,
-      "sha256": "1232fc041b05f02024c3d4fee94aa2958168df1c177cce38f3815b36326aedb4",
-      "git_blob_sha": "bffebde719d3fc864590866c4f6f69fef074a0ea",
+      "bytes": 11149,
+      "sha256": "de471065656397eacad7497673c88bf306400262437fe42ff002b4fcc552f674",
+      "git_blob_sha": "ceb5adcdefde8566b352baa0daa12aa37e99f429",
       "mode": "100644"
     },
     {
@@ -5904,6 +5925,13 @@
       "mode": "100644"
     },
     {
+      "path": "Sources/SongRenderProfile.swift",
+      "bytes": 7469,
+      "sha256": "e28d4a65abfe68ec0dc42616cefa1c350a61cc6d6ec6514e0bfb0e1b7273867e",
+      "git_blob_sha": "5ad0727c8b664d2ce7c23bb02a00ba4b54cf2efa",
+      "mode": "100644"
+    },
+    {
       "path": "Sources/StickLayout.swift",
       "bytes": 8743,
       "sha256": "73633efcc0b52e5ebce5ffc664972ff863ed5fa00a1ac23445b378dae44431b4",
@@ -5933,9 +5961,9 @@
     },
     {
       "path": "SwitchIOSLab.xcodeproj/project.pbxproj",
-      "bytes": 30250,
-      "sha256": "e3053ebccb614739a69b676b0d2595cf06ecdaee643c58b66fe9008d2b39a782",
-      "git_blob_sha": "be48e1b67de65b8d6f0b706ca884a5513d831775",
+      "bytes": 30540,
+      "sha256": "d6895686d05782d21e1674206cdc02084ccc0ecd6db21733c7fc10ea11f992e5",
+      "git_blob_sha": "108905d9024f2e75037d355f5942be424c1760f6",
       "mode": "100644"
     },
     {
@@ -6192,9 +6220,9 @@
     },
     {
       "path": "Tests/SessionOwnership/check.swift",
-      "bytes": 5829,
-      "sha256": "5b2c489d761bfdc442049265ee814ba00d399e310f1c91487b8ca5586b422794",
-      "git_blob_sha": "ebd87544f8293e22a6bda4a9d2979244ffcdca67",
+      "bytes": 7286,
+      "sha256": "67f0e08b2d2faf86f03dbcdf59b210e0c3d9d7ea8f2a98f9e52d1d05b1d64728",
+      "git_blob_sha": "08ab147dc3f0b091cf28afbfea79d067d34b3620",
       "mode": "100644"
     },
     {
@@ -6206,9 +6234,9 @@
     },
     {
       "path": "Tests/SessionOwnership/run.py",
-      "bytes": 1753,
-      "sha256": "e453d64a21a8e206f664ad632ee81e673e52dc4edbd1d2b235826b9f1f24bb08",
-      "git_blob_sha": "53ad5deddf584c495bc9e4b91850f809b936d71e",
+      "bytes": 1668,
+      "sha256": "e82e96ae57eb2f77b5535e497c827e3126ac54c0d58a8cdb0e44e351d89735d6",
+      "git_blob_sha": "c4a7056a8a3eecdd4c2912d35b035de3eb4955c4",
       "mode": "100644"
     },
     {
@@ -6216,6 +6244,13 @@
       "bytes": 2242,
       "sha256": "b737af85a5c9e5db5821c1d92375f7e2afc61261c89bad9afd4d120db8a8f43a",
       "git_blob_sha": "fbed8009f954a9bea73591b2f8635e738a8004f0",
+      "mode": "100644"
+    },
+    {
+      "path": "Tests/SongRenderProfile/main.swift",
+      "bytes": 8947,
+      "sha256": "d1409ce1a1a1dc608d5b744369311ae6f78083ba978aa24a2cdbd3cafedff9b4",
+      "git_blob_sha": "96cba8412955e916a63b53af69bed59dc161ade6",
       "mode": "100644"
     },
     {
@@ -6527,6 +6562,13 @@
       "mode": "100644"
     },
     {
+      "path": "ThirdParty/libvpx-1.17.0/examples.mk",
+      "bytes": 19942,
+      "sha256": "ba53cdb8c4e2c08860939b56b7f58b68a2cd29867a918cbce6fe9e943cf0d33e",
+      "git_blob_sha": "a58679942d3288bd7a1f849c6718f3bc230976e3",
+      "mode": "100644"
+    },
+    {
       "path": "ThirdParty/libvpx-1.17.0/examples/decode_to_md5.c",
       "bytes": 3999,
       "sha256": "d90755ef292dae17774978ea36c3c2e9ef8e12db09fcfb902803d2dfe04c87d4",
@@ -6643,13 +6685,6 @@
       "bytes": 41400,
       "sha256": "0e87b261d72103682bfdccc9ace9698c4e62ff5f431b6a506bb242a70e27980c",
       "git_blob_sha": "3848b245a2d84daa9e0bb326ea83620473bb8052",
-      "mode": "100644"
-    },
-    {
-      "path": "ThirdParty/libvpx-1.17.0/examples.mk",
-      "bytes": 19942,
-      "sha256": "ba53cdb8c4e2c08860939b56b7f58b68a2cd29867a918cbce6fe9e943cf0d33e",
-      "git_blob_sha": "a58679942d3288bd7a1f849c6718f3bc230976e3",
       "mode": "100644"
     },
     {
@@ -8676,6 +8711,13 @@
       "mode": "100644"
     },
     {
+      "path": "ThirdParty/libvpx-1.17.0/tools.mk",
+      "bytes": 4748,
+      "sha256": "0cfa66d81781c5fef0b22c5694299b4cf52c64c6b7531df8fccad5ad39735157",
+      "git_blob_sha": "79bb0cb8d6928bfbb79b97a5aae7dc94d9b15848",
+      "mode": "100644"
+    },
+    {
       "path": "ThirdParty/libvpx-1.17.0/tools/3D-Reconstruction/MotionEST/Anandan.py",
       "bytes": 6520,
       "sha256": "1bd75a0b3e78d65046b0060d0601e44eeed90c3cc1af91b16599909702c26de0",
@@ -8862,13 +8904,6 @@
       "bytes": 2111,
       "sha256": "286d629dcd180f9f903ccdb413d9c843201dba0a5c3f0064105a4c16b33837c5",
       "git_blob_sha": "ba3fa5873292e55fb32a095b7f0d4a431c12a220",
-      "mode": "100644"
-    },
-    {
-      "path": "ThirdParty/libvpx-1.17.0/tools.mk",
-      "bytes": 4748,
-      "sha256": "0cfa66d81781c5fef0b22c5694299b4cf52c64c6b7531df8fccad5ad39735157",
-      "git_blob_sha": "79bb0cb8d6928bfbb79b97a5aae7dc94d9b15848",
       "mode": "100644"
     },
     {
@@ -15290,7 +15325,7 @@
   "physical_touch_acceptance": false,
   "startup_release_check": true,
   "desktop_output_all_Apple_Silicon_Macs": true,
-  "internal_3D_resolution_changed": false,
+  "internal_3D_resolution_changed": true,
   "bundled_shader_preflight_reuse": true,
   "launcher_redesign": true,
   "launcher_visual_interaction_acceptance": false,
@@ -15302,5 +15337,21 @@
     "gameplay_en": "On an Apple Silicon Mac, the game started twice from the resource screen. During the first run, output switched from 2048 × 1152 to 1280 × 720 as submitted frames increased from 428 to 761. After process termination and relaunch, the game retained 720p and submitted 357 frames. Both runs entered nnMain and started the 48 kHz stereo audio engine.\n\nOn the 11-inch iPad Pro (M5) simulator, AutoPlay completed “愛言葉” in Arcade mode on NORMAL using an isolated save. The result was PERFECT with 296/296 COOL and 100.71% completion. Notes, stage and lyrics continued through mid-song native 60 → 30 → 60 FPS and 1080p → 720p → 1080p switches, with nonzero Core Audio buffers. The ordinary save directory was empty before and after the song. Confirming save and exit in the game menu returned to the launcher. Audio renderer, audio output, open file, directory and mount counts returned to zero. Starting again in the same process restored the copyright screen and nonzero audio output.",
     "limits_zh": "本次完整打歌在模拟器上使用 AutoPlay。iPhone／iPad 真机的触屏判定、音画同步、长时间帧率及温升仍需实测；音频以缓冲区数据验证。",
     "limits_en": "The full song was played by AutoPlay on the simulator. Physical iPhone and iPad touch judgement, audio/video sync, sustained frame rate and thermals still need device testing. Audio was checked through buffer data."
+  },
+  "song_render_and_load_QA": {
+    "build": 26,
+    "source_fingerprint_required": true,
+    "song_profile_pv_ids": [
+      269,
+      271,
+      832
+    ],
+    "explicit_high_pv_rate_ids": [
+      271,
+      832
+    ],
+    "automatic_pv_rate_override": false,
+    "device_benchmark_verified": false,
+    "report": "Reports/RELEASE-build26-20261125.md"
   }
 }

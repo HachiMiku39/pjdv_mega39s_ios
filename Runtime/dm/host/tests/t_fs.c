@@ -71,6 +71,53 @@ static int test_holes(void) {
     printf("%s 剔零档案偏移换算 15 种读法逐字节等于原始内容\n", bad ? "✗" : "✓");
     return bad;
 }
+
+static int matching_entries(const DirectoryEntry *entries, int64_t n,
+                            const char *name, int type, int64_t size) {
+    int matches = 0;
+    for (int64_t i = 0; i < n; i++)
+        if (!strcmp(entries[i].name, name) && entries[i].type == type && entries[i].size == size)
+            matches++;
+    return matches;
+}
+
+static void test_overlay_directory(const char *rdata, const char *odata) {
+    char path[1400], overlay[1300], base[1300];
+    snprintf(base, sizeof base, "%s/Assets", rdata);
+    snprintf(overlay, sizeof overlay, "%s/physical-folder", odata);
+    mkdir(base, 0755);
+    mkdir(overlay, 0755);
+    CHECK(!setxattr(overlay, FS_GUEST_NAME, "Assets", 6, 0, 0), "overlay 目录按别名 Assets 查找");
+    snprintf(path, sizeof path, "%s/Jacket", base); mkdir(path, 0755);
+    snprintf(path, sizeof path, "%s/physical-file", overlay); put(path, "texture");
+    CHECK(!setxattr(path, FS_GUEST_NAME, "Jacket", 6, 0, 0), "overlay 文件以别名覆盖下层同名目录");
+    snprintf(path, sizeof path, "%s/physical-file.holes", overlay); put(path, "size 100\n");
+    snprintf(path, sizeof path, "%s/Movie", base); put(path, "base");
+    snprintf(path, sizeof path, "%s/Movie", overlay); symlink("missing-target", path);
+
+    uint64_t h = 0;
+    DirectoryEntry entries[8];
+    int64_t n = 0;
+    CHECK(!h_fs_OpenDirectory(&h, "rom:/data/Assets", DIRMODE_DIR | DIRMODE_FILE), "打开合并目录快照");
+    if (!h) return;
+    snprintf(path, sizeof path, "%s/physical-file", overlay);
+    unlink(path);
+    snprintf(path, sizeof path, "%s/New", overlay); put(path, "new");
+    CHECK(!h_fs_ReadDirectory(&n, entries, h, 8) && n == 2 &&
+          matching_entries(entries, n, "Jacket", ENT_FILE, 100) == 1 &&
+          matching_entries(entries, n, "Movie", ENT_FILE, 4) == 1,
+          "已打开快照保留别名、优先级、逻辑大小，悬空链接回退下层");
+    h_fs_CloseDirectory(h);
+    h = 0;
+    CHECK(!h_fs_OpenDirectory(&h, "rom:/data/Assets", DIRMODE_DIR | DIRMODE_FILE), "更改后重新打开合并目录");
+    if (!h) return;
+    CHECK(!h_fs_ReadDirectory(&n, entries, h, 8) && n == 3 &&
+          matching_entries(entries, n, "Jacket", ENT_DIR, 0) == 1 &&
+          matching_entries(entries, n, "New", ENT_FILE, 3) == 1 &&
+          matching_entries(entries, n, "Movie", ENT_FILE, 4) == 1,
+          "新快照可见新增与删除，重新显示下层目录");
+    h_fs_CloseDirectory(h);
+}
 int main(void) {
     if (test_holes()) return 1;
     char root[1024], save[1100], work[1200], p[1200];
@@ -83,6 +130,7 @@ int main(void) {
     setenv("DM_ROMFS", rom, 1); setenv("DM_ROMFS_OVERLAY", overlay, 1); CHECK(h_fs_MountRom("rom", NULL, 0) == RES_OK, "挂载 RomFS 两层 overlay");
     CHECK(read_fs("rom:/data/same", got, sizeof got) && !strcmp(got, "overlay"), "overlay 文件优先"); CHECK(read_fs("rom:/data/base", got, sizeof got) && !strcmp(got, "only-base"), "overlay 缺失时回退基底");
     uint64_t rh; CHECK(h_fs_OpenFile(&rh, "rom:/data/same", MODE_WRITE) == RES_FAIL, "两层挂载均拒绝写入");
+    test_overlay_directory(rdata, odata);
     {   // 覆盖层里找文件（dm_overlay_file）：两层用冒号连着（老机型 = 包内覆盖层 + 补充包），逐层找、前面的优先；把整串当一个目录就哪个也找不到 | Find a file in the overlay (dm_overlay_file): two layers joined by a colon (old devices = in-bundle overlay + Legacy Device Pack), searched layer by layer with earlier ones taking priority; treating the whole string as one directory finds nothing
         char l2[1100], two[2300], want[1300]; snprintf(l2, sizeof l2, "%s/pack", root); mkdir(l2, 0755); snprintf(two, sizeof two, "%s:%s", overlay, l2); setenv("DM_ROMFS_OVERLAY", two, 1);
         snprintf(fn, sizeof fn, "%s/mark", overlay); put(fn, "1"); snprintf(fn, sizeof fn, "%s/only2", l2); put(fn, "2"); snprintf(fn, sizeof fn, "%s/mark", l2); put(fn, "2");

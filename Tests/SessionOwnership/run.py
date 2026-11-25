@@ -7,8 +7,6 @@ import tempfile
 tests = Path(__file__).resolve().parent
 project = tests.parents[1]
 runtime = Path(os.environ.get("PJDV_RUNTIME_SOURCE", project / "Runtime/dm"))
-if not (runtime / "host/pjdv_boot.c").is_file() and "PJDV_RUNTIME_SOURCE" not in os.environ:
-    runtime = Path("/Volumes/Switch-iOS-Dev/Runtime/PJDV/dm")
 source = (runtime / "host/pjdv_boot.c").read_text()
 with tempfile.TemporaryDirectory(dir=os.environ.get("PJDV_TEST_ROOT")) as tmp:
     out = Path(tmp)
@@ -24,6 +22,7 @@ with tempfile.TemporaryDirectory(dir=os.environ.get("PJDV_TEST_ROOT")) as tmp:
                     "-o", str(out / "native.o")], check=True)
     subprocess.run(["xcrun", "swiftc", "-module-cache-path", str(out / "ModuleCache"),
                     str(out / "GuestRuntime.swift"), str(project / "Sources/InputCore.swift"),
+                    str(project / "Sources/SongRenderProfile.swift"),
                     str(tests / "check.swift"), str(out / "native.o"), "-o", str(out / "check")], check=True)
     (out / "ExitMenu").mkdir()
     (out / "ExitMenu/manifest.json").write_text("{}")

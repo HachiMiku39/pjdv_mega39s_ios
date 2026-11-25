@@ -2,6 +2,14 @@
 
 [简体中文](README.md) | **English**
 
+**0.1.5 build26 lightweight preview · November 25, 2026**
+
+- Opening shots in “39 Music!”, “Hand in Hand” and “Teo” now draw characters at 1280×720, up from 880×495 with the verified stock Japanese v1.0.9 assets. Automatic enables this on Apple GPU family 9 and later. Players can also choose High Quality in the launcher.
+- High Quality reduces motion trails in “Hand in Hand” and “Teo”. Short simulator samples measured about 60 FPS in “Hand in Hand” and 55.7 FPS in “Teo”. Keep Automatic if you prefer the original PV update cadence for rhythm play.
+- Enumerating layered resource directories takes less time. “Hand in Hand” still takes about 16.4–17.2 seconds from confirmation to a clearly visible stage. “Love Is War” played through to the end, with characters in the opening shot still drawn at 960×540.
+
+[Download build26](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b26) · [Screenshots, loading and stress tests](https://github.com/HachiMiku39/pjdv_mega39s_ios/blob/v0.1.5b26/Reports/RELEASE-build26-20261125.md)
+
 **0.1.5 build25 lightweight preview · November 21, 2026**
 
 - When two windows import an XCI into the same destination, the second import reports that the directory is busy. Concurrent requests for the same Mod combination reuse the completed cache.

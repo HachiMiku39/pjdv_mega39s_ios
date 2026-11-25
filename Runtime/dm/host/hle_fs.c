@@ -406,7 +406,6 @@ static int path_component(char *parent, size_t n, const char *name, int create, 
 }
 static int root_path(const char *root, const char *rest, char *out, size_t n) {
 #if defined(DM_GAME_M39)
-    path_index_poll();
     if(resolved_get(root,rest,out,n))return 1;
     const char *original_rest=rest;
     unsigned resolved_components=0;
@@ -468,8 +467,6 @@ static int rom_overlay_path(const mount_t *m, const char *rest, char *out, size_
 // create 只准最后一段尚不存在；中间目录仍需精确命中。
 // create only allows the last component to not exist yet; intermediate directories still need an exact match.
 static int host_path_ex(const char *p, char *out, size_t n, int *ro, int create) {
-    // Read-only paths poll once in root_path, including overlay layers.
-    // Writable paths bypass both indexes and resolved-path caching.
     const char *c = strchr(p, ':');
     if (!c) { errno = ENOENT; return 0; }
     size_t ln = c - p;
@@ -481,6 +478,8 @@ static int host_path_ex(const char *p, char *out, size_t n, int *ro, int create)
         // Reserved read-only extension seam. build18 always falls through;
         // save/temp writes and existing built-in compatibility overlays are unchanged.
         if (g_mnt[i].ro && !create) {
+            // All overlay candidates in this locked lookup see the same namespace.
+            path_index_poll();
             const pjdv_mod_read_request_v1 request = {
                 PJDV_MOD_ABI_VERSION, sizeof(pjdv_mod_read_request_v1), g_mnt[i].name, rest
             };
@@ -956,9 +955,16 @@ static void dir_snapshot(dirh_t *h, const mount_t *m, const char *rest) {
     int nn = 0, nr = 0;
     all[nr++] = m->dir;
     char *save = NULL;
-    for (char *root = strtok_r(roots, ":", &save); root && nr < 65; root = strtok_r(NULL, ":", &save)) all[nr++] = root;
+    char *root = strtok_r(roots, ":", &save);
+    for (; root && nr < 65; root = strtok_r(NULL, ":", &save)) all[nr++] = root;
+    // This directory handle owns a snapshot. Resolve each contributing parent once;
+    // keep per-entry exact name / xattr lookup and normal overlay precedence below.
+    char (*parents)[1024] = calloc((size_t)nr, sizeof *parents);
+    if (!parents) die("rom overlay parent allocation failed");
+    size_t rest_len = strlen(rest);
     for (int ri = nr - 1; ri >= 0; ri--) {
         if (!root_path(all[ri], rest, parent, 1024)) continue;
+        strlcpy(parents[ri], parent, sizeof parents[ri]);
         DIR *x = opendir(parent); if (!x) continue;
         struct dirent *e;
         while ((e = readdir(x))) {
@@ -974,12 +980,28 @@ static void dir_snapshot(dirh_t *h, const mount_t *m, const char *rest) {
     if (nn && !h->snap) die("rom overlay 目录快照分配失败");
     for (int j = 0; j < nn; j++) {
         strlcpy(h->snap[j].name, names[j], sizeof h->snap[j].name);
-        snprintf(rel, 2048, "%s/%s", rest, names[j]);
-        if (!rom_overlay_path(m, rel, resolved, 1024)) continue;
         struct stat st;
-        if (!stat(resolved, &st)) { h->snap[j].type = S_ISDIR(st.st_mode) ? ENT_DIR : ENT_FILE; h->snap[j].size = S_ISDIR(st.st_mode) ? 0 : dm_data_logical_size(resolved, st.st_size); }
+        int found = 0;
+        const char *name = names[j];
+        if (!root && rest_len + strlen(name) + 2 <= 2048 && *name &&
+            !strchr(name, '/') && strcmp(name, ".") && strcmp(name, "..")) {
+            // Overlay directories first in priority order, then the base at index zero.
+            for (int layer = 1; layer <= nr; layer++) {
+                const char *dir = parents[layer == nr ? 0 : layer];
+                if (!*dir) continue;
+                strlcpy(resolved, dir, 1024);
+                if (path_component(resolved, 1024, name, 0, 1) && !access(resolved, F_OK)) {
+                    found = !stat(resolved, &st);
+                    break;
+                }
+            }
+        } else {
+            snprintf(rel, 2048, "%s/%s", rest, names[j]);
+            found = rom_overlay_path(m, rel, resolved, 1024) && !stat(resolved, &st);
+        }
+        if (found) { h->snap[j].type = S_ISDIR(st.st_mode) ? ENT_DIR : ENT_FILE; h->snap[j].size = S_ISDIR(st.st_mode) ? 0 : dm_data_logical_size(resolved, st.st_size); }
     }
-    free(resolved); free(rel); free(guest); free(parent); free(all); free(names); free(roots);
+    free(parents); free(resolved); free(rel); free(guest); free(parent); free(all); free(names); free(roots);
 }
 HLE_FORCE("_ZN2nn2fs13OpenDirectoryEPNS0_15DirectoryHandleEPKci", "fsp-srv → opendir(3)", Result, h_fs_OpenDirectory, uint64_t *out, const char *path, int mode) {
     HP(path); DIR *d = opendir(hp);

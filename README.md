@@ -5,6 +5,14 @@ BETTER THAN MOST OF APPS
 
 **简体中文** | [English](README.en.md)
 
+**0.1.5 build26 精简预览 · 2026-11-25**
+
+- 《39みゅーじっく！》《Hand in Hand》《テオ》开场的人物绘制从 880×495 提高到 1280×720。适用于已识别的日版 v1.0.9 原始资源。Apple GPU family 9 及以上在「自动」档启用，也可从启动页手动选「高画质」。
+- 《Hand in Hand》和《テオ》在「高画质」下减少了快速动作时的重影。模拟器短时对照中，《Hand in Hand》约 60 FPS，《テオ》约 55.7 FPS。打歌时更重视帧率的玩家可以保留「自动」。
+- 多层资源目录的枚举开销下降。《Hand in Hand》从确认选曲到看清舞台仍约 16.4–17.2 秒。《恋は戦争》完整播放通过，开场人物仍按 960×540 绘制。
+
+[下载 build26](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b26) · [画面对照、载入与高负载测试](https://github.com/HachiMiku39/pjdv_mega39s_ios/blob/v0.1.5b26/Reports/RELEASE-build26-20261125.md)
+
 **0.1.5 build25 精简预览 · 2026-11-21**
 
 - 两个窗口向同一位置导入 XCI 时，后来的导入会提示目录正在使用。多个任务加载同一 Mod 组合时会复用已经完成的缓存。

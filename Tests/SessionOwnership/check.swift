@@ -65,9 +65,9 @@ enum ModImportController { static func userMessage(_ error: Error) -> String { e
         try score.write(to: normal)
         AutoPlaySession.enabled = true
 
-        func launch(_ host: Host) -> Bool {
+        func launch(_ host: Host, enhanceSongs: Bool = false) -> Bool {
             guard sessions.claim(host) else { return false }
-            GuestRuntime.validateMapping { [weak host] event in
+            GuestRuntime.validateMapping(enhanceSongs: enhanceSongs) { [weak host] event in
                 guard let host, sessions.current === host else { return }
                 switch event {
                 case .status: break
@@ -90,16 +90,37 @@ enum ModImportController { static func userMessage(_ error: Error) -> String { e
             RuntimeModCatalog.resume.signal()
         }
 
+        let externalOverlay = testRoot.appendingPathComponent("developer-overlay", isDirectory: true)
+        setenv("DM_ROMFS_OVERLAY", externalOverlay.path, 1)
+        let originalROM = ProcessInfo.processInfo.environment["PJDV_RENDER_TEST_ROM"]
+        if let rom = originalROM {
+            for path in [SongRenderOverlay.adpPath(269), SongRenderOverlay.weights] {
+                let source = URL(fileURLWithPath: rom).appendingPathComponent(path)
+                let dest = testRoot.appendingPathComponent(path)
+                try fm.createDirectory(at: dest.deletingLastPathComponent(), withIntermediateDirectories: true)
+                try fm.copyItem(at: source, to: dest)
+            }
+        }
+        func layers() -> [String] {
+            String(cString: getenv("PJDV_SESSION_OVERLAY")!).split(separator: ":").map(String.init)
+        }
         var windowA: Host? = Host()
         weak var detached = windowA
         let windowB = Host()
-        precondition(launch(windowA!))
+        precondition(launch(windowA!, enhanceSongs: true))
         precondition(RuntimeModCatalog.entered.wait(timeout: .now() + 4) == .success)
         precondition(phase() == 0 && !launch(windowB))
         windowA = nil
         precondition(detached != nil && sessions.current === detached)
         RuntimeModCatalog.resume.signal()
         runUntil { detached?.started == true }
+        let initialLayers = layers()
+        precondition(initialLayers.first == externalOverlay.path)
+        if originalROM != nil {
+            precondition(initialLayers.count == 2)
+            let asset = URL(fileURLWithPath: initialLayers[1]).appendingPathComponent(SongRenderOverlay.adpPath(269))
+            precondition(fm.fileExists(atPath: asset.path))
+        }
         let path = String(cString: savePath())
         precondition(phase() == 2 && !launch(windowB))
         precondition(!sessions.finish(windowB, cleanup: GuestRuntime.releaseResourceAccess))
@@ -107,6 +128,8 @@ enum ModImportController { static func userMessage(_ error: Error) -> String { e
         stopGuest()
         precondition(sessions.finish(detached!, cleanup: GuestRuntime.releaseResourceAccess))
         precondition(sessions.current == nil && !fm.fileExists(atPath: path))
+
+        if initialLayers.count == 2 { precondition(!fm.fileExists(atPath: initialLayers[1])) }
 
         failBoot()
         precondition(launch(windowB))
@@ -118,6 +141,7 @@ enum ModImportController { static func userMessage(_ error: Error) -> String { e
         precondition(launch(retry))
         unblockPreparation()
         runUntil { retry.started }
+        precondition(layers() == [externalOverlay.path])
         precondition(!sessions.finish(windowB, cleanup: GuestRuntime.releaseResourceAccess))
         precondition(autoplay() == 1 && fm.fileExists(atPath: String(cString: savePath())))
         stopGuest()

@@ -483,8 +483,8 @@ final class LabController: UIViewController {
         autoplayBadge.accessibilityIdentifier = "autoplay.testIndicator"; view.addSubview(autoplayBadge)
         updatePadVisibility()
         AppLanguage.prepareSession()
-        GameRenderProfile.prepareSession()
-        GuestRuntime.validateMapping { [weak self] event in
+        let quality = GameRenderProfile.prepareSession()
+        GuestRuntime.validateMapping(enhanceSongs: quality.enhanceSongs, unlockPVRate: quality.unlockPVRate) { [weak self] event in
             guard let self, Self.sessions.current === self else { return }
             switch event {
             case .status(let message): self.guestStatus = message
@@ -846,15 +846,16 @@ final class LabRenderer: NSObject, MTKViewDelegate {
 // Offer the choice only while idle; never reconfigure targets mid-song.
 private enum GameRenderProfile {
     private static var preferenceKey: String { DeviceGraphicsProfile.policy.conservative ? "entryHighRenderQuality" : "highRenderQuality" }
-    static var high: Bool {
-        if let value = getenv("PJDV_GAME_DOCKED") { return String(cString: value) == "1" }
-        return UserDefaults.standard.bool(forKey: preferenceKey)
+    // Snapshot the process launch override before writing this session's mode.
+    private static let initialDocked = ProcessInfo.processInfo.environment["PJDV_GAME_DOCKED"] == "1"
+    static var choice: GameRenderQuality { .selection(defaults: .standard, key: preferenceKey) }
+    static func select(_ choice: GameRenderQuality) { choice.store(in: .standard, key: preferenceKey) }
+
+    static func prepareSession() -> (enhanceSongs: Bool, unlockPVRate: Bool) {
+        let selected = choice
+        setenv("PJDV_GAME_DOCKED", selected.usesHighGameProfile(initialDocked: initialDocked) ? "1" : "0", 1)
+        return (selected.improvesSongRendering(family: DeviceGraphicsProfile.policy.family), selected == .high)
     }
-    static func select(high: Bool) {
-        UserDefaults.standard.set(high, forKey: preferenceKey)
-        setenv("PJDV_GAME_DOCKED", high ? "1" : "0", 1)
-    }
-    static func prepareSession() { setenv("PJDV_GAME_DOCKED", high ? "1" : "0", 1) }
 }
 
 // iPadOS keeps the host alive and launches a completely new guest session.
@@ -1076,10 +1077,18 @@ final class HostLaunchController: UIViewController {
         present(panel, animated: true)
     }
     private func updateQualityMenu() {
-        quality.setTitle(SessionText.quality + "：" + (GameRenderProfile.high ? SessionText.highQuality : SessionText.standardQuality), for: .normal)
-        quality.menu = UIMenu(children: [false, true].map { high in
-            UIAction(title: high ? SessionText.highQuality : SessionText.standardQuality, state: GameRenderProfile.high == high ? .on : .off) { [weak self] _ in
-                GameRenderProfile.select(high: high)
+        func title(_ choice: GameRenderQuality) -> String {
+            switch choice {
+            case .automatic: return SessionText.autoQuality
+            case .standard: return SessionText.standardQuality
+            case .high: return SessionText.highQuality
+            }
+        }
+        let selected = GameRenderProfile.choice
+        quality.setTitle(SessionText.quality + "：" + title(selected), for: .normal)
+        quality.menu = UIMenu(children: GameRenderQuality.allCases.map { choice in
+            UIAction(title: title(choice), state: selected == choice ? .on : .off) { [weak self] _ in
+                GameRenderProfile.select(choice)
                 self?.updateQualityMenu()
             }
         })
@@ -1121,6 +1130,7 @@ private enum SessionText {
     static var cancel: String { pick("取消", "取消", "Cancel", "キャンセル", "취소") }
     static var ok: String { pick("好", "好", "OK", "OK", "확인") }
     static var quality: String { pick("画质", "畫質", "Quality", "画質", "화질") }
+    static var autoQuality: String { pick("自动（按设备）", "自動（依裝置）", "Auto (by device)", "自動（端末に合わせる）", "자동 (기기별)") }
     static var standardQuality: String { pick("标准", "標準", "Standard", "標準", "표준") }
     static var highQuality: String { pick("高画质（试验）", "高畫質（試驗）", "High (Experimental)", "高画質（試験）", "고화질 (실험)") }
     static var start: String { pick("启动游戏", "啟動遊戲", "Start Game", "ゲームを開始", "게임 시작") }

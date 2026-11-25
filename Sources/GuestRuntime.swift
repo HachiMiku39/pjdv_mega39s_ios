@@ -73,17 +73,20 @@ enum GuestRuntime {
     private static var resources: ResourceAccess?
     private static let initialOverlay = ProcessInfo.processInfo.environment["DM_ROMFS_OVERLAY"]
     private static var modMenuRoot: URL?
+    private static var songRenderRoot: URL?
     static func releaseResourceAccess() {
         resources = nil; AutoPlaySession.end()
         if let root = modMenuRoot { try? FileManager.default.removeItem(at:root) }
         modMenuRoot = nil
+        if let root = songRenderRoot { try? FileManager.default.removeItem(at: root) }
+        songRenderRoot = nil
     }
     static func currentStatus() -> String {
         var value = [CChar](repeating: 0, count: 256)
         value.withUnsafeMutableBufferPointer { readGuestState($0.baseAddress!, UInt($0.count)) }
         return String(cString: value)
     }
-    static func validateMapping(completion: @escaping (LaunchEvent) -> Void) {
+    static func validateMapping(enhanceSongs: Bool, unlockPVRate: Bool = false, completion: @escaping (LaunchEvent) -> Void) {
         let autoplay = AutoPlaySession.enabled
         let launchOverlay = initialOverlay
         DispatchQueue.global(qos: .userInitiated).async {
@@ -126,25 +129,24 @@ enum GuestRuntime {
                 if !mods.isEmpty {
                     let session=try ModComposition.prepare(mods,catalog:RuntimeModCatalog.current,base:layout.rom,dlc:layout.dlc,
                         root:documents.appendingPathComponent("Mods/Compositions",isDirectory:true))
-                    let paths = session.paths
-                    modLayers = paths
-                    setenv("DM_ROMFS_OVERLAY", paths.joined(separator:":"), 1)
-                    setenv("PJDV_SESSION_OVERLAY", paths.joined(separator:":"), 1)
+                    modLayers = session.paths
                     normalSave = documents.appendingPathComponent("Mods/Profiles/"+session.profileID!+"/GuestSave", isDirectory: true)
                     if !FileManager.default.fileExists(atPath: normalSave.path), FileManager.default.fileExists(atPath: originalSave.path) {
                         try FileManager.default.createDirectory(at: normalSave.deletingLastPathComponent(), withIntermediateDirectories: true)
                         try FileManager.default.copyItem(at: originalSave, to: normalSave)
                     }
                 } else {
-                    // Explicit developer trial overlays remain possible, but a
-                    // previous in-app selection must not leak into vanilla boot.
-                    if let explicit = launchOverlay { setenv("DM_ROMFS_OVERLAY", explicit, 1) }
-                    else { unsetenv("DM_ROMFS_OVERLAY") }
-                    setenv("PJDV_SESSION_OVERLAY", launchOverlay ?? "", 1)
                     normalSave = originalSave
                 }
                 try FileManager.default.createDirectory(at: normalSave, withIntermediateDirectories: true)
                 try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
+                var layers = modLayers + (launchOverlay ?? "").split(separator: ":").map(String.init)
+                songRenderRoot = SongRenderOverlay.prepare(enabled: enhanceSongs, unlockPVRate: unlockPVRate,
+                                                          rom: layout.rom, layers: &layers, temp: temp)
+                let overlay = layers.joined(separator: ":")
+                if layers.isEmpty { unsetenv("DM_ROMFS_OVERLAY") }
+                else { setenv("DM_ROMFS_OVERLAY", overlay, 1) }
+                setenv("PJDV_SESSION_OVERLAY", overlay, 1)
                 let save = try AutoPlaySession.saveDirectory(normal: normalSave, temp: temp, enabled: autoplay)
                 AppLanguage.configure(available: layout.languages)
                 AppLanguage.prepareSession()
