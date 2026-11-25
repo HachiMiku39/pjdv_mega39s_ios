@@ -1,10 +1,10 @@
 // swiftc Sources/SongRenderProfile.swift Tests/SongRenderProfile/main.swift -o <test>
-// <test> <scratch-directory> [user's original romfs directory]
+// <test> <scratch-directory> [user's original romfs directory [mounted DLC/8 directory]]
 import Foundation
 import Darwin
 
 let args = CommandLine.arguments
-precondition((2...3).contains(args.count))
+precondition((2...4).contains(args.count))
 let fm = FileManager.default
 let temp = URL(fileURLWithPath: args[1]).appendingPathComponent(UUID().uuidString)
 try fm.createDirectory(at: temp, withIntermediateDirectories: true)
@@ -28,6 +28,25 @@ precondition(!choice().improvesSongRendering(family: 9) && !choice().usesHighGam
 GameRenderQuality.automatic.store(in: defaults, key: key)
 precondition(choice() == .automatic && defaults.object(forKey: key) == nil)
 
+let internalResolution = InternalSceneResolution(defaults: defaults)
+precondition(!internalResolution.enabled)
+defaults.set("1440fx", forKey: "outputResolution")
+internalResolution.select(true)
+precondition(InternalSceneResolution(defaults: defaults).enabled && choice() == .automatic)
+let isolated = ["PJDV_APP_DATA_TEST_ROOT": temp.path, InternalSceneResolution.environmentKey: "0"]
+let forcedOff = InternalSceneResolution(defaults: defaults, testEnvironment: isolated)
+precondition(!forcedOff.enabled)
+forcedOff.select(false)
+precondition(internalResolution.enabled)
+internalResolution.select(false)
+var forcedOn = isolated
+forcedOn[InternalSceneResolution.environmentKey] = "1"
+precondition(InternalSceneResolution(defaults: defaults, testEnvironment: forcedOn).enabled)
+forcedOn.removeValue(forKey: "PJDV_APP_DATA_TEST_ROOT")
+precondition(!InternalSceneResolution(defaults: defaults, testEnvironment: forcedOn).enabled)
+precondition(defaults.string(forKey: "outputResolution") == "1440fx")
+print("Opt-in internal 1080p, independent output setting and isolated launch overrides passed")
+
 var ownedTestLayers = [URL]()
 defer { for layer in ownedTestLayers { try? fm.removeItem(at: layer) } }
 let asset = SongRenderOverlay.adpPath(269)
@@ -38,9 +57,11 @@ func store(_ data: Data, in root: URL, at name: String) throws {
     try fm.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
     try data.write(to: file)
 }
-func plan(_ rom: URL, layers: [String] = [], enabled: Bool = true, unlockPVRate: Bool = false, destination: URL = temp) -> (URL?, [String]) {
+func plan(_ rom: URL, layers: [String] = [], enabled: Bool = true, unlockPVRate: Bool = false,
+          internal1080: Bool = false, dlc7: URL? = nil, destination: URL = temp) -> (URL?, [String]) {
     var ordered = layers
-    let output = SongRenderOverlay.prepare(enabled: enabled, unlockPVRate: unlockPVRate, rom: rom, layers: &ordered, temp: destination)
+    let output = SongRenderOverlay.prepare(enabled: enabled, unlockPVRate: unlockPVRate, internal1080: internal1080,
+                                           rom: rom, dlc7: dlc7, layers: &ordered, temp: destination)
     if let output { ownedTestLayers.append(output) }
     return (output, ordered)
 }
@@ -52,7 +73,7 @@ precondition(plan(unknown).0 == nil)
 try store(Data(repeating: 0, count: 15_032), in: unknown, at: asset)
 try store(Data(repeating: 0, count: 3762), in: unknown, at: weights)
 precondition(plan(unknown).0 == nil)
-if args.count == 3 {
+if args.count >= 3 {
     let rom = URL(fileURLWithPath: args[2])
     let table = try Data(contentsOf: rom.appendingPathComponent(weights))
     let source = String(decoding: table, as: UTF8.self)
@@ -97,6 +118,49 @@ if args.count == 3 {
     precondition(Set(overlayADPs) == Set(ids.map { "pv_\($0).adp" }))
     precondition(plan(rom, enabled: false).0 == nil)
 
+    let dlc7 = args.count == 4 ? URL(fileURLWithPath: args[3]) : nil
+    let ghostPath = SongRenderOverlay.adpPath(266)
+    let koiPath = SongRenderOverlay.loveIsWarADP
+    let internalOnly = try require(plan(rom, enabled: false, internal1080: true, dlc7: dlc7).0)
+    func verifyScaleOnly(_ path: String, originalRoot: URL, offset: Int) throws {
+        var original = try Data(contentsOf: originalRoot.appendingPathComponent(path))
+        original.replaceSubrange(offset..<(offset + 4), with: [0, 0, 0x80, 0x3f])
+        let output = try Data(contentsOf: internalOnly.appendingPathComponent(path))
+        precondition(output == original)
+    }
+    try verifyScaleOnly(ghostPath, originalRoot: rom, offset: 0x5f0)
+    let autoTable = try String(contentsOf: vanilla.appendingPathComponent(weights), encoding: .utf8)
+    let experimentalTable = try String(contentsOf: internalOnly.appendingPathComponent(weights), encoding: .utf8)
+    precondition(experimentalTable == autoTable.replacingOccurrences(of: "pv_weight.266=3", with: "pv_weight.266=0"))
+    for id in ids {
+        let path = SongRenderOverlay.adpPath(id)
+        let defaultSong = try Data(contentsOf: vanilla.appendingPathComponent(path))
+        let experimentalSong = try Data(contentsOf: internalOnly.appendingPathComponent(path))
+        precondition(defaultSong == experimentalSong) // no PV cadence unlock
+    }
+    let omittedDLC = try require(plan(rom, internal1080: true).0)
+    precondition(!fm.fileExists(atPath: omittedDLC.appendingPathComponent(koiPath).path))
+    if let dlc7 {
+        try verifyScaleOnly(koiPath, originalRoot: dlc7, offset: 0x4b0)
+        precondition(!fm.fileExists(atPath: internalOnly.appendingPathComponent(SongRenderOverlay.dlc7Weights).path))
+        let off = try require(plan(rom, dlc7: dlc7).0)
+        precondition(!fm.fileExists(atPath: off.appendingPathComponent(koiPath).path))
+        let songMod = temp.appendingPathComponent("internal-song-mod")
+        try store(Data("custom Ghost Rule ADP".utf8), in: songMod, at: ghostPath)
+        let partial = try require(plan(rom, layers: [songMod.path], internal1080: true, dlc7: dlc7).0)
+        precondition(!fm.fileExists(atPath: partial.appendingPathComponent(ghostPath).path))
+        precondition(fm.fileExists(atPath: partial.appendingPathComponent(koiPath).path))
+        let partialTable = try String(contentsOf: partial.appendingPathComponent(weights), encoding: .utf8)
+        precondition(partialTable == autoTable)
+        for customPath in [koiPath, SongRenderOverlay.dlc7Weights] {
+            let dlcMod = temp.appendingPathComponent(UUID().uuidString)
+            try store(Data("custom DLC resource".utf8), in: dlcMod, at: customPath)
+            let layer = try require(plan(rom, layers: [dlcMod.path], internal1080: true, dlc7: dlc7).0)
+            precondition(fm.fileExists(atPath: layer.appendingPathComponent(ghostPath).path))
+            precondition(!fm.fileExists(atPath: layer.appendingPathComponent(koiPath).path))
+        }
+        print("Internal 1080p PV266 + DLC7 PV001: exact scale-only bytes, DLC weight intact, off/absent DLC and partial Mods passed")
+    }
     // A complete table may contain other Mod edits and its own formatting.
     let other = source.replacingOccurrences(of: "pv_weight.002=0", with: "pv_weight.002=-2")
         .replacingOccurrences(of: "\n", with: "\r\n") + "pv_weight.1999=-2\r\n"

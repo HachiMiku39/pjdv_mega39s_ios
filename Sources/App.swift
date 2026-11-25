@@ -381,6 +381,7 @@ final class LabController: UIViewController {
             return
         }
         #endif
+        let quality = GameRenderProfile.prepareSession()
         setGameFG(0)
         setNativeFPS(60)
         supportsMetalFX = metalFXSupported(Unmanaged.passUnretained(device as AnyObject).toOpaque()) != 0
@@ -483,8 +484,8 @@ final class LabController: UIViewController {
         autoplayBadge.accessibilityIdentifier = "autoplay.testIndicator"; view.addSubview(autoplayBadge)
         updatePadVisibility()
         AppLanguage.prepareSession()
-        let quality = GameRenderProfile.prepareSession()
-        GuestRuntime.validateMapping(enhanceSongs: quality.enhanceSongs, unlockPVRate: quality.unlockPVRate) { [weak self] event in
+        GuestRuntime.validateMapping(enhanceSongs: quality.enhanceSongs, unlockPVRate: quality.unlockPVRate,
+                                     internal1080: quality.internal1080) { [weak self] event in
             guard let self, Self.sessions.current === self else { return }
             switch event {
             case .status(let message): self.guestStatus = message
@@ -848,13 +849,23 @@ private enum GameRenderProfile {
     private static var preferenceKey: String { DeviceGraphicsProfile.policy.conservative ? "entryHighRenderQuality" : "highRenderQuality" }
     // Snapshot the process launch override before writing this session's mode.
     private static let initialDocked = ProcessInfo.processInfo.environment["PJDV_GAME_DOCKED"] == "1"
+    static let internalResolution: InternalSceneResolution = {
+        #if targetEnvironment(simulator) || targetEnvironment(macCatalyst)
+        // Capture the harness override once, before any session writes to the environment.
+        return InternalSceneResolution(defaults: .standard, testEnvironment: ProcessInfo.processInfo.environment)
+        #else
+        return InternalSceneResolution(defaults: .standard)
+        #endif
+    }()
     static var choice: GameRenderQuality { .selection(defaults: .standard, key: preferenceKey) }
     static func select(_ choice: GameRenderQuality) { choice.store(in: .standard, key: preferenceKey) }
 
-    static func prepareSession() -> (enhanceSongs: Bool, unlockPVRate: Bool) {
+    static func prepareSession() -> (enhanceSongs: Bool, unlockPVRate: Bool, internal1080: Bool) {
         let selected = choice
+        let internal1080 = internalResolution.enabled
+        setenv(InternalSceneResolution.environmentKey, internal1080 ? "1" : "0", 1)
         setenv("PJDV_GAME_DOCKED", selected.usesHighGameProfile(initialDocked: initialDocked) ? "1" : "0", 1)
-        return (selected.improvesSongRendering(family: DeviceGraphicsProfile.policy.family), selected == .high)
+        return (selected.improvesSongRendering(family: DeviceGraphicsProfile.policy.family), selected == .high, internal1080)
     }
 }
 
@@ -1086,12 +1097,24 @@ final class HostLaunchController: UIViewController {
         }
         let selected = GameRenderProfile.choice
         quality.setTitle(SessionText.quality + "：" + title(selected), for: .normal)
-        quality.menu = UIMenu(children: GameRenderQuality.allCases.map { choice in
+        let presets = GameRenderQuality.allCases.map { choice in
             UIAction(title: title(choice), state: selected == choice ? .on : .off) { [weak self] _ in
                 GameRenderProfile.select(choice)
                 self?.updateQualityMenu()
             }
-        })
+        }
+        let resolution = GameRenderProfile.internalResolution
+        let internal1080 = UIAction(title: SessionText.internal1080,
+                                    identifier: UIAction.Identifier("launcher.internal1080p"),
+                                    attributes: resolution.testOverride == nil ? [] : .disabled,
+                                    state: resolution.enabled ? .on : .off) { [weak self] _ in
+            resolution.select(!resolution.enabled)
+            self?.updateQualityMenu()
+        }
+        quality.menu = UIMenu(children: [
+            UIMenu(options: .displayInline, children: presets),
+            UIMenu(options: .displayInline, children: [internal1080])
+        ])
     }
     @objc private func startGame() {
         guard let window = view.window else { return }
@@ -1133,6 +1156,7 @@ private enum SessionText {
     static var autoQuality: String { pick("自动（按设备）", "自動（依裝置）", "Auto (by device)", "自動（端末に合わせる）", "자동 (기기별)") }
     static var standardQuality: String { pick("标准", "標準", "Standard", "標準", "표준") }
     static var highQuality: String { pick("高画质（试验）", "高畫質（試驗）", "High (Experimental)", "高画質（試験）", "고화질 (실험)") }
+    static var internal1080: String { pick("内部 1080p 渲染（实验）", "內部 1080p 算繪（實驗）", "Internal 1080p Rendering (Experimental)", "内部解像度 1080p（試験）", "내부 1080p 렌더링 (실험)") }
     static var start: String { pick("启动游戏", "啟動遊戲", "Start Game", "ゲームを開始", "게임 시작") }
     static var otherWindow: String { pick("游戏已在另一个窗口启动", "遊戲已在另一個視窗啟動", "The game is open in another window.", "ゲームは別のウインドウで起動しています", "게임이 다른 창에서 실행 중입니다") }
     static var confirm: String { pick("保存进度并退出游戏？", "儲存進度並結束遊戲？", "Save your progress and exit the game?", "進行状況を保存してゲームを終了しますか？", "진행 상황을 저장하고 게임을 종료하시겠습니까?") }

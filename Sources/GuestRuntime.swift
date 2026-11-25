@@ -86,7 +86,8 @@ enum GuestRuntime {
         value.withUnsafeMutableBufferPointer { readGuestState($0.baseAddress!, UInt($0.count)) }
         return String(cString: value)
     }
-    static func validateMapping(enhanceSongs: Bool, unlockPVRate: Bool = false, completion: @escaping (LaunchEvent) -> Void) {
+    static func validateMapping(enhanceSongs: Bool, unlockPVRate: Bool = false, internal1080: Bool = false,
+                                completion: @escaping (LaunchEvent) -> Void) {
         let autoplay = AutoPlaySession.enabled
         let launchOverlay = initialOverlay
         DispatchQueue.global(qos: .userInitiated).async {
@@ -141,8 +142,10 @@ enum GuestRuntime {
                 try FileManager.default.createDirectory(at: normalSave, withIntermediateDirectories: true)
                 try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
                 var layers = modLayers + (launchOverlay ?? "").split(separator: ":").map(String.init)
-                songRenderRoot = SongRenderOverlay.prepare(enabled: enhanceSongs, unlockPVRate: unlockPVRate,
-                                                          rom: layout.rom, layers: &layers, temp: temp)
+                let dlc7 = internal1080 && layout.dlcContents.contains(where: { $0.index == 8 })
+                    ? layout.dlc.appendingPathComponent("8", isDirectory: true) : nil
+                songRenderRoot = SongRenderOverlay.prepare(enabled: enhanceSongs, unlockPVRate: unlockPVRate, internal1080: internal1080,
+                                                          rom: layout.rom, dlc7: dlc7, layers: &layers, temp: temp)
                 let overlay = layers.joined(separator: ":")
                 if layers.isEmpty { unsetenv("DM_ROMFS_OVERLAY") }
                 else { setenv("DM_ROMFS_OVERLAY", overlay, 1) }

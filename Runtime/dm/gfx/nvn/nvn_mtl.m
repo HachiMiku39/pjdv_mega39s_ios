@@ -675,9 +675,14 @@ static void *g_sub_pool;
 static int g_ruler_truth = -1, g_ruler_pending;
 static int tbdr_on(void);
 
+// Sampled before replay starts, on the submission thread. Texture promotion
+// is decided once per guest texture lifetime, at first render-target binding.
+static int g_pjdv_internal1080;
 static uint64_t g_sub_serial;   // 第几次提交（并行预编「每次提交只预测一次」用） | Submission index (used by the parallel precompile's 'predict only once per submission')
 void mtl_sub_begin(void) {
     mtl_init();extern void pjdv_begin_game_graphics(void);pjdv_begin_game_graphics();g_sub_serial++;
+    const char *internal = getenv("PJDV_INTERNAL_1080P");
+    g_pjdv_internal1080 = internal && !strcmp(internal, "1");
     if (tbdr_on() == 0 && g_ruler_pending) { g_ruler_truth = 0; g_ruler_pending = 0; MLOG("DM_NVN_RULER：切到被测模式"); }
     defer_drain();
     defer_reset();
@@ -1598,6 +1603,56 @@ static id<MTLTexture> tex_mtl(const tex_t *ct) {
     serial_put(t->serial, mt);
     return mt;
 }
+// Promotion is restricted to render attachments matching the game's full
+// screen framebuffer layout. A decoded movie or a same-size uploaded asset
+// never qualifies by dimensions alone.
+static NSString *const PJDVNativeFramebuffer = @"PJDV guest-coordinate framebuffer";
+static BOOL pjdv_copy_backing(id<MTLTexture> from, id<MTLTexture> to, const tex_t *t);
+static BOOL pjdv_framebuffer_layout(const tex_t *t) {
+    return t && t->serial && t->d.width==1280 && t->d.height==720 && t->d.levels==1 &&
+        t->d.target==NVN_TEXTURE_TARGET_2D && t->d.samples<=1 && !t->has_layout &&
+        (t->d.flags & (NVN_TEXTURE_FLAGS_COMPRESSIBLE|NVN_TEXTURE_FLAGS_DISPLAY)) &&
+        !(t->d.flags & (NVN_TEXTURE_FLAGS_VIDEO_DECODE|NVN_TEXTURE_FLAGS_LINEAR|NVN_TEXTURE_FLAGS_LINEAR_RENDER_TARGET|NVN_TEXTURE_FLAGS_SPARSE)) &&
+        t->d.format!=NVN_FORMAT_DEPTH24;
+}
+static void pjdv_prepare_internal_target(const tex_t *t, BOOL discard) {
+    if (!pjdv_framebuffer_layout(t)) return;
+    id existing=serial_get(t->serial);
+    if (existing && (![existing conformsToProtocol:@protocol(MTLTexture)] ||
+        [(id<MTLTexture>)existing width] != 1280 || [[(id<MTLTexture>)existing label] isEqual:PJDVNativeFramebuffer])) return;
+    MTLTextureDescriptor *desc = tex_desc(t, 0);
+    if (!desc || !(desc.usage & MTLTextureUsageRenderTarget)) return;
+    switch (desc.pixelFormat) {
+        case MTLPixelFormatRGBA8Unorm: case MTLPixelFormatBGRA8Unorm:
+        case MTLPixelFormatRGBA8Unorm_sRGB: case MTLPixelFormatBGRA8Unorm_sRGB:
+        case MTLPixelFormatRGBA16Float: case MTLPixelFormatRG16Float:
+        case MTLPixelFormatR16Float: case MTLPixelFormatR32Float: case MTLPixelFormatR8Unorm:
+        case MTLPixelFormatDepth32Float: case MTLPixelFormatDepth16Unorm: break;
+        default: return;
+    }
+    desc.width = 1920;
+    desc.height = 1080;
+    id<MTLTexture> target = [g_dev newTextureWithDescriptor:desc];
+    if (!target) return;
+    res_add(target);
+    // Tone-map, FXAA and history targets can already have a sampled view
+    // before the first draw. Keep their contents and retire old views via
+    // the serial generation, the same mechanism used for format-view upgrades.
+    if (existing && !discard && !pjdv_copy_backing(existing,target,t)) {
+        defer_obj_release(target);
+        return;
+    }
+    serial_put(t->serial, target);
+    MLOG("PJDV internal framebuffer ser=%llu format=%lu guest=1280x720 physical=1920x1080",
+         (unsigned long long)t->serial, (unsigned long)desc.pixelFormat);
+}
+static int pjdv_is_promoted(const tex_t *t, id<MTLTexture> physical) {
+    return t && t->d.width == 1280 && t->d.height == 720 &&
+           physical.width == 1920 && physical.height == 1080;
+}
+static long pjdv_raster_edge(long guest, int promoted) {
+    return promoted ? lround((double)guest * 1.5) : guest;
+}
 // 内存读数行（常开、低频、封顶）：常驻内存、显卡已分配、延迟释放队列、驻留集对象数、在册内存池数 / 峰值 / 跟踪表容量、贴图重传累计、游戏堆总量 / 余量 / 最大可分配块（宿主 dm_guest_heap_stat）、离系统内存上限还有多少（仅 iOS）。
 // 用途：定「没有日志的闪退」——系统按内存杀进程前不给任何通知，只有事先留下的读数能说明是哪个数一路往上涨。
 // 每 300 帧由帧钩子调一次；常驻、显卡已分配变了 ≥ 64 MB，或游戏堆余量、最大可分配块变了 ≥ 16 MB（主堆平时只剩约 100 MB）才打，否则每 3000 帧打一行；一局封顶 400 行。全是整数（帧钩子在客体线程的小栈上，不用浮点格式）
@@ -2265,6 +2320,7 @@ static void shmap_load(void) {
 
 @interface NvShader : NSObject { @public id<MTLFunction> fn; nvn_refl rf; id<MTLArgumentEncoder> ae; NSUInteger arg_len; int stage, range_ro; const char *builtin; uint64_t logged; char key[24]; id<MTLBuffer> c1buf; uint64_t c1_gpu; size_t c1off;
     uint64_t simulator_border_args;
+    uint32_t pjdv_image_regs; BOOL pjdv_image_regs_known;
     // 上次编好的参数缓冲
     // The argument buffer encoded last time
     id<MTLBuffer> ab_buf; uint64_t ab_gpu; size_t ab_off; uint64_t ab_pass;   // ab_pass：编这块参数的渲染通道序号——只在同一通道内复用（跨通道 / 跨提交的块所在 arena 可能已回收重写） | ab_pass: serial of the render pass that encoded this argument block - reused only within the same pass (the arena holding a block from another pass / another submission may already have been reclaimed and rewritten)
@@ -5176,9 +5232,14 @@ static void ghost_flush(void) {   // 渲染通道结束前：把认到的图标�
 #include "pjdv_rt_stage_live.inc"
 #endif
 #include "pjdv_hdr_scene.inc"
+static void pjdv_protect_image_coordinates(NvShader *sh, int stage);
 static void draw(const p_draw *dw, const p_draw_idx *di) {
     if (!S.prog) { RED_ONCE(18, "绘制前没有绑定程序"); return; }
     __unsafe_unretained NvProg *pr = prog_get(S.prog);
+    if(g_pjdv_internal1080 && pr) {
+        pjdv_protect_image_coordinates(pr->sh[0],0);
+        pjdv_protect_image_coordinates(pr->sh[1],1);
+    }
 #if DM_GAME_M39 && !TARGET_OS_SIMULATOR
     pjdv_rt_geometry_capture(pr,dw,di);
 #endif
@@ -5352,11 +5413,20 @@ frz_plain:;
     if (g_ui_rect_fn && dw && dw->count == 4 && S.nattr == 2 && S.stream[0].stride == 20) { double uy = 0, uh = 1; g_ui_rect_fn(&uy, &uh);
         if (uh > 0 && uh < 1) { if (ui_cover_all(uh)) vs = 1 / uh; else if (uy > 0) { so = lround(uy * th); if (ui_mat_ok()) moff = 2 * uy; else { vo = so; static int n; if (n++ < 4) MLOG("界面下移：投影矩阵这次读不到，退回挪视口（通道 %llu）", g_stat_pass); } } } }
     if (moff != g_ui_moff) { g_ui_moff = moff; g_args_dirty[0] = 1; }
-    if (S.has_vp) enc_r_viewport(en, (MTLViewport){S.vp[0][0], S.vp[0][1] + vo, S.vp[0][2], S.vp[0][3] * vs, S.dr[0], S.dr[1]});
-    else enc_r_viewport(en, (MTLViewport){0, vo, tw, th * vs, 0, 1});
+    const tex_t *attachment = R.rt.n && R.rt.color[0] ? R.rt.color[0] : R.rt.depth;
+    const int promoted = tw == 1920 && th == 1080 &&
+                         attachment && attachment->d.width == 1280 && attachment->d.height == 720;
+    const double scale = promoted ? 1.5 : 1.0;
+    MTLViewport vp = S.has_vp ?
+        (MTLViewport){S.vp[0][0]*scale, S.vp[0][1]*scale+vo, S.vp[0][2]*scale, S.vp[0][3]*scale*vs, S.dr[0], S.dr[1]} :
+        (MTLViewport){0, vo, tw, th*vs, 0, 1};
+    enc_r_viewport(en, vp);
     MTLScissorRect sc = {0, 0, tw, th};
     if (R.has_sc) {
-        long x0 = R.sc.x < 0 ? 0 : R.sc.x, y0 = R.sc.y <= 0 ? 0 : R.sc.y + so, x1 = (long)R.sc.x + R.sc.w, y1 = vs != 1 ? (long)th : (long)R.sc.y + R.sc.h + so;
+        long x0 = R.sc.x < 0 ? 0 : pjdv_raster_edge(R.sc.x, promoted);
+        long y0 = R.sc.y <= 0 ? 0 : pjdv_raster_edge(R.sc.y, promoted) + so;
+        long x1 = pjdv_raster_edge((long)R.sc.x + R.sc.w, promoted);
+        long y1 = vs != 1 ? (long)th : pjdv_raster_edge((long)R.sc.y + R.sc.h, promoted) + so;
         if (x1 > (long)tw) x1 = tw; if (y1 > (long)th) y1 = th;
         if (x1 <= x0 || y1 <= y0) return;
         sc = (MTLScissorRect){(NSUInteger)x0, (NSUInteger)y0, (NSUInteger)(x1 - x0), (NSUInteger)(y1 - y0)};
@@ -5424,8 +5494,7 @@ frz_plain:;
                     g_stat_pass, (unsigned long)sc.x, (unsigned long)sc.y,
                     (unsigned long)sc.width, (unsigned long)sc.height,
                     (unsigned long)tw, (unsigned long)th,
-                    S.has_vp ? S.vp[0][0] : 0, S.has_vp ? S.vp[0][1] : 0,
-                    S.has_vp ? S.vp[0][2] : (float)tw, S.has_vp ? S.vp[0][3] : (float)th);
+                    vp.originX, vp.originY, vp.width, vp.height);
         if (all && pr->sh[0]) {   // 顶点阶段各常量缓冲的内容指纹（判某次绘制跨帧是否完全相同：阴影缓存等用）；读不到（本提交待执行的写）记 P | Content fingerprint of each constant buffer of the vertex stage (to judge whether a draw is completely identical across frames: used by the shadow cache etc.); when unreadable (a write pending execution in this submit) record P
             char ub[400]; size_t o = 0; NvShader *v = pr->sh[0];
             for (int i = 0; i < v->rf.nb && o < sizeof ub - 40; i++) if (v->rf.b[i].kind == NVN_RB_CBUF && v->rf.b[i].reg < 16) {
@@ -5593,6 +5662,7 @@ static void dispatch(const p_dispatch *dp) {
     if (!S.prog) { RED_ONCE(27, "派发前没有绑定程序"); return; }
     NvShader *cs = prog_get(S.prog)->sh[5];
     if (!cs) { RED_ONCE(28, "派发的程序没有计算着色器（或未映射）"); return; }
+    if(g_pjdv_internal1080) pjdv_protect_image_coordinates(cs,5);
     const void *k = (__bridge const void *)cs;
     id<MTLComputePipelineState> ps = hm_get_id(&g_cps, &k);
     if (!ps) {
@@ -5632,6 +5702,75 @@ static void dispatch(const p_dispatch *dp) {
 }
 // GPU：贴图 → 缓冲（行距取 SetCopyRowStride，0 = 紧排）
 // GPU: texture -> buffer (row stride taken from SetCopyRowStride, 0 = tightly packed)
+#include "pjdv_internal_transfer.inc"
+static BOOL pjdv_copy_backing(id<MTLTexture> from, id<MTLTexture> to, const tex_t *t) {
+    int bw=0,bh=0,bpp=nvn_fmt_bpb(t->d.format,&bw,&bh);
+    if(bw!=1 || bh!=1 || from.pixelFormat!=to.pixelFormat) return NO;
+    PJDVCopySurface a={.texture=from,.region={.width=(int)from.width,.height=(int)from.height,.depth=1}};
+    PJDVCopySurface b={.texture=to,.region={.width=(int)to.width,.height=(int)to.height,.depth=1}};
+    return pjdv_copy_guest_pixels(a,b,bpp);
+}
+
+static void pjdv_pin_guest_size(const tex_t *t) {
+    if(!pjdv_framebuffer_layout(t)) return;
+    id<MTLTexture> old=tex_mtl(t);
+    if(!old) return;
+    if(!pjdv_is_promoted(t,old)) { old.label=PJDVNativeFramebuffer;return; }
+    MTLTextureDescriptor *desc=tex_desc(t,0);
+    id<MTLTexture> native=[g_dev newTextureWithDescriptor:desc];
+    if(!native) return;
+    res_add(native);
+    if(!pjdv_copy_backing(old,native,t)){defer_obj_release(native);return;}
+    native.label=PJDVNativeFramebuffer;
+    serial_put(t->serial,native);
+    MLOG("PJDV internal framebuffer restored to guest size ser=%llu",(unsigned long long)t->serial);
+}
+static void pjdv_prepare_framebuffer_group(const p_set_rt *rt) {
+    const tex_t *attachments[9];
+    int count=0;
+    for(int i=0;i<rt->n && i<8;i++) if(rt->color[i]) attachments[count++]=rt->color[i];
+    if(rt->depth) attachments[count++]=rt->depth;
+    BOOL hasHigh=NO,hasNative=NO;
+    for(int i=0;i<count;i++){
+        const tex_t *t=attachments[i];
+        pjdv_prepare_internal_target(t,NO);
+        id backing=serial_get(t->serial);
+        if ([backing conformsToProtocol:@protocol(MTLTexture)] && pjdv_is_promoted(t,backing)) hasHigh=YES;
+        else hasNative=YES;
+    }
+    // All attachments in a Metal pass use one raster coordinate system.
+    // An incompatible depth/extra color target must not silently crop its peers.
+    if(hasHigh && hasNative) for(int i=0;i<count;i++) pjdv_pin_guest_size(attachments[i]);
+}
+// Storage images use integer coordinates. A texture created with IMAGE may
+// still be used exclusively as a framebuffer; only pin a resource once a
+// reflected image instruction actually consumes its bound handle.
+static void pjdv_protect_image_coordinates(NvShader *sh, int stage) {
+    if(!sh) return;
+    if(!sh->pjdv_image_regs_known) {
+        for(int i=0;i<sh->rf.nb;i++) {
+            const typeof(sh->rf.b[0]) *b=&sh->rf.b[i];
+            if(b->kind==NVN_RB_IMG && b->reg<32) sh->pjdv_image_regs|=1u<<b->reg;
+        }
+        sh->pjdv_image_regs_known=YES;
+    }
+    uint32_t mask=sh->pjdv_image_regs;
+    while(mask) {
+        int reg=__builtin_ctz(mask);mask&=mask-1;
+        int id_=(int)(S.img[stage][reg]&0xfffff);
+        tex_t tex={0};
+        pthread_mutex_lock(&g_rmu);
+        if(id_>0 && id_<g_ntreg && g_treg[id_].ok) tex=g_treg[id_].t;
+        pthread_mutex_unlock(&g_rmu);
+        if(!pjdv_framebuffer_layout(&tex)) continue;
+        id<MTLTexture> old=tex_mtl(&tex);
+        if(!old || [old.label isEqual:PJDVNativeFramebuffer]) continue;
+        int high=pjdv_is_promoted(&tex,old);
+        if(high) rp_flush();
+        pjdv_pin_guest_size(&tex);
+        if(high && R.has_rt) pjdv_prepare_framebuffer_group(&R.rt);
+    }
+}
 static void copy_t2b(const p_copy_b2t *c) {
     if (c->tex) xv_check(c->tex->serial, c->has_view && c->view.set_levels ? c->view.base_level : 0, c->has_view && c->view.set_layers ? c->view.min_layer : 0, "贴图读缓冲");
     id<MTLTexture> t = tex_mtl(c->tex);
@@ -5643,6 +5782,12 @@ static void copy_t2b(const p_copy_b2t *c) {
     int is3d = c->tex->d.target == 2, nz = c->r.depth ? c->r.depth : 1;
     void *mb; uint64_t mo;
     if (!mtl_addr(c->src, img * nz, &mb, &mo)) { RED_ONCE(31, "贴图→缓冲拷贝的目标不在内存池里"); return; }
+    if (pjdv_is_promoted(c->tex,t)) {
+        PJDVCopySurface texture={.texture=t,.level=level,.slice=layer0,.region=pjdv_physical_region(c->r,1)};
+        PJDVCopySurface buffer={.buffer=(__bridge id<MTLBuffer>)mb,.offset=mo,.row=row,.region=c->r};
+        if (!pjdv_copy_guest_pixels(texture,buffer,bpb)) MLOG("PJDV unsupported logical framebuffer copy, serial=%llu",(unsigned long long)c->tex->serial);
+        return;
+    }
     BENC b = blit();
     if (is3d)
         enc_b_copy_texture_buffer(b, t, 0, level, MTLOriginMake(c->r.xoffset, c->r.yoffset, c->r.zoffset), MTLSizeMake(c->r.width, c->r.height, nz), (__bridge id<MTLBuffer>)mb, mo, row, img);
@@ -5673,6 +5818,28 @@ void mtl_read_texels(const tex_t *t, unsigned level, unsigned layer0, const NVNc
     }
     id<MTLTexture> mt = tex_mtl(t);
     if (!mt) { memset(dst, 0, img * nz); return; }
+    if(pjdv_is_promoted(t,mt)) {
+        NVNcopyRegion high=pjdv_physical_region(*r,1);
+        PJDVCopySurface from={.texture=mt,.region=high,.level=level,.slice=layer0};
+        if(!pjdv_surface_valid(from,bpb) || bw!=1 || bh!=1 || row<wb) return;
+        mtl_finish_gpu();
+        size_t pitch=((size_t)high.width*bpb+255)&~(size_t)255;
+        id<MTLBuffer> copy=[g_dev newBufferWithLength:pitch*high.height options:MTLResourceStorageModeShared];
+        if(!copy) return;
+        id<MTLCommandBuffer> cb=q_cb(); id<MTLBlitCommandEncoder> bl=[cb blitCommandEncoder];
+        enc_b_copy_texture_buffer(bl,mt,0,0,MTLOriginMake(high.xoffset,high.yoffset,0),MTLSizeMake(high.width,high.height,1),copy,0,pitch,pitch*high.height);
+        [bl endEncoding];[cb commit];[cb waitUntilCompleted];
+        if(cb.status!=MTLCommandBufferStatusCompleted) return;
+        for(int y=0;y<r->height;y++) {
+            size_t sy=(size_t)(2*y+1)*high.height/(2*r->height);
+            const uint8_t *line=(const uint8_t *)copy.contents+sy*pitch;
+            for(int x=0;x<r->width;x++) {
+                size_t sx=(size_t)(2*x+1)*high.width/(2*r->width);
+                memcpy(dst+y*row+(size_t)x*bpb,line+sx*bpb,bpb);
+            }
+        }
+        return;
+    }
     mtl_finish_gpu();
     id<MTLBuffer> buf = [g_dev newBufferWithLength:wb * hb * nz options:MTLResourceStorageModeShared];
     id<MTLCommandBuffer> cb = q_cb(); id<MTLBlitCommandEncoder> b = enc_b_begin(cb);
@@ -5694,6 +5861,12 @@ static void copy_b2t(const p_copy_b2t *c) {
     int is3d = c->tex->d.target == 2, nz = c->r.depth ? c->r.depth : 1;
     void *mb; uint64_t mo;
     if (!mtl_addr(c->src, img * nz, &mb, &mo)) { RED_ONCE(23, "缓冲→贴图拷贝的源不在内存池里"); return; }
+    if (pjdv_is_promoted(c->tex,t)) {
+        PJDVCopySurface texture={.texture=t,.level=level,.slice=layer0,.region=pjdv_physical_region(c->r,1)};
+        PJDVCopySurface buffer={.buffer=(__bridge id<MTLBuffer>)mb,.offset=mo,.row=row,.region=c->r};
+        if (!pjdv_copy_guest_pixels(buffer,texture,bpb)) MLOG("PJDV unsupported logical framebuffer copy, serial=%llu",(unsigned long long)c->tex->serial);
+        return;
+    }
     const uint8_t *glyphBytes=[(__bridge id<MTLBuffer>)mb contents];
     if(glyphBytes)pjdv_glyph_capture(c->tex,level,layer0,&c->r,glyphBytes+mo,row);
     uint32_t upf; int ubpp;
@@ -5876,6 +6049,25 @@ static void copy_t2t(const p_copy_t2t *c) {
     id<MTLTexture> s = tex_mtl(c->src), d = tex_mtl(c->dst);
     PD("T src=%llu dst=%llu %dx%dx%d→%dx%dx%d flags=%#x", c->src->serial, c->dst->serial, c->sr.width, c->sr.height, c->sr.depth, c->dr.width, c->dr.height, c->dr.depth, c->flags);
     if (!s || !d) return;
+    p_copy_t2t physicalCopy;
+    int highSrc=pjdv_is_promoted(c->src,s), highDst=pjdv_is_promoted(c->dst,d);
+    if(highSrc || highDst) {
+        physicalCopy=*c;
+        physicalCopy.sr=pjdv_physical_region(c->sr,highSrc);
+        physicalCopy.dr=pjdv_physical_region(c->dr,highDst);
+        if(c->sr.width==c->dr.width && c->sr.height==c->dr.height &&
+           (physicalCopy.sr.width!=physicalCopy.dr.width || physicalCopy.sr.height!=physicalCopy.dr.height)) {
+            int bw=0,bh=0,bpp=nvn_fmt_bpb(c->src->d.format,&bw,&bh);
+            PJDVCopySurface from={.texture=s,.region=physicalCopy.sr,
+                .level=c->has_sv && c->sv.set_levels ? c->sv.base_level:0,.slice=c->has_sv && c->sv.set_layers ? c->sv.min_layer:0};
+            PJDVCopySurface to={.texture=d,.region=physicalCopy.dr,
+                .level=c->has_dv && c->dv.set_levels ? c->dv.base_level:0,.slice=c->has_dv && c->dv.set_layers ? c->dv.min_layer:0};
+            if(s.pixelFormat!=d.pixelFormat || bw!=1 || bh!=1 || !pjdv_copy_guest_pixels(from,to,bpp))
+                MLOG("PJDV unsupported logical texel copy ser=%llu -> %llu",(unsigned long long)c->src->serial,(unsigned long long)c->dst->serial);
+            return;
+        }
+        c=&physicalCopy;
+    }
     unsigned sl = c->has_sv && c->sv.set_levels ? c->sv.base_level : 0, dl = c->has_dv && c->dv.set_levels ? c->dv.base_level : 0;
     unsigned sz0 = c->has_sv && c->sv.set_layers ? c->sv.min_layer : 0, dz0 = c->has_dv && c->dv.set_layers ? c->dv.min_layer : 0;
     PD("t src=%llu lv%u sl%u xyz=%d,%d,%d dst=%llu lv%u sl%u xyz=%d,%d,%d size=%d,%d,%d", c->src->serial, sl, sz0, c->sr.xoffset, c->sr.yoffset, c->sr.zoffset,
@@ -5910,6 +6102,9 @@ static void copy_t2t(const p_copy_t2t *c) {
 // view with changed format: clear on a view of that format; partial region, partial channels, compressed / packaged textures (no render target usage): report a failure, to be implemented
 static void clear_tex(const p_clear_tex *c) {
     if (c->tex) zskip_del(c->tex->serial);
+    if (g_pjdv_internal1080 && c->tex && !c->r.xoffset && !c->r.yoffset && !c->r.zoffset &&
+        c->r.width == 1280 && c->r.height == 720 && c->r.depth == 1 && (c->mask & 15) == 15)
+        pjdv_prepare_internal_target(c->tex, 1);
     id<MTLTexture> t = tex_mtl(c->tex);
     PD("X ser=%llu 视图格式 %#x 区域 %d,%d,%d %dx%dx%d 掩码 %#x %s %g,%g,%g,%g", c->tex->serial, c->has_view && c->view.set_format ? c->view.format : -1, c->r.xoffset, c->r.yoffset, c->r.zoffset, c->r.width, c->r.height, c->r.depth, c->mask,
        c->is_uint ? "ui" : "f", c->is_uint ? (double)c->c.u[0] : c->c.f[0], c->is_uint ? (double)c->c.u[1] : c->c.f[1], c->is_uint ? (double)c->c.u[2] : c->c.f[2], c->is_uint ? (double)c->c.u[3] : c->c.f[3]);
@@ -5929,7 +6124,7 @@ static void clear_tex(const p_clear_tex *c) {
     }
     MTLPixelFormat pf = t.pixelFormat;
     int depth = pf == MTLPixelFormatDepth32Float || pf == MTLPixelFormatDepth16Unorm || pf == MTLPixelFormatDepth32Float_Stencil8, stencil = pf == MTLPixelFormatStencil8 || pf == MTLPixelFormatDepth32Float_Stencil8;
-    if (c->r.xoffset || c->r.yoffset || (NSUInteger)c->r.width != w || (NSUInteger)c->r.height != h || (c->mask & 0xf) != 0xf
+    if (c->r.xoffset || c->r.yoffset || (NSUInteger)c->r.width != mip_extent(c->tex->d.width, lv) || (NSUInteger)c->r.height != mip_extent(c->tex->d.height, lv) || (c->mask & 0xf) != 0xf
         || !(t.usage & MTLTextureUsageRenderTarget)) {
         RED_ONCE(44, "清贴图未实现的形态：区域 %d,%d %dx%d（本级 %lux%lu）掩码 %#x 可作渲染目标 %d", c->r.xoffset, c->r.yoffset, c->r.width, c->r.height,
                  (unsigned long)w, (unsigned long)h, c->mask, !!(t.usage & MTLTextureUsageRenderTarget));
@@ -6249,7 +6444,9 @@ void mtl_exec(const uint8_t *p) {
                 // 不续用只为清除开的通道；少挂深度 / 模板的可续用（绘制前核平面）
                 // Do not continue a render pass opened only for a clear; one with fewer depth / stencil attachments can be continued (check the planes before drawing)
                 if (g_enc && g_enc_mode != 1 && !pend && R.has_rt && tbdr_on() && rt_same(&R.rt, r)) { g_rt_merged = 1; if (!g_rt_merge_n++) MLOG("同目标续用：首例 通道 %llu", g_stat_pass); PD("M %llu 同目标续用通道", g_stat_pass); R.rt = *r; break; }
-                rp_flush(); R.rt = *r; R.has_rt = 1; break;
+                rp_flush();
+                if(g_pjdv_internal1080) pjdv_prepare_framebuffer_group(r);
+                R.rt = *r; R.has_rt = 1; break;
             }
             case OP_CLEAR_COLOR: {
                 const p_clear_color *c = a;
@@ -6836,6 +7033,16 @@ static int present_now(const tex_t *t, double period, uint64_t frame, uint64_t t
     PD("X ser=%llu", t->serial);
     id<MTLTexture> src = tex_mtl(t);
     if (!src) { RED_ONCE(8, "出图贴图建不出 MTLTexture"); return 0; }
+    int physicalCrop[4];
+    if (crop && (crop[2] || crop[3]) && pjdv_is_promoted(t, src)) {
+        // NVN window crops are in guest pixels; retain a full-size MetalFX
+        // input or the correct subrectangle when a guest sets a partial crop.
+        for (int i = 0; i < 2; i++) {
+            physicalCrop[i] = (int)pjdv_raster_edge(crop[i], 1);
+            physicalCrop[2+i] = (int)(pjdv_raster_edge((long)crop[i]+crop[2+i], 1)-physicalCrop[i]);
+        }
+        crop = physicalCrop;
+    }
     // DM_NVN_REGLUM=x0,y0,x1,y1:文件（归一化坐标）：每次出图回读该区域，记「出图序号、出图时刻 ns、区域平均亮度、隔点灰度小图（十六进制）」（诊断：核动画速度与帧率无关）。
     // 单独的命令缓冲排在本帧渲染之后（同一队列按提交序执行），不等 GPU、不扰动帧节奏
     // DM_NVN_REGLUM=x0,y0,x1,y1:file (normalized coordinates): read back this region on every present and record "present sequence number, present time ns, region mean luminance, subsampled grayscale thumbnail (hex)" (diagnostic: verify that animation speed is independent of frame rate).

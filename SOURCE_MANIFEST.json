@@ -1,9 +1,9 @@
 {
   "format": "pjdv-public-source-v1",
   "date": "2026-11-25",
-  "source_build": "0.1.5 build26",
-  "public_release": "v0.1.5b26",
-  "source_parent_commit": "725832d38d6779457b2c332671cf2dba7b9cc47a",
+  "source_build": "0.1.5 build27",
+  "public_release": "v0.1.5b27",
+  "source_parent_commit": "8f267f6c7c361447fbb03728dad02efb72805568",
   "native_resource_model_and_movie_song_import": true,
   "Eden_raw_ID_over_999_import": false,
   "universal_PC_Mod_compatibility": false,
@@ -131,15 +131,15 @@
     {
       "path": "BUILDING.md",
       "bytes": 18629,
-      "sha256": "297d4c98d8aca7299fcb275782720f16210c40d65ec37e8c56e8c0db7c10e677",
-      "git_blob_sha": "cd233c690cf8213138078aca84e00521e8dde4e3",
+      "sha256": "f8d63f33aa91f398fa635d16f806d73fafac326cc791038c77b69d3ef5f1d4e3",
+      "git_blob_sha": "b0405ddc4d7d43d216d2b50a6a9e6bd8306e7cd7",
       "mode": "100644"
     },
     {
       "path": "Info.plist",
       "bytes": 2882,
-      "sha256": "5fc9febf591c65fd1514473da852e52f8b0e02c54cf29e03a8e0c6a96b937ffd",
-      "git_blob_sha": "d6f1347f75ea569098ffa3740971bffc82be76fd",
+      "sha256": "c1a8a150635fc9fbbed82b68975b7c082d7b7c2fdc7748c166bc1d9cb5a7238e",
+      "git_blob_sha": "c47b12b166cd9d138a4ce87f0d537d6d5a149e64",
       "mode": "100644"
     },
     {
@@ -151,16 +151,16 @@
     },
     {
       "path": "README.en.md",
-      "bytes": 68444,
-      "sha256": "97ae73186ff7f6445b3a34509c282e54ce4e99a0aa2e11439fbcf48eb1818d4f",
-      "git_blob_sha": "c056b9250beb44522240156044c73c25cc3148cc",
+      "bytes": 69604,
+      "sha256": "b940f45e8b05245e49b899eb904f06be4d185607b6f33992c39014de6e92a849",
+      "git_blob_sha": "e405acc750d948db4566208cd41f3eccc49eb1b0",
       "mode": "100644"
     },
     {
       "path": "README.md",
-      "bytes": 60361,
-      "sha256": "706603d00dec0be30b13228b230479afc253c6e516b61b95afbc9e3199de3c07",
-      "git_blob_sha": "6a1dd841ca9858307a6542530a235641a58453b3",
+      "bytes": 61397,
+      "sha256": "ddb25ff1a3adadd3879196439865bb2b8f89cf1f2a8c6e8a50372511df42373a",
+      "git_blob_sha": "904583c91735ac57d55a6acf955d609674cfc1ae",
       "mode": "100644"
     },
     {
@@ -217,6 +217,13 @@
       "bytes": 7398,
       "sha256": "d1ba537cb1d983c887997a5f2f512c9449adeda0723de79f4495bcbad01b319b",
       "git_blob_sha": "78fd5a42cc7c746fb11552a342ff7b3bb51b1883",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/INTERNAL-1080P-20261125.md",
+      "bytes": 6280,
+      "sha256": "e6052321be263285195860ce2fc82ed730c673463c696b8f5b8ee4d8c002b656",
+      "git_blob_sha": "8b684ebd28cf0d27de0307eeb7d82f6fc24f57b0",
       "mode": "100644"
     },
     {
@@ -525,6 +532,27 @@
       "bytes": 1193578,
       "sha256": "fbbaa152d7d04c6d944fc1744c09cd505da63746509d4f325c0d8d323a24746f",
       "git_blob_sha": "c5f50c989eff9a371f04749e8ee005ad67fd0f77",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/internal-1080p-39music-20261125.jpg",
+      "bytes": 42854,
+      "sha256": "4d6605de7da152a7dfea38319a526d0a69b76349e0b83e3d92ab6c2920599cb3",
+      "git_blob_sha": "562389e95c3cb13221934de2f6ec97e09bcd5dde",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/internal-1080p-koi-detail-20261125.jpg",
+      "bytes": 92500,
+      "sha256": "574f21cdb98359ae79dfdee778f6cb6dd52f626862ae86b47d796ac815b67470",
+      "git_blob_sha": "8faa8136b63ff3b3d4a8775c35c0d93f21551ccc",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/internal-1080p-songs-20261125.jpg",
+      "bytes": 189039,
+      "sha256": "f1a497b4316ccdbbb7989fa32570d79334dea8d8a09c9b2bf19812e0cdf16626",
+      "git_blob_sha": "4bcc08c9d453b77b93ca715f0e9f8ecf13f0628f",
       "mode": "100644"
     },
     {
@@ -1208,9 +1236,9 @@
     },
     {
       "path": "Runtime/dm/gfx/nvn/nvn_mtl.m",
-      "bytes": 703527,
-      "sha256": "119d82a891072b65b26f436a7ca0fb2a8b43a92a2d45251482554121070320bc",
-      "git_blob_sha": "4aab79a40fa2ca1c38bbb0eb18819f1dbee29c9d",
+      "bytes": 714839,
+      "sha256": "dc111fea61acafd961f84aeac6c1d32a4f4f1eb2621910678afa49da73d2b2c8",
+      "git_blob_sha": "8141af9547083e58d7d6da890a26bac301fcb5c7",
       "mode": "100644"
     },
     {
@@ -1362,9 +1390,16 @@
     },
     {
       "path": "Runtime/dm/gfx/nvn/pjdv_hdr_scene.inc",
-      "bytes": 4419,
-      "sha256": "d429c1bac57ad873c8f2cb633d5028420fadde74bb9714d564c9d3a633dd10b1",
-      "git_blob_sha": "9e63d3ee516db9261eb418ebd0bb6139555410bc",
+      "bytes": 5687,
+      "sha256": "9d05690a2418b2cc9aab20ca6137b977a9d07ed2a691cf68d3ca6333ac957eee",
+      "git_blob_sha": "d4d33e0f32c9782c47c436094081374fba9f2d52",
+      "mode": "100644"
+    },
+    {
+      "path": "Runtime/dm/gfx/nvn/pjdv_internal_transfer.inc",
+      "bytes": 5128,
+      "sha256": "cd8e7a583df2bbfb782196af598cc42eff3eadd1f38b017e653fee8167302095",
+      "git_blob_sha": "eb5a18c0be9e32d2ca2744795eaef41f71fd4255",
       "mode": "100644"
     },
     {
@@ -5709,9 +5744,9 @@
     },
     {
       "path": "Sources/App.swift",
-      "bytes": 68542,
-      "sha256": "220b3154853e3646987917a0adf08f1b17fc3fc15b9daab6a4df9427d3bd7542",
-      "git_blob_sha": "e11906f685497764030711dc9d53bd35d41125bd",
+      "bytes": 70143,
+      "sha256": "f75ddd5c640895b9a8092ab44a06c8d61537aeeda1da0f21b9d37e10f6ff6011",
+      "git_blob_sha": "618901c2298d830f8f06afd8add1b18bbe6248ca",
       "mode": "100644"
     },
     {
@@ -5758,9 +5793,9 @@
     },
     {
       "path": "Sources/GuestRuntime.swift",
-      "bytes": 11149,
-      "sha256": "de471065656397eacad7497673c88bf306400262437fe42ff002b4fcc552f674",
-      "git_blob_sha": "ceb5adcdefde8566b352baa0daa12aa37e99f429",
+      "bytes": 11432,
+      "sha256": "ecea89d26482e52120fe8bdf8f4e9ab2299bc58e76fa4f7e345469604b78bcd4",
+      "git_blob_sha": "2bfbbecb7ed2ba4b4178233710c575d0d5671817",
       "mode": "100644"
     },
     {
@@ -5926,9 +5961,9 @@
     },
     {
       "path": "Sources/SongRenderProfile.swift",
-      "bytes": 7469,
-      "sha256": "e28d4a65abfe68ec0dc42616cefa1c350a61cc6d6ec6514e0bfb0e1b7273867e",
-      "git_blob_sha": "5ad0727c8b664d2ce7c23bb02a00ba4b54cf2efa",
+      "bytes": 9863,
+      "sha256": "96f01ab53c9bb138125bb64df19ace3c04ba91570b3ce558c9bfb2ef6e7e510c",
+      "git_blob_sha": "d7cd532912fa8507fbaa29b3e39596d9397f2be1",
       "mode": "100644"
     },
     {
@@ -6062,6 +6097,13 @@
       "bytes": 2803,
       "sha256": "40d13cc153a68b9aa7534e8507335291fa526b802397a47550fd73ef9b8c51c4",
       "git_blob_sha": "fddfb7baf5ecee8621137341ce08c7fd74cb57c4",
+      "mode": "100644"
+    },
+    {
+      "path": "Tests/InternalFramebuffer/transfer.m",
+      "bytes": 7098,
+      "sha256": "84ea762b7cad5b6e037715f22199d4e0d589b6be100890340b56e2d4c31f8ae0",
+      "git_blob_sha": "ec8ff6e01e4aa1e869b57a7bc590c3052f1ec52d",
       "mode": "100644"
     },
     {
@@ -6248,9 +6290,9 @@
     },
     {
       "path": "Tests/SongRenderProfile/main.swift",
-      "bytes": 8947,
-      "sha256": "d1409ce1a1a1dc608d5b744369311ae6f78083ba978aa24a2cdbd3cafedff9b4",
-      "git_blob_sha": "96cba8412955e916a63b53af69bed59dc161ade6",
+      "bytes": 13354,
+      "sha256": "cd4a212d35b2accbd1af06b41e50af10b47f3be052718907ebf95e2201c88761",
+      "git_blob_sha": "45ef6a46c8299e611c1bce29b3961b895243ba16",
       "mode": "100644"
     },
     {
@@ -15353,5 +15395,19 @@
     "automatic_pv_rate_override": false,
     "device_benchmark_verified": false,
     "report": "Reports/RELEASE-build26-20261125.md"
+  },
+  "internal_1080p_QA": {
+    "build": 27,
+    "opt_in": true,
+    "default_enabled": false,
+    "songs": [
+      "Hand in Hand",
+      "恋は戦争",
+      "ゴーストルール",
+      "39みゅーじっく！"
+    ],
+    "test_platform": "iPad Pro simulator on Apple M3 Max",
+    "physical_device_performance_verified": false,
+    "report": "Reports/INTERNAL-1080P-20261125.md"
   }
 }

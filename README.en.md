@@ -2,6 +2,14 @@
 
 [简体中文](README.md) | **English**
 
+**0.1.5 build27 lightweight preview · November 25, 2026**
+
+Choose **Quality → Internal 1080p Rendering (Experimental)** in the launcher. It defaults to off, takes effect when the next game session starts, and can be set independently of output resolution and MetalFX. The main character and stage targets render at 1920×1080. Shadows and bloom retain their original resolutions.
+
+On an M3 Max running the iPad Pro simulator, sampled shots from “Hand in Hand”, “Love Is War”, “Ghost Rule” and “39 Music!” rendered at 1080p through character and depth passes, tone mapping, FXAA and final composition. The character viewport in the “Love Is War” opening increased from 960×540 to 1920×1080. A roughly 45-second “Ghost Rule” EXTREME gameplay sample averaged 60.00 displayed FPS with a 19.37 ms P95 frame interval. Sustained performance and thermals on physical phones and tablets still need testing.
+
+[Download build27](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b27) · [Four-song test and image comparison](https://github.com/HachiMiku39/pjdv_mega39s_ios/blob/v0.1.5b27/Reports/INTERNAL-1080P-20261125.md)
+
 **0.1.5 build26 lightweight preview · November 25, 2026**
 
 - Opening shots in “39 Music!”, “Hand in Hand” and “Teo” now draw characters at 1280×720, up from 880×495 with the verified stock Japanese v1.0.9 assets. Automatic enables this on Apple GPU family 9 and later. Players can also choose High Quality in the launcher.
