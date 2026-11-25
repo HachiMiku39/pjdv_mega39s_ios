@@ -22,7 +22,7 @@ enum ModComposition {
         init(_ item:RuntimeMod,_ files:[String:File]){self.item=item;self.files=files}
     }
     struct Receipt:Codable {let key:String;let files:[RuntimeMod.Check];let generated:[String]}
-    static let revision="native-composition-8"
+    static let revision="native-composition-9"
     static func identity(_ items:[RuntimeMod])->String {
         let raw=items.map{$0.id.uuidString}.sorted().joined(separator:"\n")
         let h=F.sha(Data(raw.utf8));return String(h.prefix(32))
@@ -44,7 +44,7 @@ enum ModComposition {
         guard items.count<=16,Set(items.map(\.id)).count==items.count else {throw ModLoadError.limit}
         // Reuse this invocation's validated paths. A single-package launch
         // previously repeated every baseline hash and payload check here.
-        let validatedPaths=try items.map{try catalog.overlayPaths($0,base:base,dlc:dlc)}
+        let validatedPaths=try items.map{try catalog.overlayPaths($0,base:base,dlc:dlc,progress:progress)}
         if items.count==1 {return Session(paths:validatedPaths[0],profileID:items[0].id.uuidString)}
         let fm=FileManager.default
         var key=Data((revision+"\n"+base.resolvingSymlinksInPath().path).utf8)
@@ -244,8 +244,21 @@ enum ModComposition {
             for p in positions {_=try F.u(raw,p)};return positions
         }
         func objectFile(_ pack:Pack,_ row:F.ObjectSet)throws->File {
-            let name=row.file.replacingOccurrences(of:"_obj.bin",with:".farc").lowercased()
-            guard let f=pack.files.first(where:{$0.key.contains("/objset/") && URL(fileURLWithPath:$0.key).lastPathComponent.lowercased()==name})?.value else {throw ModLoadError.invalid};return f
+            let conventional = row.file.lowercased().replacingOccurrences(of: "_obj.bin", with: ".farc")
+            let archive = row.archive.isEmpty ? conventional : row.archive.lowercased()
+            guard archive.hasSuffix(".farc"), !archive.contains("/"), !archive.contains("\\"),
+                  let file = pack.files.first(where: {
+                      $0.key.contains("/objset/") && $0.key.split(separator: "/").last?.lowercased() == archive
+                  })?.value else { throw ModLoadError.invalid }
+            // Some model sets use an outer archive with a different basename
+            // from its members. Check the registry's exact member names.
+            if archive != conventional {
+                let members = try F.archiveIndex(F.read(file.url)).map(\.name)
+                guard members.contains(row.file), row.texture.isEmpty || members.contains(row.texture) else {
+                    throw ModLoadError.invalid
+                }
+            }
+            return file
         }
         func registries()throws {
             let objectPaths=Set(originals.keys.filter{$0.hasSuffix("/objset/obj_db.bin")}).union(packs.flatMap{$0.files.keys.filter{$0.hasSuffix("/objset/obj_db.bin")}})

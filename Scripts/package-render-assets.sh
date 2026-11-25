@@ -30,3 +30,14 @@ cp "$SRCROOT/Assets/PCModelProfiles.json" "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOUR
 mkdir -p "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/ThirdPartyNotices"
 cp "$SRCROOT/ThirdParty/libvpx-1.17.0/LICENSE" "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/ThirdPartyNotices/libvpx-LICENSE.txt"
 cp "$SRCROOT/ThirdParty/libvpx-1.17.0/PATENTS" "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/ThirdPartyNotices/libvpx-PATENTS.txt"
+
+# Bundle both original typefaces together with their respective OFL notices.
+font_dest="$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/GoogleSans"
+mkdir -p "$font_dest"
+for name in GoogleSans-Regular.ttf NotoSansCJK-Regular.ttc GoogleSans-OFL.txt NotoSansCJK-OFL.txt; do
+    if [ ! -s "$SRCROOT/Assets/GoogleSans/$name" ]; then
+        echo "Missing $name. Run python3 Scripts/prepare_google_sans.py before building." >&2
+        exit 1
+    fi
+    cp "$SRCROOT/Assets/GoogleSans/$name" "$font_dest/$name"
+done

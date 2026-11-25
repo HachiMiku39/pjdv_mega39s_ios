@@ -38,6 +38,23 @@ try Data("name = \"Unseen song pack\"\n".utf8).write(to:root.appendingPathCompon
 try Data("pv_701.song_name=Test\r\n".utf8).write(to:root.appendingPathComponent("rom/mod_pv_db.txt"))
 let candidate=try PCSongConverter.recognize(root,progress:Progress())!
 require(candidate.profile.name=="Unseen song pack" && candidate.profile.id==PCSongConverter.profile)
+let wrapper=root.appendingPathComponent("Enclosure"),inner=wrapper.appendingPathComponent("Pack")
+try fm.createDirectory(at:inner,withIntermediateDirectories:true)
+try fm.copyItem(at:root.appendingPathComponent("rom"),to:inner.appendingPathComponent("rom"))
+try Data().write(to:wrapper.appendingPathComponent("cover.png"))
+require(try PCSongConverter.recognize(wrapper,progress:Progress()) != nil)
+for extra in ["plugin.dll","config.toml",".required"] {
+    let dependency=wrapper.appendingPathComponent(extra)
+    try Data("dependency".utf8).write(to:dependency)
+    require(try PCSongConverter.recognize(wrapper,progress:Progress())==nil)
+    try fm.removeItem(at:dependency)
+}
+try Data("dll = [\"missing.dll\"]".utf8).write(to:inner.appendingPathComponent("config.toml"))
+do {
+    _=try PCSongConverter.recognize(wrapper,progress:Progress())
+    fatalError("Ignored a required plug-in inside an illustrated enclosure")
+} catch let reason as ModWindowsRequirement { require(reason == .declaredPlugin("missing.dll")) }
+try fm.removeItem(at:wrapper)
 require(PCSongConverter.safeAsset("rom/movie/pv_701.usm"))
 for p in ["rom/../private","rom//movie/x","rom/movie/.hidden","rom/movie/a:b","rom\\movie\\x"]{require(!PCSongConverter.safeAsset(p))}
 try Data([0]).write(to:root.appendingPathComponent("plugin.dll"))

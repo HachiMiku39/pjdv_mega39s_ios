@@ -1,0 +1,5 @@
+module PJDVArchive {
+    header "archive.h"
+    header "archive_entry.h"
+    export *
+}

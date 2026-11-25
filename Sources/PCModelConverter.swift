@@ -41,17 +41,47 @@ enum PCModelConverter {
               (after[.size] as? NSNumber)?.uint64Value==count else {throw ModPackageError.changedSource}
         return .init(path:"",bytes:count,sha256:h.finalize().map{String(format:"%02x",$0)}.joined())
     }
+    /// Unwrap packaging folders without losing sibling plug-ins or loader settings.
+    static func packageRoot(_ installed:URL, marker:String, maximumDepth:Int, progress:Progress) throws -> URL? {
+        let fm=FileManager.default
+        var root=installed.standardizedFileURL.resolvingSymlinksInPath()
+        for depth in 0...maximumDepth {
+            try check(progress)
+            if fm.fileExists(atPath:root.appendingPathComponent(marker).path) {
+                // A cover outside the inner package can change its effective root during initial inspection.
+                // Check the exact package whose databases the converter is about to consume.
+                if depth>0, let reason=try ModPlatformAnalyzer.windowsRequirement(in:root,progress:progress) { throw reason }
+                return root
+            }
+            guard depth<maximumDepth else { return nil }
+            let children=try fm.contentsOfDirectory(at:root,includingPropertiesForKeys:[.isRegularFileKey,.isDirectoryKey,.isSymbolicLinkKey])
+            var nested:URL?
+            for child in children {
+                try check(progress)
+                let name=child.lastPathComponent.lowercased()
+                if name==".ds_store" || name=="__macosx" || name.hasPrefix("._") { continue }
+                let kind=try child.resourceValues(forKeys:[.isRegularFileKey,.isDirectoryKey,.isSymbolicLinkKey])
+                guard kind.isSymbolicLink != true else { throw ModPackageError.specialFile }
+                if kind.isDirectory == true {
+                    guard nested==nil, !name.hasPrefix(".") else { return nil }
+                    nested=child
+                } else {
+                    guard kind.isRegularFile == true else { throw ModPackageError.specialFile }
+                    let ext=child.pathExtension.lowercased(),stem=child.deletingPathExtension().lastPathComponent.lowercased()
+                    let documentation=["","txt","md","rst"].contains(ext) && ["readme","license","licence","changelog","credits"].contains(stem)
+                    let artwork=["png","jpg","jpeg","webp"].contains(ext) && !name.hasPrefix(".")
+                    guard documentation || artwork else { return nil }
+                }
+            }
+            guard let nested else { return nil }
+            root=nested
+        }
+        return nil
+    }
     static func recognize(_ installed:URL,profiles:[Profile],progress:Progress,
                           report:((ModInstallUpdate)->Void)?=nil)throws->Candidate? {
         let fm=FileManager.default;try check(progress)
-        var root=installed.standardizedFileURL.resolvingSymlinksInPath()
-        if !fm.fileExists(atPath:root.appendingPathComponent("rom/mod_gm_module_tbl.farc").path) {
-            let children=try fm.contentsOfDirectory(at:root,includingPropertiesForKeys:nil,options:.skipsHiddenFiles)
-            guard children.count==1 else {return nil};root=children[0]
-        }
-        guard try fm.attributesOfItem(atPath:root.path)[.type] as? FileAttributeType == .typeDirectory,
-              root.resolvingSymlinksInPath()==root else {throw ModPackageError.specialFile}
-        guard fm.fileExists(atPath:root.appendingPathComponent("rom/mod_gm_module_tbl.farc").path) else {return nil}
+        guard let root=try packageRoot(installed,marker:"rom/mod_gm_module_tbl.farc",maximumDepth:1,progress:progress) else {return nil}
         var actual=[String:URL](),failure:Error?
         guard let it=fm.enumerator(at:root,includingPropertiesForKeys:nil,options:[],errorHandler:{_,e in failure=e;return false}) else {throw ModLoadError.invalid}
         let prefix=root.path+"/"
@@ -81,19 +111,17 @@ enum PCModelConverter {
         guard let profile=matches.first(where:{$0.files.sorted{$0.path<$1.path}.map{$0.path+":"+String($0.bytes)+":"+$0.sha256}==expected}) else {return nil}
         return Candidate(root:root,profile:profile,sourceSHA256:F.sha(Data(expected.joined(separator:"\n").utf8)))
     }
+    // The consolidated settings file is read into memory. The other files under
+    // these paths are hashed and copied in 1 MiB blocks, including OPD FArCs.
+    private static func streamsUnmodified(_ path: String) -> Bool {
+        path != "rom/skin_param/mod_osage_setting.txt" &&
+            (path.hasPrefix("rom/skin_param/") || path.hasPrefix("rom/osage_play_data/"))
+    }
+
     static func recognizeResourceModel(_ installed:URL,progress:Progress,
                                        report:((ModInstallUpdate)->Void)?=nil)throws->Candidate? {
         let fm=FileManager.default;try check(progress)
-        var root=installed.standardizedFileURL.resolvingSymlinksInPath()
-        // ZIPs commonly wrap a single MOD folder. Limit traversal; never search
-        // arbitrary descendants or accidentally combine several independent MODs.
-        for _ in 0..<4 {
-            if fm.fileExists(atPath:root.appendingPathComponent("rom/mod_gm_module_tbl.farc").path){break}
-            let dirs=try children(root).filter{(try? fm.attributesOfItem(atPath:$0.path)[.type]) as? FileAttributeType == .typeDirectory}
-            guard dirs.count==1 else{return nil};root=dirs[0]
-            guard root.resolvingSymlinksInPath()==root else{throw ModPackageError.specialFile}
-        }
-        guard fm.fileExists(atPath:root.appendingPathComponent("rom/mod_gm_module_tbl.farc").path) else{return nil}
+        guard let root=try packageRoot(installed,marker:"rom/mod_gm_module_tbl.farc",maximumDepth:4,progress:progress) else {return nil}
         for path in ["rom/mod_chritm_prop.farc","rom/objset/mod_obj_db.bin","rom/objset/mod_tex_db.bin","rom/2d/mod_spr_db.bin"] {
             guard fm.fileExists(atPath:root.appendingPathComponent(path).path) else{throw ModLoadError.unsupported}
         }
@@ -111,7 +139,8 @@ enum PCModelConverter {
                 continue
             }
             let bytes=(a[.size] as? NSNumber)?.uint64Value ?? UInt64.max
-            guard inputs.count<2000,bytes<=UInt64(F.fileLimit),total<=1024*1024*1024-bytes else{throw ModLoadError.limit}
+            let fileLimit = streamsUnmodified(rel) ? UInt64(512 * 1024 * 1024) : UInt64(F.fileLimit)
+            guard inputs.count<2000,bytes<=fileLimit,total<=1024*1024*1024-bytes else{throw ModLoadError.limit}
             total+=bytes;inputs.append((rel,url,bytes))
         }
         guard !inputs.isEmpty,Set(inputs.map{$0.0.lowercased()}).count==inputs.count else{throw ModPackageError.unsafePath}
@@ -322,7 +351,7 @@ enum PCModelConverter {
                 var blocks=try F.archive(source(accessoryPath))
                 var free=(0...1200).filter{!usedAccessories.contains($0) && !usedModules.contains($0) && !moduleMap.values.contains($0)}
                 for i in blocks.indices {
-                    let d=try F.properties(blocks[i].data);var rows=F.group(d,"cstm_item")
+                    let d=try F.properties(blocks[i].data);var rows=try uniqueAccessories(F.group(d,"cstm_item"))
                     for j in rows.indices {
                         let old=try number(rows[j],"id"),obj=try number(rows[j],"obj_id")
                         guard !free.isEmpty,accessoryMap[old]==nil,let char=rows[j]["chara"],let stem=characters[char],let mapped=itemMaps[stem+"_tbl.txt"]?[obj] else{throw ModLoadError.unsupported}
@@ -387,12 +416,12 @@ enum PCModelConverter {
                 try put(rel,F.spriteData(nativePortraits))
             }
             let translationPath="rom/lang2/mod_str_array.toml"
-            let translations=candidate.profile.files.contains(where:{$0.path==translationPath}) ? try PCModelConverter.translations(source(translationPath)):[:]
+            let translations=candidate.profile.files.contains(where:{$0.path==translationPath}) ? try PCModelConverter.translations(source(translationPath)) : ModelStrings()
             for p in snapshot.urls where p.path.hasPrefix(base.path+"/") && p.lastPathComponent=="str_array.bin" {
                 let lang=p.deletingLastPathComponent().lastPathComponent,original=try F.read(p);var changes=[Int:String]()
                 for (old,new) in moduleMap {
                     guard let row=modules.first(where:{$0["id"]==String(new)}),let fallback=row["name"] else {throw ModLoadError.invalid}
-                    changes[new+220]=translations[lang]?[old+275] ?? translations[""]?[old+275] ?? fallback
+                    changes[new+220]=translations.module(old, language: lang) ?? fallback
                 }
                 if !accessoryMap.isEmpty {
                     // Locate the title's native string segment from an existing
@@ -403,33 +432,85 @@ enum PCModelConverter {
                     guard let offset=offsets.sorted().first(where:{n in baseAccessories.filter{r in guard let id=Int(r["id"] ?? ""),let name=r["name"],(0..<values.count).contains(n+id) else{return false};return values[n+id]==name}.count>=min(3,baseAccessories.count)}) else{throw ModLoadError.unsupported}
                     for (old,new) in accessoryMap {
                         guard let row=accessories.first(where:{$0["id"]==String(new)}),let fallback=row["name"] else{throw ModLoadError.invalid}
-                        changes[new+offset]=translations[lang]?[old+936] ?? translations[""]?[old+936] ?? fallback
+                        changes[new+offset]=translations.accessory(old, language: lang) ?? fallback
                     }
                 }
                 try put(String(p.path.dropFirst(base.path.count+1)),F.changeStrings(original,changes))
             }
             for row in candidate.profile.files where !consumed.contains(row.path) {
                 if row.path=="rom/skin_param/mod_osage_setting.txt" {try put("rom_switch/rom/skin_param/osage_setting.txt",source(row.path))}
-                else if row.path.hasPrefix("rom/skin_param/") || row.path.hasPrefix("rom/osage_play_data/"){try copy(row.path,"rom_switch/"+row.path)}
+                else if streamsUnmodified(row.path){try copy(row.path,"rom_switch/"+row.path)}
                 else {throw ModLoadError.unsupported}
             }
             guard consumed==Set(candidate.profile.files.map(\.path)) else {throw ModLoadError.invalid}
         }
     }
-    // The verified profile uses this strict TOML subset. Unknown TOML syntax
-    // fails rather than silently losing localized labels; no script is run.
-    static func translations(_ data:Data)throws->[String:[Int:String]] {
-        guard let text=String(data:data,encoding:.utf8) else {throw ModLoadError.invalid};var result=[String:[Int:String]]()
-        for raw in text.replacingOccurrences(of:"\u{feff}",with:"").components(separatedBy:.newlines) {
-            let line=raw.trimmingCharacters(in:.whitespaces);if line.isEmpty || line.hasPrefix("#"){continue}
-            guard let eq=line.firstIndex(of:"=") else {throw ModLoadError.unsupported}
-            let key=line[..<eq].trimmingCharacters(in:.whitespaces),parts=key.split(separator:".").map(String.init)
-            guard (1...2).contains(parts.count),let id=Int(parts.last!),id>=0,id<1000000 else {throw ModLoadError.unsupported}
-            let lang=parts.count==1 ? "":parts[0];guard ["","jp","cn","tw","en","kr"].contains(lang) else {throw ModLoadError.unsupported}
-            let encoded=String(line[line.index(after:eq)...]).trimmingCharacters(in:.whitespaces)
-            guard encoded.utf8.count<=4096,let value=try JSONSerialization.jsonObject(with:Data(encoded.utf8),options:.fragmentsAllowed) as? String,
-                  result[lang]?[id]==nil,!value.contains("\0") else {throw ModLoadError.invalid}
-            result[lang,default:[:]][id]=value
-        };return result
+    // Some authors export the same accessory row twice in one table.
+    // Reuse it only when every source field is identical, before any ID remap.
+    static func uniqueAccessories(_ rows: [Props]) throws -> [Props] {
+        var seen = [Int: Props]()
+        return try rows.filter { row in
+            guard let value = row["id"], let id = Int(value), id >= 0 else { throw ModLoadError.invalid }
+            if let existing = seen[id] {
+                guard existing == row else { throw ModLoadError.unsupported }
+                return false
+            }
+            seen[id] = row
+            return true
+        }
+    }
+
+    struct ModelStrings {
+        fileprivate enum Group: String {
+            case module, customize, cstmItem = "cstm_item"
+        }
+        fileprivate var legacy = [String: [Int: String]]()
+        fileprivate var grouped = [Group: [String: [Int: String]]]()
+
+        private func lookup(_ table: [String: [Int: String]]?, _ id: Int, _ language: String) -> String? {
+            table?[language]?[id] ?? table?[""]?[id]
+        }
+
+        // DML looks in the named array first, before falling back to a
+        // legacy offset. An accessory and a module may have the same ID.
+        func module(_ id: Int, language: String) -> String? {
+            lookup(grouped[.module], id, language) ?? lookup(legacy, id + 275, language)
+        }
+        func accessory(_ id: Int, language: String) -> String? {
+            lookup(grouped[.customize], id, language) ?? lookup(grouped[.cstmItem], id, language) ??
+                lookup(legacy, id + 936, language)
+        }
+    }
+
+    static func translations(_ data: Data) throws -> ModelStrings {
+        guard let text = String(data: data, encoding: .utf8) else { throw ModLoadError.invalid }
+        let languages: Set<String> = ["jp", "cn", "tw", "en", "kr", "fr", "ge", "it", "sp"]
+        var result = ModelStrings()
+        for raw in text.replacingOccurrences(of: "\u{feff}", with: "").components(separatedBy: .newlines) {
+            let line = raw.trimmingCharacters(in: .whitespaces)
+            if line.isEmpty || line.hasPrefix("#") { continue }
+            guard let eq = line.firstIndex(of: "=") else { throw ModLoadError.unsupported }
+            let key = line[..<eq].trimmingCharacters(in: .whitespaces)
+            var parts = key.split(separator: ".", omittingEmptySubsequences: false)[...]
+            let language: String
+            if let first = parts.first, languages.contains(String(first)) {
+                language = String(parts.removeFirst())
+            } else { language = "" }
+            guard let last = parts.popLast(), !last.isEmpty, last.utf8.allSatisfy({ (48...57).contains($0) }),
+                  let id = Int(last), id < 1_000_000, parts.count <= 1 else { throw ModLoadError.unsupported }
+            let encoded = String(line[line.index(after: eq)...]).trimmingCharacters(in: .whitespaces)
+            guard encoded.utf8.count <= 4096,
+                  let value = try JSONSerialization.jsonObject(with: Data(encoded.utf8), options: .fragmentsAllowed) as? String,
+                  !value.contains("\0") else { throw ModLoadError.invalid }
+            if let name = parts.first {
+                guard let group = ModelStrings.Group(rawValue: String(name)) else { throw ModLoadError.unsupported }
+                guard result.grouped[group]?[language]?[id] == nil else { throw ModLoadError.invalid }
+                result.grouped[group, default: [:]][language, default: [:]][id] = value
+            } else {
+                guard result.legacy[language]?[id] == nil else { throw ModLoadError.invalid }
+                result.legacy[language, default: [:]][id] = value
+            }
+        }
+        return result
     }
 }

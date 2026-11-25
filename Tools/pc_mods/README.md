@@ -38,7 +38,7 @@ These tools reuse this project's conversion paths to turn **one extracted packag
 | Profile | 范围 / Scope |
 | --- | --- |
 | `rage-winter-2020` | Rage Winter 2020 Miku：重分配模型、纹理和服装部件编号；只在测试覆盖层中替换 Miku 默认服装 0。Remaps model/texture/item IDs and replaces Miku costume 0 in the test overlay; no additive costume menu registration. |
-| `x-song-pack` | X Song Pack 的 32 首曲目：注册 PV、舞台、动作、Auth3D、精灵与 AET，配对扩展字体和各语言缩略图。Registers 32 PVs, stages, motions, Auth3D, sprites/AET; pairs extended fonts and localized thumbnail atlases. |
+| `x-song-pack` | 注册 X Song Pack 的 32 首曲目、舞台、动作、Auth3D、精灵和 AET，配对字体与各语言缩略图。PV800、802、820 的舞台屏幕视频通过 FFmpeg 从 USM 转成游戏声明的 MP4。Registers the 32 songs and their stages, motions, Auth3D, sprites, AET, fonts and localized thumbnails. FFmpeg converts the stage-screen clips for PV800, 802 and 820 from USM to the MP4 paths requested by the game. |
 | `electric-angel-rin-len` | PC v2.0.1 的 Electric Angel 编曲版，PV237。紧凑化 Auth3D／精灵编号、分配独立舞台登记槽；保留全部原缩略图并追加新图。PC v2.0.1, PV237: compact Auth3D/sprite IDs, allocate a stage registry slot, preserve every base thumbnail and append the new one. |
 
 X Charts Pack 依赖 New Classics 的判定、长星键和计分逻辑，不能仅复制谱面启用。X Charts requires New Classics gameplay mechanics; merely copying its charts is insufficient.
@@ -62,9 +62,9 @@ python3 Tools/pc_mods/convert.py \
 
 The manifest records ID mappings and hashes. Use `overlay/` for the model, or `ui-candidate:overlay` priority for X Song's paired fonts/sprites. **Use an isolated test save.** Conversion success is not visual acceptance: inspect models, physics, lyrics, covers, stages and song completion in the game.
 
-Electric Angel 同样使用 `overlay/`，已在模拟器完成 NORMAL：371 COOL、371 连击、100.78%，尚未完成所有镜头和双人表现的原版对照。X Song 已验证 Strangers／海底谭完整结算及海底谭的大小封面、中文歌词；**Calc 的 MV 倒置仍未解决**。模型下载包转换后 16 个文件与已验证配置逐字节相同；模型仍只是覆盖默认服装的试验。
+Electric Angel 同样使用 `overlay/`，已在模拟器完成 NORMAL：371 COOL、371 连击、100.78%，尚未完成所有镜头和双人表现的原版对照。X Song 已验证 Strangers／海底谭完整结算及海底谭的大小封面、中文歌词；《Calc.》的画面方向取决于宿主渲染器版本，见[逐曲报告](../../Reports/X-SONG-MV-20261125.md)。模型下载包转换后 16 个文件与已验证配置逐字节相同；模型仍只是覆盖默认服装的试验。
 
-Electric Angel uses `overlay/` and completed NORMAL in the simulator (371 COOL, 371 combo, 100.78%); camera/duet visual parity is not fully accepted. X Song's Strangers/Umiyuri completed, with Umiyuri covers and Chinese lyrics verified; **Calc's inverted MV remains unresolved**. The downloaded model produces 16 files identical to the previously validated profile, which remains a default-costume replacement experiment.
+Electric Angel uses `overlay/` and completed NORMAL in the simulator (371 COOL, 371 combo, 100.78%); camera/duet visual parity is not fully accepted. X Song's Strangers/Umiyuri completed, with Umiyuri covers and Chinese lyrics verified; The orientation of Calc.'s MV depends on the host renderer version. See the [per-song report](../../Reports/X-SONG-MV-20261125.md). The downloaded model produces 16 files identical to the previously validated profile, which remains a default-costume replacement experiment.
 
 下载来源与转换资源只保存在本地；公开仓库仅保留工具、报告和获授权的测试截图。Downloaded/converted assets remain local; the public repository contains tools, reports and authorized test screenshots only.
 

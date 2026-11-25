@@ -7,8 +7,11 @@ mkdir -p "$PJDV_TEST_ROOT"
 python3 "$PROJECT_ROOT/Tests/ModInstall/build_fixtures.py" "$PJDV_TEST_ROOT/Fixtures"
 python3 "$PROJECT_ROOT/Tests/ModPackages/build_fixtures.py" "$PJDV_TEST_ROOT/ParserFixtures"
 cp "$PJDV_TEST_ROOT/ParserFixtures/zip64.zip" "$PJDV_TEST_ROOT/ParserFixtures/traversal.zip" "$PJDV_TEST_ROOT/ParserFixtures/symlink.zip" "$PJDV_TEST_ROOT/Fixtures/"
+bash "$PROJECT_ROOT/Scripts/build-mod-rar.sh" macos "$PJDV_TEST_ROOT/mod-rar"
 xcrun swiftc -module-cache-path "$PJDV_TEST_ROOT/SwiftCache" \
-    "$PROJECT_ROOT/Sources/ModPackage.swift" "$PROJECT_ROOT/Sources/ModInstaller.swift" \
+    -I "$PROJECT_ROOT/ThirdParty/ModRAR/include" "$PJDV_TEST_ROOT/mod-rar/libpjdvarchive.a" -liconv \
+    "$PROJECT_ROOT/Sources/GameContent.swift" "$PROJECT_ROOT/Sources/ModRARReader.swift" \
+    "$PROJECT_ROOT/Sources/ModPackage.swift" "$PROJECT_ROOT/Sources/ModInstaller.swift" "$PROJECT_ROOT/Sources/ModPlatformAnalyzer.swift" \
     "$PROJECT_ROOT/Tests/ModInstall/main.swift" -lz -o "$PJDV_TEST_ROOT/mod-install"
 python3 - "$PJDV_TEST_ROOT/mod-install" "$PJDV_TEST_ROOT/Fixtures" <<'PY'
 import resource,subprocess,sys

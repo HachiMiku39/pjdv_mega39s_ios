@@ -74,12 +74,15 @@ enum GuestRuntime {
     private static let initialOverlay = ProcessInfo.processInfo.environment["DM_ROMFS_OVERLAY"]
     private static var modMenuRoot: URL?
     private static var songRenderRoot: URL?
+    private static var gameTextFontRoot: URL?
     static func releaseResourceAccess() {
         resources = nil; AutoPlaySession.end()
         if let root = modMenuRoot { try? FileManager.default.removeItem(at:root) }
         modMenuRoot = nil
         if let root = songRenderRoot { try? FileManager.default.removeItem(at: root) }
         songRenderRoot = nil
+        if let root = gameTextFontRoot { try? FileManager.default.removeItem(at: root) }
+        gameTextFontRoot = nil
     }
     static func currentStatus() -> String {
         var value = [CChar](repeating: 0, count: 256)
@@ -89,6 +92,7 @@ enum GuestRuntime {
     static func validateMapping(enhanceSongs: Bool, unlockPVRate: Bool = false, internal1080: Bool = false,
                                 completion: @escaping (LaunchEvent) -> Void) {
         let autoplay = AutoPlaySession.enabled
+        let useGoogleSans = GameTextFontSelection.usesGoogleSans
         let launchOverlay = initialOverlay
         DispatchQueue.global(qos: .userInitiated).async {
             let selectedMods = Result { try RuntimeModCatalog.current.selectedMods() }
@@ -129,9 +133,9 @@ enum GuestRuntime {
                 let mods=try selectedMods.get()
                 if !mods.isEmpty {
                     let session=try ModComposition.prepare(mods,catalog:RuntimeModCatalog.current,base:layout.rom,dlc:layout.dlc,
-                        root:documents.appendingPathComponent("Mods/Compositions",isDirectory:true))
+                        root:ModInbox.managedRoot(under:documents).appendingPathComponent("Compositions",isDirectory:true))
                     modLayers = session.paths
-                    normalSave = documents.appendingPathComponent("Mods/Profiles/"+session.profileID!+"/GuestSave", isDirectory: true)
+                    normalSave = ModInbox.managedRoot(under:documents).appendingPathComponent("Profiles/"+session.profileID!+"/GuestSave", isDirectory: true)
                     if !FileManager.default.fileExists(atPath: normalSave.path), FileManager.default.fileExists(atPath: originalSave.path) {
                         try FileManager.default.createDirectory(at: normalSave.deletingLastPathComponent(), withIntermediateDirectories: true)
                         try FileManager.default.copyItem(at: originalSave, to: normalSave)
@@ -146,12 +150,22 @@ enum GuestRuntime {
                     ? layout.dlc.appendingPathComponent("8", isDirectory: true) : nil
                 songRenderRoot = SongRenderOverlay.prepare(enabled: enhanceSongs, unlockPVRate: unlockPVRate, internal1080: internal1080,
                                                           rom: layout.rom, dlc7: dlc7, layers: &layers, temp: temp)
+                AppLanguage.configure(available: layout.languages)
+                if useGoogleSans {
+                    do {
+                        gameTextFontRoot = try GameTextFontOverlay.prepare(rom: layout.rom, dlc: layout.dlc,
+                            dlcIndexes: layout.dlcContents.map(\.index), layers: &layers, temp: temp, language: AppLanguage.current)
+                    } catch {
+                        let message = L("Google Sans 字体无法应用，本次使用游戏原字体。")
+                        NSLog("PJDV: %@ (%@ %ld)", message, (error as NSError).domain, (error as NSError).code)
+                        DispatchQueue.main.async { completion(.status(message)) }
+                    }
+                }
                 let overlay = layers.joined(separator: ":")
                 if layers.isEmpty { unsetenv("DM_ROMFS_OVERLAY") }
                 else { setenv("DM_ROMFS_OVERLAY", overlay, 1) }
                 setenv("PJDV_SESSION_OVERLAY", overlay, 1)
                 let save = try AutoPlaySession.saveDirectory(normal: normalSave, temp: temp, enabled: autoplay)
-                AppLanguage.configure(available: layout.languages)
                 AppLanguage.prepareSession()
                 // Declare only this import's validated, physically complete
                 // DLC set. Stale folders and unrelated content are not exposed.
@@ -166,7 +180,10 @@ enum GuestRuntime {
                       FileManager.default.fileExists(atPath: menuRoot.appendingPathComponent("manifest.json").path) else {
                     DispatchQueue.main.async { completion(.failed("Exit menu resources unavailable")) };return
                 }
-                let sessionMenu = try ModSessionUI.prepare(bundle:menuRoot,layers:modLayers,temp:temp,language:AppLanguage.current)
+                // The exit menu is prepended by the native host. Feed the active
+                // costume-name table through its one-slot merge before boot.
+                let menuLayers = gameTextFontRoot != nil ? layers : modLayers
+                let sessionMenu = try ModSessionUI.prepare(bundle:menuRoot,layers:menuLayers,temp:temp,language:AppLanguage.current)
                 if sessionMenu != menuRoot { modMenuRoot = sessionMenu }
                 setenv("PJDV_EXIT_MENU_ROOT", sessionMenu.path, 1)
                 let started = rom.withCString { r in dlc.withCString { d in save.path.withCString { s in temp.path.withCString { t in

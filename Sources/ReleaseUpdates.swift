@@ -47,8 +47,8 @@ enum ReleaseUpdatePolicy {
     static func newest(_ data: Data, assetExtension: String) throws -> AvailableRelease? {
         guard data.count <= maximumBytes else { throw URLError(.dataLengthExceedsMaximum) }
         let releases = try JSONDecoder().decode([Release].self, from: data)
-        // Our public builds are prereleases. /latest would omit them. Ignore
-        // source-only drafts/experiments and compare numeric versions, not dates.
+        // The releases list includes both stable releases and public previews.
+        // Require an uploaded asset for this platform and compare versions numerically.
         return releases.compactMap { row -> AvailableRelease? in
             guard !row.draft, let version = AppReleaseVersion(tag: row.tag_name), releasePage(row.html_url),
                   row.assets.contains(where: { $0.state == "uploaded" && $0.name.hasPrefix("PJDVM39-") && $0.name.hasSuffix(assetExtension) }) else { return nil }

@@ -63,6 +63,21 @@ require(catalog.selectedIDs==[a.id]);try catalog.toggle(b.id)
 require(Set(catalog.selectedIDs)==Set([a.id,b.id]));require(try catalog.selectedMods().count==2)
 require(defaults.object(forKey:"pjdv.runtimeMod.v1")==nil)
 let dlc=root.appendingPathComponent("DLC");try fm.createDirectory(at:dlc,withIntermediateDirectories:true)
+// An archive can have a different basename from its object and texture. Both
+// registered members still need to exist in the named archive.
+let outer = root.appendingPathComponent("outer.farc")
+let inner = try F.archiveData([.init(name: "model_obj.bin", data: Data([1])), .init(name: "model_tex.bin", data: Data([2]))])
+try inner.write(to: outer)
+let check = RuntimeMod.Check(path: "rom/objset/outer.farc", bytes: UInt64(inner.count), sha256: F.sha(inner))
+let pack = ModComposition.Pack(a, [check.path: .init(url: outer, check: check)])
+let reader = try ModComposition.Worker(packs: [pack], base: base, dlc: dlc, output: root, progress: Progress())
+var named = objects[0]
+named.archive = "outer.farc"
+require(try reader.objectFile(pack, named).url == outer)
+named.texture = "absent_tex.bin"
+reject { _ = try reader.objectFile(pack, named) }
+named.archive = "missing.farc"
+reject { _ = try reader.objectFile(pack, named) }
 // The single-package fast path must still reject changed payloads/baselines.
 let single=try ModComposition.prepare([a],catalog:catalog,base:base,dlc:dlc,root:cache)
 require(single.paths==[catalog.directory(a).appendingPathComponent("0").path] && single.profileID==a.id.uuidString)

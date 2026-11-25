@@ -1,9 +1,9 @@
 {
   "format": "pjdv-public-source-v1",
   "date": "2026-11-25",
-  "source_build": "0.1.5 build27",
-  "public_release": "v0.1.5b27",
-  "source_parent_commit": "8f267f6c7c361447fbb03728dad02efb72805568",
+  "source_build": "0.2.0 build1",
+  "public_release": "v0.2.0b1",
+  "source_parent_commit": "a982964280bd80cda1d9651b7106f3ff43221415",
   "native_resource_model_and_movie_song_import": true,
   "Eden_raw_ID_over_999_import": false,
   "universal_PC_Mod_compatibility": false,
@@ -11,9 +11,9 @@
   "files": [
     {
       "path": ".gitignore",
-      "bytes": 539,
-      "sha256": "6e2e62cdbe6620ca6e2aba9cd83b73dca325a8d8965f4d6e136243149add2993",
-      "git_blob_sha": "13b96d8f88584ee2e25a5f5e80934d9c65779b6d",
+      "bytes": 559,
+      "sha256": "300a10457a41b904de67b558b837f082ab6bcb7102b216341e311b4a0c2f3a64",
+      "git_blob_sha": "382ebd3e6549b03aa0e4b505ff699d63580d4b42",
       "mode": "100644"
     },
     {
@@ -74,37 +74,37 @@
     },
     {
       "path": "Assets/Localizations/en.lproj/Localizable.strings",
-      "bytes": 24986,
-      "sha256": "a01f2544e0dfeece321ef6129c93eaaa11aa014ec5a116741ff40fb1580405c0",
-      "git_blob_sha": "d2be108ef4249ab6b40e72a34bd1e0e41f6f61d4",
+      "bytes": 27226,
+      "sha256": "869eb7089e4bd94a8b61a00b8d7bc280098f8600e3e11ceaa9d246978d0ae91c",
+      "git_blob_sha": "237fb71395a5628fcd1fcccd3a882229d1b416e0",
       "mode": "100644"
     },
     {
       "path": "Assets/Localizations/ja.lproj/Localizable.strings",
-      "bytes": 29390,
-      "sha256": "ec41d12a80a627880a5e2e574f8ff8c772b840fdbe229ef52f4e2227b027f0bf",
-      "git_blob_sha": "d80d8f2e92ad693f47b62ac2a77a1afba1a99b39",
+      "bytes": 32167,
+      "sha256": "2d61713a05834bb0d2179f6b6707594f12bf0b755e8328581299cadd034a4052",
+      "git_blob_sha": "b5e3f29e57744421c233d97ce2d67d905ce79a5d",
       "mode": "100644"
     },
     {
       "path": "Assets/Localizations/ko.lproj/Localizable.strings",
-      "bytes": 27264,
-      "sha256": "863d88fcf604ac38de3a6ccda23a81747011bba3b8c7cf620a1ddc2a34be1c01",
-      "git_blob_sha": "b8bcd07fc2332a4028c4267b729d7d9d1fd7dcbd",
+      "bytes": 29742,
+      "sha256": "5d2590278ba259fbea86afae10ecc2023a0d82132574ff52e8277a43c5d8b908",
+      "git_blob_sha": "3330945f2f4f00a0eb92cb61c90fae085bb7446f",
       "mode": "100644"
     },
     {
       "path": "Assets/Localizations/zh-Hans.lproj/Localizable.strings",
-      "bytes": 23768,
-      "sha256": "d8295ffddb40bfcada35be85f80a4a87d6bf378e2358d9fef2e58a54cf324f18",
-      "git_blob_sha": "9d471bb9bdbbcb6ae1be114707929112907dd65c",
+      "bytes": 25883,
+      "sha256": "2e7093bbede9d49e430e158180c5a175966a35b00e06bebbd0287eed56d174a8",
+      "git_blob_sha": "30816e599700358e98eb633c5040b3dbb7e6496b",
       "mode": "100644"
     },
     {
       "path": "Assets/Localizations/zh-Hant.lproj/Localizable.strings",
-      "bytes": 24316,
-      "sha256": "f36164bc03c455680a475ca5ddea2d6dde07a8ccc7a57a3244110e9ae9c2eb82",
-      "git_blob_sha": "cef78368ac4517cb3c7712bd9bca575bde70dc1f",
+      "bytes": 26504,
+      "sha256": "166e8f2a5093cf5f25d54ff1d26e4f8c85355cfd1be7217c523d926462955c2d",
+      "git_blob_sha": "56dbdc9d7caac88d8beb69c893ea12f220abfaca",
       "mode": "100644"
     },
     {
@@ -123,23 +123,23 @@
     },
     {
       "path": "Assets/ThirdPartyNotices.txt",
-      "bytes": 3786,
-      "sha256": "65f51a9f9b956539193d53df4b117d84325a800bf02f0596e2dce5530652ae91",
-      "git_blob_sha": "b1ad72720816cc2fcb5c47e868fbb8c4d3d2a094",
+      "bytes": 8250,
+      "sha256": "a216e53a94ffa01cdb22c8ec07d2bb44992c3545957f2588d2a4f15b526a113c",
+      "git_blob_sha": "dc9860ae73a6fb045e04cd5b55d7209be8264a70",
       "mode": "100644"
     },
     {
       "path": "BUILDING.md",
-      "bytes": 18629,
-      "sha256": "f8d63f33aa91f398fa635d16f806d73fafac326cc791038c77b69d3ef5f1d4e3",
-      "git_blob_sha": "b0405ddc4d7d43d216d2b50a6a9e6bd8306e7cd7",
+      "bytes": 19589,
+      "sha256": "a7e2afcdb3e76e90fdea251cf5e7f9404788dcbd8fdec587c0ec49d4f745cadf",
+      "git_blob_sha": "3229136afc337cd8ac9a197c6301eb083f15499b",
       "mode": "100644"
     },
     {
       "path": "Info.plist",
-      "bytes": 2882,
-      "sha256": "c1a8a150635fc9fbbed82b68975b7c082d7b7c2fdc7748c166bc1d9cb5a7238e",
-      "git_blob_sha": "c47b12b166cd9d138a4ce87f0d537d6d5a149e64",
+      "bytes": 2881,
+      "sha256": "04edb37a3c30fcaea768c3c14e9e63807da10cdf6f6fbc567c1e05d1c784b663",
+      "git_blob_sha": "00003c3044209e0f0974d82f4bac95f252279340",
       "mode": "100644"
     },
     {
@@ -151,16 +151,16 @@
     },
     {
       "path": "README.en.md",
-      "bytes": 69604,
-      "sha256": "b940f45e8b05245e49b899eb904f06be4d185607b6f33992c39014de6e92a849",
-      "git_blob_sha": "e405acc750d948db4566208cd41f3eccc49eb1b0",
+      "bytes": 72528,
+      "sha256": "9af49d3c2dcb796b2da26f4a8499f58faa04a616191f27bab918048f580b79c1",
+      "git_blob_sha": "14efddefac5a1f2af8393ac22a2accde711563a2",
       "mode": "100644"
     },
     {
       "path": "README.md",
-      "bytes": 61397,
-      "sha256": "ddb25ff1a3adadd3879196439865bb2b8f89cf1f2a8c6e8a50372511df42373a",
-      "git_blob_sha": "904583c91735ac57d55a6acf955d609674cfc1ae",
+      "bytes": 64105,
+      "sha256": "a6b92d38e83572da2a97d94768fd412c75919e3a846067d9be51d4949efbe092",
+      "git_blob_sha": "2b36fdb22dd5e6f607f2fbd1a7e5ebd93ab9135f",
       "mode": "100644"
     },
     {
@@ -322,6 +322,13 @@
       "bytes": 11333,
       "sha256": "c238af6944628f1eebe8b46f35cc88f89bd0f596a970bd21b490107d922ddb18",
       "git_blob_sha": "0dc96cec32b3d958366dc0aaa60e73ebc34651ad",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/RELEASE-0.2.0b1.md",
+      "bytes": 10588,
+      "sha256": "124a449f0a53faf981de90ec95e43e19ab933f3c5d10b673d3afad7b55e5c73a",
+      "git_blob_sha": "e1106cc37d8549e950b978a1849dff1f4a6e82a1",
       "mode": "100644"
     },
     {
@@ -1046,6 +1053,55 @@
       "mode": "100644"
     },
     {
+      "path": "Reports/images/release-0.2.0b1/calc-lyrics.png",
+      "bytes": 82214,
+      "sha256": "088882854f02f185e3cf28da45898d14e7f6c998db137b277d33fc615654f534",
+      "git_blob_sha": "4f15c9983aa98e29358c936ac35b6c092d4fa08c",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/release-0.2.0b1/calc-orientation.jpg",
+      "bytes": 332256,
+      "sha256": "1f5debfc9cfce0a7a2f3666bf71073beac85c95b9fe620b2ad49ed13f48cb7dc",
+      "git_blob_sha": "5404aa06294f4f5c808d6cfeff2067f88bbf489d",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/release-0.2.0b1/hajimari-result.jpg",
+      "bytes": 118166,
+      "sha256": "df3e064ec844ad269896cf909763ef1521d9282f6a95186c807b42b66cb8384b",
+      "git_blob_sha": "5c365b644e9c0701f6d9a5915f0edd03cb2f390c",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/release-0.2.0b1/miracle-paint.jpg",
+      "bytes": 95810,
+      "sha256": "0988e9f192e9423a7413ee53a8bcb949fa302b3e3cfa619d83d69345191e1e95",
+      "git_blob_sha": "0386b687893f37a688c06c2ae6a4e5b7241b32b9",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/release-0.2.0b1/racing-2024.jpg",
+      "bytes": 86924,
+      "sha256": "23f06cb0897319b73ee839e9ce9e5720c9ab41dd00e50aca6414b7b058021844",
+      "git_blob_sha": "52369e1c64bfe827fcc6b7816cc9dd5b7f3baeeb",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/release-0.2.0b1/racing-2025.jpg",
+      "bytes": 104779,
+      "sha256": "d896535620270e54857002f078e2e760fa01af58063849b1b312be2ad11f3bab",
+      "git_blob_sha": "38ff668d9c57b57fcd76d49e69b5d6b0d618a0c2",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/release-0.2.0b1/rekka-kohane.jpg",
+      "bytes": 101697,
+      "sha256": "7d9256b673234b2b0e7c5bce273544657d80db79ca5ad88598d7d910f4147bfa",
+      "git_blob_sha": "25d8b95e50d36fe286db2ee8d6ac00ec222bba49",
+      "mode": "100644"
+    },
+    {
       "path": "Reports/images/touch-play-20261108/catch-slide-result.png",
       "bytes": 3714104,
       "sha256": "41e2b2e1e71cae1579ea44dabf035d1e16afce8ad57186ff7570832b9bc15a08",
@@ -1236,9 +1292,9 @@
     },
     {
       "path": "Runtime/dm/gfx/nvn/nvn_mtl.m",
-      "bytes": 714839,
-      "sha256": "dc111fea61acafd961f84aeac6c1d32a4f4f1eb2621910678afa49da73d2b2c8",
-      "git_blob_sha": "8141af9547083e58d7d6da890a26bac301fcb5c7",
+      "bytes": 715713,
+      "sha256": "52f634066287324a1c00fe2b68e54bf8d3654dbe29b3911533cb53ad6ec5c678",
+      "git_blob_sha": "d6c0dbef60d97115600315e3d1296de27ee9de5c",
       "mode": "100644"
     },
     {
@@ -1463,6 +1519,13 @@
       "bytes": 26079,
       "sha256": "3413d23ae04d46d61e8d8b66e64ca566a9052541f504fe8abe51759bbc5dfdaf",
       "git_blob_sha": "d7257f69963060f3eb3b9cfda6da1db3118e6d67",
+      "mode": "100644"
+    },
+    {
+      "path": "Runtime/dm/gfx/nvn/pjdv_transparency_origin.inc",
+      "bytes": 2552,
+      "sha256": "f33f01218e88d3510e12d00924c2a4963b679aca005342155ab6340be8cade90",
+      "git_blob_sha": "3ee5934abde39dcb905c124cdefb72fb0e69b471",
       "mode": "100644"
     },
     {
@@ -5624,6 +5687,13 @@
       "mode": "100644"
     },
     {
+      "path": "Scripts/build-mod-rar.sh",
+      "bytes": 1880,
+      "sha256": "6076e33170ab7d72b61beea0bfb4564c828114686fcbdae5c02098e7ae8fee28",
+      "git_blob_sha": "b9ad3117e8f529345107f80a729c75b59f57537d",
+      "mode": "100755"
+    },
+    {
       "path": "Scripts/build-vp9-decoder.py",
       "bytes": 2767,
       "sha256": "17c0e9c7707b04fc1ebe52b649325e2670bc8d310da89e374f0cbfe73796c2f0",
@@ -5653,10 +5723,17 @@
     },
     {
       "path": "Scripts/package-render-assets.sh",
-      "bytes": 1919,
-      "sha256": "7e44d9e92aca97f39e08f12d54d4a24057157d47272b5349f0108d0e3a323f65",
-      "git_blob_sha": "5e0d113b4da44d2e8d40b03e3304875500a3872b",
+      "bytes": 2436,
+      "sha256": "7de11f78490d8423b65226f2126c80b0c10cb116e2d8c52227b3698b6ec8ecf0",
+      "git_blob_sha": "07c6edf92ee724f003b70f65f08131ceb5dc2784",
       "mode": "100755"
+    },
+    {
+      "path": "Scripts/prepare_google_sans.py",
+      "bytes": 3761,
+      "sha256": "58e8c2a9fa8143da0a2f0308120234b6f6dfeee2650d7ebf0389287fac2922ee",
+      "git_blob_sha": "d82ea5a2119dfb9f08284c96a2e6dc23d64dcecc",
+      "mode": "100644"
     },
     {
       "path": "Scripts/test-avc-contract.sh",
@@ -5680,10 +5757,24 @@
       "mode": "100755"
     },
     {
+      "path": "Scripts/test-mod-archives.sh",
+      "bytes": 1048,
+      "sha256": "02fc7dd6fb31ec5e6fdcf9f9a08a6515a70d6f7983b387006c9b0f4925f52a75",
+      "git_blob_sha": "b8a9d208cfdc4120cd8ddbe1e79338a7a326c55a",
+      "mode": "100755"
+    },
+    {
+      "path": "Scripts/test-mod-inbox.sh",
+      "bytes": 498,
+      "sha256": "aa19c978f762bbc222ef5a252d3ee48b82f075505a58b66244b004cb18306dd9",
+      "git_blob_sha": "9e76ead75a7e899b83680078e822550243320cce",
+      "mode": "100755"
+    },
+    {
       "path": "Scripts/test-mod-install.sh",
-      "bytes": 1448,
-      "sha256": "cba5e0a9276c8ab3224d7807153ed54f9b8ee1a81ae43b6655bf9385bb37f374",
-      "git_blob_sha": "5c9f4638530982bed81a6d530275126017a95311",
+      "bytes": 1769,
+      "sha256": "b24c44bcacbe927fc6c248a2d90176fcef9dce92892f2f25c99ba4bec4d2bbfc",
+      "git_blob_sha": "b575fd4b7f3d4fe3e817bbab534a0f2d515c9212",
       "mode": "100755"
     },
     {
@@ -5695,9 +5786,16 @@
     },
     {
       "path": "Scripts/test-mod-packages.sh",
-      "bytes": 984,
-      "sha256": "1060189b6706a3e7fd02dae463c16abf036a76f430fbf741b2ec323b6c77717b",
-      "git_blob_sha": "3c6614cb31d125962982ef527490e7597fa12dc5",
+      "bytes": 1352,
+      "sha256": "bd2c84a9bb5d27027c269da55edf8292272c0d9890984c1e3241159fb796e92a",
+      "git_blob_sha": "8fd188672857c96ff79c6ccabc077b459e798934",
+      "mode": "100755"
+    },
+    {
+      "path": "Scripts/test-mod-platform.sh",
+      "bytes": 960,
+      "sha256": "d33c42c773bb1a0410d03b8ab81c3720e62f4ed5ed52f40712025e4be893efc5",
+      "git_blob_sha": "7666050c7e5f64f2de5b337cbac23c379b2229d1",
       "mode": "100755"
     },
     {
@@ -5709,16 +5807,16 @@
     },
     {
       "path": "Scripts/test-pc-model-import.sh",
-      "bytes": 730,
-      "sha256": "f47c9466f6bf31f2ee8ab9f3ad8ef973847c74574a7ba1896a92d794f63f80cf",
-      "git_blob_sha": "3601f29fae574e9f10e0eee1a6f0c63913fb2cba",
+      "bytes": 1051,
+      "sha256": "11f6dd6905e8d2c31c2c6971c0e4ddbde41a75bcee8d6cf7a6d7a9ee909479fc",
+      "git_blob_sha": "13c57dcf79c7c8d82eb667002e19586e5d6253ca",
       "mode": "100644"
     },
     {
       "path": "Scripts/test-pc-song-import.sh",
-      "bytes": 829,
-      "sha256": "22ab12eb03c7ac5dde61d15186e5a6aff9812b8611f7883db93efa1d27cdb135",
-      "git_blob_sha": "73d8a1b3d607f2d85cc5f6784a104e97d83cd570",
+      "bytes": 1150,
+      "sha256": "481771baf161224110a5a2c9d0ec400f943ba87b4f0ce97d7699bccabbe237c9",
+      "git_blob_sha": "b4a2d6251bd228396489277723940824c241fdc9",
       "mode": "100755"
     },
     {
@@ -5743,17 +5841,24 @@
       "mode": "100755"
     },
     {
+      "path": "Scripts/test-transparency-origin.sh",
+      "bytes": 630,
+      "sha256": "c283a00c62ac07e036493655f2f7b1b8caf9b77e98b164b6f7af8dace91d6d88",
+      "git_blob_sha": "39c903b82939871fe8b7b1369d41f839f809e0b0",
+      "mode": "100644"
+    },
+    {
       "path": "Sources/App.swift",
-      "bytes": 70143,
-      "sha256": "f75ddd5c640895b9a8092ab44a06c8d61537aeeda1da0f21b9d37e10f6ff6011",
-      "git_blob_sha": "618901c2298d830f8f06afd8add1b18bbe6248ca",
+      "bytes": 71356,
+      "sha256": "08321805d541af8601e48ffec72e34bdc366338b6b3c9a7249b9422ba1e8393b",
+      "git_blob_sha": "ce85624b76c1ca3c6682d077b7b2bf2e6b78490b",
       "mode": "100644"
     },
     {
       "path": "Sources/AppLanguage.swift",
-      "bytes": 2295,
-      "sha256": "57af68887a38aa52b8e31fa7666f72c5bf56e1917a28b7e4ed9ad81f5a0b6d0f",
-      "git_blob_sha": "89b0f4a9fd74d49acd1c1d681c23d1dcdfa6c335",
+      "bytes": 2547,
+      "sha256": "adb0018e2d0f5f371977788d33daa2de1cd5ed5b5de046a634127aa3d87f332c",
+      "git_blob_sha": "191710ca284e3664ad7956ecad143c7daf389f3a",
       "mode": "100644"
     },
     {
@@ -5768,6 +5873,27 @@
       "bytes": 2231,
       "sha256": "4159a3ca54fcb88a82c5ca5a99a7eb8ff5680e0134fd07e070a5f688a310a949",
       "git_blob_sha": "bf54e000b4b86daa11ed314922ad80c208f79d21",
+      "mode": "100644"
+    },
+    {
+      "path": "Sources/GameTextFontAtlas.swift",
+      "bytes": 14790,
+      "sha256": "2ee8549cb13208cdbb6378e46b250d3369c2f4ef9e5177989d271998a6cfb5f8",
+      "git_blob_sha": "99731faa1802130f1311c56c7c6a8b88a1cfb403",
+      "mode": "100644"
+    },
+    {
+      "path": "Sources/GameTextFontContent.swift",
+      "bytes": 13434,
+      "sha256": "def10ac66cb277c003915a46baf387cd506bf8cc166726b1a8f20242843a0964",
+      "git_blob_sha": "8cf44f9cc1bdcbdc02cb704de1f5eb40b0e10687",
+      "mode": "100644"
+    },
+    {
+      "path": "Sources/GameTextFontOverlay.swift",
+      "bytes": 11968,
+      "sha256": "f3438a713c18eb5f0397896444ddb079350b39aab3eea5d28d4b51978f0edd96",
+      "git_blob_sha": "f7c68ed19b79735f7d5b06f78048920fa17b576c",
       "mode": "100644"
     },
     {
@@ -5793,9 +5919,9 @@
     },
     {
       "path": "Sources/GuestRuntime.swift",
-      "bytes": 11432,
-      "sha256": "ecea89d26482e52120fe8bdf8f4e9ab2299bc58e76fa4f7e345469604b78bcd4",
-      "git_blob_sha": "2bfbbecb7ed2ba4b4178233710c575d0d5671817",
+      "bytes": 12621,
+      "sha256": "8f61ddc4235cfde2e619a9da69e9d71e83281ac046095ef9ed1b3381b708c5ca",
+      "git_blob_sha": "55c40ad501b3f4b7ddaac0fd3b543db55c544b6b",
       "mode": "100644"
     },
     {
@@ -5814,9 +5940,9 @@
     },
     {
       "path": "Sources/LauncherInterface.swift",
-      "bytes": 16458,
-      "sha256": "1a87a78ffce2fd2aac40a143099df82638a5c1847a3f57ae935b7f2df4dd57da",
-      "git_blob_sha": "5495aad7748203b8392819a89aa5ee3cc7d80c72",
+      "bytes": 16551,
+      "sha256": "c96b41874af73dbfaa6f353e0a68d692df93934cb907b33b9e32cadd855472c7",
+      "git_blob_sha": "a6f7e78d24f33772949323320314f56b03a5036e",
       "mode": "100644"
     },
     {
@@ -5835,16 +5961,16 @@
     },
     {
       "path": "Sources/ModComposition.swift",
-      "bytes": 59252,
-      "sha256": "8663fd96b0454db3460f18d1036fda520c63abcca5f44f0402127d55e66a2e6b",
-      "git_blob_sha": "89aae60600cd86a35d615aaf39ffdf9d8a05203b",
+      "bytes": 59986,
+      "sha256": "28e0992aec09fa7186c8ba443162ecc0e3990b1aa56e8bf0f1d3d6ffeaa315ae",
+      "git_blob_sha": "a61c0356bc3e468798e50406d09b5d86ba28dcca",
       "mode": "100644"
     },
     {
       "path": "Sources/ModDownloadBrowser.swift",
-      "bytes": 7620,
-      "sha256": "fbfd51ed0ddbd707d16073f9e728c1853256723b412c589ebfb3cf60e3d10957",
-      "git_blob_sha": "e5e7e98a0995766aca683b4093112caa871a858b",
+      "bytes": 7676,
+      "sha256": "df5d8c898aa0cc62f3c35ce4e3d676c19a44cb6f6deccdeba3c2ba11550c5efc",
+      "git_blob_sha": "34db53d6692968de4496a6f6c5d94faa050b4b68",
       "mode": "100644"
     },
     {
@@ -5856,23 +5982,51 @@
     },
     {
       "path": "Sources/ModImportController.swift",
-      "bytes": 24968,
-      "sha256": "fa5db621b03634584187b2b9b4f4daa82d7c6c15ecd2a42937e3d2ef876dd7e1",
-      "git_blob_sha": "a6d2f14535e9356fc4b491eddaf35deb32a279f3",
+      "bytes": 29124,
+      "sha256": "1c50b3a53511c871e7e216907427e1164101059405743ae8838fa9230cb2bb23",
+      "git_blob_sha": "6426d8512203956cb1e1fa0d91d7d20f11f407dd",
+      "mode": "100644"
+    },
+    {
+      "path": "Sources/ModInbox.swift",
+      "bytes": 5592,
+      "sha256": "269746b3ef8d0bd72408d7749cf47fe1e804ee331edb88d36e54aec3263a6452",
+      "git_blob_sha": "9a18306cd1dcbdbc30f3810b4e3b0509bb3d8f1e",
       "mode": "100644"
     },
     {
       "path": "Sources/ModInstaller.swift",
-      "bytes": 14848,
-      "sha256": "ca66accf25bc0b3649a76c0ce92f2de152070130b2805b9ce87542ce30c073e2",
-      "git_blob_sha": "795a68cba7eb7917afee0e4efa3ecdcec30c27f5",
+      "bytes": 18855,
+      "sha256": "7666bbb169b732a5866497c380a45f16da55bfc19356a4d79612734bbbed0fab",
+      "git_blob_sha": "6ebf71fab535cba08b9d1a7001c398b1d4385cb7",
       "mode": "100644"
     },
     {
       "path": "Sources/ModPackage.swift",
-      "bytes": 42138,
-      "sha256": "e1c0600517d176f82a3d7dd4d9e6798a2514b3f4c92070331d05cfbcdec92c7e",
-      "git_blob_sha": "840cc8501e52136c34266f25a437b22e06de8b31",
+      "bytes": 45351,
+      "sha256": "453ac1fd25dfb2019e245a26afdf1a808c7d23640860426daccb345c5e8eb6cb",
+      "git_blob_sha": "fb6f7fe7b1021151f7ce42e5db422aaa1ea1f757",
+      "mode": "100644"
+    },
+    {
+      "path": "Sources/ModPlatformAnalyzer.swift",
+      "bytes": 16447,
+      "sha256": "0bc06d034e49fa1714c58d2405520c3ed0cc0aaf5d62c706819e17242034f108",
+      "git_blob_sha": "bec1d458d39a1a5d90750f04e608bf6499a8a4f2",
+      "mode": "100644"
+    },
+    {
+      "path": "Sources/ModRARReader.swift",
+      "bytes": 8530,
+      "sha256": "0962eece6e56cdd19958150809e01d8068fd6eb735fe7231a81ef81cc31520d9",
+      "git_blob_sha": "9fce4acfc761b2cbfd0fc98a351304091c1b73ca",
+      "mode": "100644"
+    },
+    {
+      "path": "Sources/ModSwitchOverlay.swift",
+      "bytes": 6404,
+      "sha256": "6a75c25cbeaf84ce71bc849d91a36b7c38a97fd080e229a86e616b5216790c0f",
+      "git_blob_sha": "4bb2fced6cc9ac78acd17cca22a89a3756f31d6a",
       "mode": "100644"
     },
     {
@@ -5891,16 +6045,16 @@
     },
     {
       "path": "Sources/PCModelConverter.swift",
-      "bytes": 37948,
-      "sha256": "3e282dbb3ee3035e59ffa57d7559247d6d70ecc1d69fcf957d966055368d5812",
-      "git_blob_sha": "57780acc324130d67b9c9a454b5f84763569a394",
+      "bytes": 41813,
+      "sha256": "f7efd49f37aa37d93ecd391060ce2e809ab75ae65fa78afb7c2c19406b81bbdc",
+      "git_blob_sha": "2c08bd8b4ee17680581642231d602824ac263d34",
       "mode": "100644"
     },
     {
       "path": "Sources/PCSongConverter.swift",
-      "bytes": 23821,
-      "sha256": "1721c53fb7bd497e034c6f700baf0c6e1be8975100f87c167a254424ac8a1e4d",
-      "git_blob_sha": "47e791e4468559d9f2c54b6dc990ff2118b3ca99",
+      "bytes": 23304,
+      "sha256": "ec151c21494319490ffff4210b4195397e8f5044da534da86a97e77943edd45b",
+      "git_blob_sha": "449a587eb3ef1e378c284a75f5982e9e8d302010",
       "mode": "100644"
     },
     {
@@ -5919,9 +6073,9 @@
     },
     {
       "path": "Sources/ReleaseUpdates.swift",
-      "bytes": 9361,
-      "sha256": "0fea2c03fa667e38da69191e01f6cd945c560ffa2049e433727cb3bf0c8a03cf",
-      "git_blob_sha": "9f990592481a527cf905c0c933acee860c788a6a",
+      "bytes": 9369,
+      "sha256": "756101019c82c7dd269d9d5e32ebcf97b964a229c951e1b647d640da869b0e6c",
+      "git_blob_sha": "880eb6a94f5824e15b771dd001e014ad213d04a5",
       "mode": "100644"
     },
     {
@@ -5996,9 +6150,9 @@
     },
     {
       "path": "SwitchIOSLab.xcodeproj/project.pbxproj",
-      "bytes": 30540,
-      "sha256": "d6895686d05782d21e1674206cdc02084ccc0ecd6db21733c7fc10ea11f992e5",
-      "git_blob_sha": "108905d9024f2e75037d355f5942be424c1760f6",
+      "bytes": 33407,
+      "sha256": "61f2ef0d0a7e8831757ed2903b6796fd2b665efd19727239d309b054e7a6d9be",
+      "git_blob_sha": "69fd4f3efb94d56150cda05ed2ecc1c23ef5f5ba",
       "mode": "100644"
     },
     {
@@ -6065,6 +6219,13 @@
       "mode": "100644"
     },
     {
+      "path": "Tests/GameTextFont/main.swift",
+      "bytes": 4798,
+      "sha256": "499848d852913271f26d01e8d69bcafde46aec78537115d537882653f2c5e320",
+      "git_blob_sha": "3680ea7d4500ce75662c7799a6493956d983103f",
+      "mode": "100644"
+    },
+    {
       "path": "Tests/ImportPicker/README.md",
       "bytes": 2787,
       "sha256": "37afc8018a10e89b996f32faa21f0de132727bb2f6101f061ca4923e81d9e3fc",
@@ -6107,6 +6268,20 @@
       "mode": "100644"
     },
     {
+      "path": "Tests/ModArchives/build_fixtures.py",
+      "bytes": 4266,
+      "sha256": "87a51d9bf5b4f00ba120ac29d076894cb7930c5fafbf90806319a756fcd56d47",
+      "git_blob_sha": "f1072d3afa5407d6af4a42155d1b6f41f54e0a74",
+      "mode": "100644"
+    },
+    {
+      "path": "Tests/ModArchives/main.swift",
+      "bytes": 8791,
+      "sha256": "d2b1aed540ad6145ff75c4d4de591d39e5dc3f783e92fc0f54f99dccd86af6a5",
+      "git_blob_sha": "ae746f0c2c6087a68cfa3bedbc73e1215abadca2",
+      "mode": "100644"
+    },
+    {
       "path": "Tests/ModComposition/build_fixtures.py",
       "bytes": 1019,
       "sha256": "0fded030afdb2bdbb3d3765dc02426e3dce0d7ebf82d979b576090bf8f9939ba",
@@ -6115,9 +6290,16 @@
     },
     {
       "path": "Tests/ModComposition/main.swift",
-      "bytes": 18490,
-      "sha256": "937b3c66dc5277762b9f8c26e52cedafbf78ab0bc924eb939eeddd0ab85c08a6",
-      "git_blob_sha": "64f64467a9e585994d1aa2d435cdadcc0f22262f",
+      "bytes": 19415,
+      "sha256": "300152d43ecc9f024475e488d3a1e07be4c28101233a82d1a028d6290ac294a6",
+      "git_blob_sha": "6a72fcc323ba6eb0ebdbf6860da4664a17435d4e",
+      "mode": "100644"
+    },
+    {
+      "path": "Tests/ModInbox/main.swift",
+      "bytes": 3589,
+      "sha256": "bc759a4d9d7a3f20c1ec7a187ca438d39a724f00aa53dae9eaca605c53687039",
+      "git_blob_sha": "94660ea9e6c8129e13aea570e21a29ccfd9eee8b",
       "mode": "100644"
     },
     {
@@ -6150,9 +6332,23 @@
     },
     {
       "path": "Tests/ModPackages/main.swift",
-      "bytes": 3469,
-      "sha256": "51e11e30b16f4c1edb3e1d0c671f4a165ed8985927c087543dc2342ea2e81cc5",
-      "git_blob_sha": "47c20e74b144d1006752fe05d2499194ad4e0377",
+      "bytes": 3921,
+      "sha256": "fe362bff1e974ed8ccce9c265e3601cc28d16c6330ff18324598118f2619bbea",
+      "git_blob_sha": "d17e109f7d3a41b64afc390814f1bd29cd032f14",
+      "mode": "100644"
+    },
+    {
+      "path": "Tests/ModPlatform/build_fixtures.py",
+      "bytes": 4544,
+      "sha256": "c6518b0e20c570d522d7c23d8cdf0c89e1b890682b159194fd4bd8e15096076f",
+      "git_blob_sha": "ff6ae7e29557a1a50fcf17af67c9466c00230bfa",
+      "mode": "100644"
+    },
+    {
+      "path": "Tests/ModPlatform/main.swift",
+      "bytes": 5166,
+      "sha256": "71ddce1776474cd0d6ecd2456839f50605bbb9e1288ce26b5a140523cf5ceec5",
+      "git_blob_sha": "c1fe34f79420eeb75316c3fa0cd7ef88cca26bc0",
       "mode": "100644"
     },
     {
@@ -6178,9 +6374,9 @@
     },
     {
       "path": "Tests/PCModelImport/main.swift",
-      "bytes": 11570,
-      "sha256": "3b066700bfacc1c4d86d5099e4e6b9b1ecfab86dc71083a9efe3bc28b14316ed",
-      "git_blob_sha": "e6141375324d6cc3586dc2eb3e5334c5ce4f9cfd",
+      "bytes": 14470,
+      "sha256": "6457af4c2396df3c2727fcf8736f974337659a5209d2d3fdaa607b8c453a445f",
+      "git_blob_sha": "ce01f91cfa38c54df5ef72c09b1f4caad8c912fc",
       "mode": "100644"
     },
     {
@@ -6192,9 +6388,9 @@
     },
     {
       "path": "Tests/PCSongImport/main.swift",
-      "bytes": 8043,
-      "sha256": "db180c38fba37223f05bb41430eb72b843243fb0d36702f90a1f059ba8069bff",
-      "git_blob_sha": "1c25c9b8f8fd929860a72de75690e356851b6670",
+      "bytes": 9093,
+      "sha256": "615e82a8cb272690be08c0b2a4d8694008381c7a47fd2f382150ffd279ccd6be",
+      "git_blob_sha": "e0fb349d3ce548a82aaf8f74b5414c9173dbe440",
       "mode": "100644"
     },
     {
@@ -6241,9 +6437,9 @@
     },
     {
       "path": "Tests/ReleaseUpdates/main.swift",
-      "bytes": 4922,
-      "sha256": "ff02bb63756f9dcdb9121d07ce93305de50de1bb533170d7a70c43b04e90ed13",
-      "git_blob_sha": "7924b586767e4db5f49bd74cc5813b3de6aa08c3",
+      "bytes": 6094,
+      "sha256": "7a75f255f660089d964d3e8e347ecf4c30613b0d8ba828a238f1e7ec126ba8ac",
+      "git_blob_sha": "3b691ec6c5652d05b322d2a1d0cb2d5675363a8b",
       "mode": "100644"
     },
     {
@@ -6296,10 +6492,24 @@
       "mode": "100644"
     },
     {
+      "path": "Tests/TransparencyOrigin/main.m",
+      "bytes": 6945,
+      "sha256": "837aa25365f10da4a0c7989489ca1af040e565d1d991b89248b5c2d587b1a9ab",
+      "git_blob_sha": "9eaa0313dd6b500e82016295cbbed4807843e484",
+      "mode": "100644"
+    },
+    {
       "path": "Tests/USMVideo/test_stream.py",
       "bytes": 2817,
       "sha256": "344d560417317267e33054249a66367917dfcf2af7fabe7e6251b120748f7483",
       "git_blob_sha": "a74ac59a286072765eeddc2c28d7377bdcb19e1e",
+      "mode": "100644"
+    },
+    {
+      "path": "Tests/USMVideo/test_x_song.py",
+      "bytes": 4003,
+      "sha256": "42ecbfaff0ce5d70ae90948adf2eca3253d01abc514557d17406f92707fa9025",
+      "git_blob_sha": "5f6af350073a8e288a70477f1422c82df5d095f5",
       "mode": "100644"
     },
     {
@@ -6349,6 +6559,405 @@
       "bytes": 3616,
       "sha256": "8aa36b5fc775304dd06a32a05954ac90508d381e524b1b3ca1ccc61ba038932b",
       "git_blob_sha": "7d28a01b064eb5e7c400ac94755d8c244e82fbac",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/COPYING",
+      "bytes": 3089,
+      "sha256": "30e556b3959e3985d66efefec5eaac51d4995053caa1d3cffe6eb916f146f229",
+      "git_blob_sha": "9d0bcf81ff613bf5f36d71983b75e20cd0f69213",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/Inputs.xcfilelist",
+      "bytes": 2850,
+      "sha256": "02e0faf4477d70c1c38145575fbc9f5b870f802debe40091f7b4a1a4244ae4f2",
+      "git_blob_sha": "959fc81181d057ebb22db35ddb51b9f69009ab45",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/README.md",
+      "bytes": 2652,
+      "sha256": "639e4460aaa558e21c8eb73ea5e1b025c003e66cc6e8a1780dcd6b00c02116e6",
+      "git_blob_sha": "83c922d55b6b6f7191facd1e62c3ad9f98f91f7a",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/SHA256SUMS",
+      "bytes": 4488,
+      "sha256": "d412f18882991a3b74c2fa825a9687478f217f176d022645f6d04beb0ed6418e",
+      "git_blob_sha": "2c96dda1ac77a03157b8bb20f1dcb02a9934048b",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/darwin_config.h",
+      "bytes": 1369,
+      "sha256": "fc143779815f4ba6e2f4cff578c458da83f4b6fc4993e111519c30081eb6d93b",
+      "git_blob_sha": "742c94f8dcd30f384fbc6a62e1fda2f5d0dc6b49",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/fixtures/test_read_format_rar5_compressed.rar",
+      "bytes": 436,
+      "sha256": "68f9d7e2662cd5bc5607ba9c6bf1edbf121cf3b08011a7d8643091791750a7c8",
+      "git_blob_sha": "6d58585c4acb1035528a53df0d98f65f4cd0e6e7",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/fixtures/test_read_format_rar_compress_normal.rar",
+      "bytes": 14617,
+      "sha256": "7d32e2ef511d0ade372345440838165df828197eff4d7816880dafde690cce03",
+      "git_blob_sha": "cd6f42ff60f40fcfc8c892e041fe8cd78ba332d3",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/fixtures/test_read_format_rar_subblock.rar",
+      "bytes": 166,
+      "sha256": "e871277670529329cc2c06f178ced453c560d03fd26c76614f42ef9c06b50af0",
+      "git_blob_sha": "f3e9435937954211ecc6212d0a9e8912e9229d9e",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/include/archive.h",
+      "bytes": 56278,
+      "sha256": "7c1f9a5858cf11b4097e61489eb498ea955067287a9f754312c60cce3a3e54de",
+      "git_blob_sha": "2c1390828ca27b26fce26b1a99e337a07af72876",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/include/archive_entry.h",
+      "bytes": 35427,
+      "sha256": "0f76dc1de6cd51be76c946c27ab5af0e9b29b3f0991d50a498cf17e0ee0c2ffc",
+      "git_blob_sha": "ce9626a68e7d4518dba5e9f646557d8faa95cabd",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/include/module.modulemap",
+      "bytes": 88,
+      "sha256": "9b7c770e073823f0c31bea292c9840bec630e63dc4e94fea61e1f9f14fa62834",
+      "git_blob_sha": "fdd929c5e9f038f6fcef2ccd5695951262636161",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/src/archive_acl.c",
+      "bytes": 51040,
+      "sha256": "9527cf8627062314802129e06c68235b56bf5ba0c1706765c9c025ebaddba5d3",
+      "git_blob_sha": "f1b1232f5eef2f2d96fe7ae372faa2e1d8bb2a23",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/src/archive_acl_private.h",
+      "bytes": 3370,
+      "sha256": "dd5613b9e3e88f58d6344ab48dd14bd78bc2aae9620fd15db18dd4e04c8bf500",
+      "git_blob_sha": "4df8a0ac3a5c9bcc0991ee96e93a454f7d75927d",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/src/archive_blake2.h",
+      "bytes": 7121,
+      "sha256": "f6cbec059ad25b02a1d885c6089a0a907b1d0400bdcc5daa03560cb89e71a7af",
+      "git_blob_sha": "b8cf2e8e7153f4b6d5756ef98a0ae644d1125009",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/src/archive_blake2_impl.h",
+      "bytes": 4231,
+      "sha256": "2e285a36ccb7c41078514d31585a625c646dd233c940f90f698243ac915f425c",
+      "git_blob_sha": "eb8619ca7c9882ab76cf27d99b1c71672b8161eb",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/src/archive_blake2s_ref.c",
+      "bytes": 9716,
+      "sha256": "bd4217c21aa970cea07fb0a1209fa5370daa2935927b7273317bfbe715e003ca",
+      "git_blob_sha": "93d3281189d73e4ba973e9806178fd858e19de47",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/src/archive_blake2sp_ref.c",
+      "bytes": 9363,
+      "sha256": "c3891562aa2e1bd043a71a0c7f0cca46378644e384cd65f078efd1d3ea363631",
+      "git_blob_sha": "b913a4db65e4dbb1e6616794359fa9900adbf171",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/src/archive_check_magic.c",
+      "bytes": 5001,
+      "sha256": "71f113a58f0f497ced17fde595a6ea785d5a0f573f8e34a422de4698a8ca387a",
+      "git_blob_sha": "9d925118704aaab0e5ca77bbf5fc5589d48d4f79",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/src/archive_crc32.c",
+      "bytes": 7477,
+      "sha256": "c96f05527de5ce7a15a32fdaeb5e15a750e989f9d5f021f1d75fd4c0736cf43d",
+      "git_blob_sha": "0b0055784943bfd5e9631dd8456c86f0f9db448e",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/src/archive_endian.h",
+      "bytes": 6363,
+      "sha256": "ed87904c1685c722784fa7a22b3055ad878993baff8ca8a6da3bddacc9cf72a7",
+      "git_blob_sha": "939acc6670ea37b2cbd8a6d2fd1620c65de9ad4b",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/src/archive_entry.c",
+      "bytes": 58505,
+      "sha256": "c1260eb7217a4a24031b0c0de1df93941b239d49a0e7601a8884a175d89c7b88",
+      "git_blob_sha": "758d766169594a9bb1489aa3e4c996e20d3fdd09",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/src/archive_entry_copy_stat.c",
+      "bytes": 3799,
+      "sha256": "2766d3fc8fd470d0bf1c9d84a325100d5d886ad054bb46f1c91a7c2404b742f6",
+      "git_blob_sha": "f9c2e8469b1ef90caf2ad4d52fcb75fa41d89dbf",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/src/archive_entry_locale.h",
+      "bytes": 4501,
+      "sha256": "dcfdcf6d8b51b61fac09c3f385bb47d450b15986911f10a61618eec60e280841",
+      "git_blob_sha": "570ee90f78fc67325a29a9a215cdf94bbff7df4a",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/src/archive_entry_private.h",
+      "bytes": 6421,
+      "sha256": "04113c12987bbddfed3b2b647c61774060e21b0a9600357eec89b9acb60ce732",
+      "git_blob_sha": "9736f7716eec8dc24cb9e0f6ec7885880e7b09f0",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/src/archive_entry_sparse.c",
+      "bytes": 4078,
+      "sha256": "82dc763f08cb3cfd2fe7be76b9500e0e96980ffffd63169732cde228bb10d8b1",
+      "git_blob_sha": "1e84ff7f8589162152d7f7621f6d1e9ed3a03c8a",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/src/archive_entry_stat.c",
+      "bytes": 4467,
+      "sha256": "7c9d521a1ccf18fea5696cfc249f9c603c3f30aa0c87c3c30d875b37dc6efb2d",
+      "git_blob_sha": "345d3d29b2f2ae4665ae574e13671a49ec3bc859",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/src/archive_entry_strmode.c",
+      "bytes": 2390,
+      "sha256": "fc3764b849346f3b91184233608d99bdc9562f008c2673b5103ee5060b0b06b6",
+      "git_blob_sha": "22171992dd492a93dba170a1496c07150dd6c5c8",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/src/archive_entry_xattr.c",
+      "bytes": 3924,
+      "sha256": "e4692d8ac2c06f0815510078eaa115da5ca1a116482f3ff96eeaa8b47cd4f2f1",
+      "git_blob_sha": "7a78f0c3e1ab089cbad030b3f54adc940aac0434",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/src/archive_integer.h",
+      "bytes": 6854,
+      "sha256": "6159f95fe34a150ce5035f808f2af0650c1fa749638ba045e5c415c791a72103",
+      "git_blob_sha": "1e715927901ecdd983f70d0248da13dd1224aaf8",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/src/archive_options.c",
+      "bytes": 5324,
+      "sha256": "c274a1ed73754464b3cb5de6dfa230c495c157e998f3b1fa445536a2fbfd2d4c",
+      "git_blob_sha": "24480b97e25de18362437b7be95dc78388e613ce",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/src/archive_options_private.h",
+      "bytes": 2058,
+      "sha256": "23330401c3ded3006cef7c988dd4c554e76f15155601525d83397de8ce1e1336",
+      "git_blob_sha": "f07d242ee65b4479afc503ab58bd9dc40cfd529a",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/src/archive_platform.h",
+      "bytes": 6600,
+      "sha256": "0910ae12b1f45675fd6545b802780a0b25d5ef9115c101d332b9d70163352c2e",
+      "git_blob_sha": "33dc5582b7ed31ae4209ca1dcb2b435717e2c009",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/src/archive_platform_stat.h",
+      "bytes": 1025,
+      "sha256": "d1415443c6eede4268e472a2dde7edd52c0695ae773351f605a6ef2b0f87e585",
+      "git_blob_sha": "5432b2f6433a7ecf350dc20a79fe0e52317f6a48",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/src/archive_ppmd7.c",
+      "bytes": 28339,
+      "sha256": "a589cb82ead903e58fe67099f37efab5863ea2b3dda3d4d8cfe7af9fe4d2ecfe",
+      "git_blob_sha": "f0369835b83fe30b82757d504e5770bcb1b3c39b",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/src/archive_ppmd7_private.h",
+      "bytes": 3084,
+      "sha256": "c31e6af32c5a975988df4b9bc8c8256811dabca50c9907e7c374920b09c59f63",
+      "git_blob_sha": "71b954458c65ae322dde87c2e54bff70c113f49e",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/src/archive_ppmd_private.h",
+      "bytes": 3487,
+      "sha256": "8cb50b08e62f94219a7e77a25d19c20773fa1b04b40086127ae0cd457013b715",
+      "git_blob_sha": "bc525b47e52b8860ade06e94fc2322e324fe5285",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/src/archive_private.h",
+      "bytes": 7153,
+      "sha256": "b3dbc08ee4bca25b7c24b2dc28922e79a50c8165b29dbf30991804a482f98392",
+      "git_blob_sha": "ca1bad94484b38be0da20b259dfedb4c086bb37f",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/src/archive_random_private.h",
+      "bytes": 1640,
+      "sha256": "7d0f2c8fb1936151bec6c2beac99bdfc1cca63ca209e4cce2b47913c77fc3c73",
+      "git_blob_sha": "de23964979effdd60405c327504b4ce0a6756853",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/src/archive_read.c",
+      "bytes": 51522,
+      "sha256": "90692b2cd900eacd7f72c519f73643e0dd326ffb2a51c7e5764da62acce4a1ef",
+      "git_blob_sha": "6235d66d99e33483121f4383121ff0de52cd7883",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/src/archive_read_add_passphrase.c",
+      "bytes": 5309,
+      "sha256": "0f087d8605d00151de2dda70831451013a2ae7b4036869af47c3c024528927f7",
+      "git_blob_sha": "c67d1df3d1b80dd06544afdd443f16154c971775",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/src/archive_read_open_fd.c",
+      "bytes": 6716,
+      "sha256": "796cb2dbadfb206d4105142ccc2ca0327fe6bd5249290f66c1490a217b6e0349",
+      "git_blob_sha": "97c944b82a126b6d948f0b15408804998b08e5c7",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/src/archive_read_open_filename.c",
+      "bytes": 19438,
+      "sha256": "a2973f46ad7a1cfe0c7f69faf7f17fa769d90dadffdbb9484c75685e4d60b275",
+      "git_blob_sha": "2c442eb1205007b81022483ad254351978463b15",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/src/archive_read_open_memory.c",
+      "bytes": 5531,
+      "sha256": "dd93869d24bac346af8cdad0d32c4b670a0cd7eddd0f9eb372dd15a0fd52365c",
+      "git_blob_sha": "54c0f94ed21875655fda3f841005f6a354f686f8",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/src/archive_read_private.h",
+      "bytes": 9326,
+      "sha256": "a5d039254e3d321e555387c5175f6412f28a64804c436f853c2474535db1a29a",
+      "git_blob_sha": "43b7f853b671de9e281d1f721b05b56d72308b9f",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/src/archive_read_set_options.c",
+      "bytes": 4106,
+      "sha256": "5c94ff58e66366c4f08237161f882c70b31b4f883dc1125dc58c5b32d37677ce",
+      "git_blob_sha": "c0a4b420734e52271af1d8d0d0dfe1a9b7b69c48",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/src/archive_read_support_filter_none.c",
+      "bytes": 1896,
+      "sha256": "98f12fce080fdf2dbb62e5aa1527260c6aa03bc013e83ba76bd17ba65f98191e",
+      "git_blob_sha": "9eb8e54ae960bb48b7fa6c5d7ff5238e19737ad9",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/src/archive_read_support_format_rar.c",
+      "bytes": 111888,
+      "sha256": "e7f9b14b8f29dc6ab4b443320f7c76d51a17736c014341dc16ca3ea159420eb2",
+      "git_blob_sha": "18dd55661e14ccb7cc8bb62f2c917d758f5ca330",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/src/archive_read_support_format_rar5.c",
+      "bytes": 129979,
+      "sha256": "5da08ac344bd39cdb7fa9f90b65b944abfea612f7cc28950c3391fd5aa6e53fa",
+      "git_blob_sha": "9076c1d6b1790743385b8d6c409cebc8f4e72373",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/src/archive_string.c",
+      "bytes": 112625,
+      "sha256": "ac391cc5bb3ec70f7312ad2ce0985672413ff09c28c5c0c88eb4ece982168602",
+      "git_blob_sha": "12a894e279f6876e91ce45b8665599c03fbd90a6",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/src/archive_string.h",
+      "bytes": 9568,
+      "sha256": "be56aa2aa579506f40df3a288297abf4b1626e9b0d36b7de3d50b402c5a27743",
+      "git_blob_sha": "d5f5c03aca30c8bf3e38555a6245bdd5f5c13a84",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/src/archive_string_composition.h",
+      "bytes": 82059,
+      "sha256": "cc5a28335f6566b22b5568558027e5bf2be82bf39aa29db46ac403c9fa648026",
+      "git_blob_sha": "7f5b77a1d8a5ea2a0422b0f728c08d69f1471b1c",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/src/archive_string_sprintf.c",
+      "bytes": 5635,
+      "sha256": "8cc77766c243fcd262858ab3da09f7f173ca5f733f586a74da117b2991f9760c",
+      "git_blob_sha": "c49de3e112215816aa6bb4e8408805040d496f85",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/src/archive_time.c",
+      "bytes": 5135,
+      "sha256": "b5e6bede18ff40e4f23a030c32f91193ebff01043cce6a1d2efd428fe4196b23",
+      "git_blob_sha": "6bf8fd71b5848ca270bbac16d41385228ecc6d3b",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/src/archive_time_private.h",
+      "bytes": 2125,
+      "sha256": "7858e3367fa482b397f0c5c2994b7bab7d558838fd61d135369044ea31443ff0",
+      "git_blob_sha": "4c8fbb87c1f2823bf9586fb5359ac278ad5c8da7",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/src/archive_util.c",
+      "bytes": 14873,
+      "sha256": "98caf3df34f7b28d3a94c23619629bc01d0007a3ab6641af741f237857424884",
+      "git_blob_sha": "b0a5f2dde755f729eba89af920c7a01da78fdc49",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/src/archive_virtual.c",
+      "bytes": 4018,
+      "sha256": "523728aab6b92713a9eda70fec9486fc16086f55f9d035d70223e128e443bda3",
+      "git_blob_sha": "97e0b8a0d7b770b6ac480c5ae0369dfb673db208",
+      "mode": "100644"
+    },
+    {
+      "path": "ThirdParty/ModRAR/src/archive_windows.h",
+      "bytes": 10731,
+      "sha256": "d50831ef8bfcb9af565c72588365f7bfdd7e005374785ea8f8db8eb94ec9d398",
+      "git_blob_sha": "42c265d04159f9e2c3d923822cb784d8ea0eb4d0",
       "mode": "100644"
     },
     {
@@ -15138,9 +15747,9 @@
     },
     {
       "path": "Tools/build_miku_msl.py",
-      "bytes": 8785,
-      "sha256": "3e8fcb3575903652786c3153b4c3e90536cd91f127bc03c55826d8f40b4f641b",
-      "git_blob_sha": "db28230cd4398e8230fb45b45893c0799266ea9d",
+      "bytes": 9058,
+      "sha256": "2a2ade007e6a2fa76d30705dfd0d6996f7b69c037b3d64b3055e395cd981e56a",
+      "git_blob_sha": "586399de84a62f6118b4a5d4b7707274c88ec299",
       "mode": "100644"
     },
     {
@@ -15215,9 +15824,9 @@
     },
     {
       "path": "Tools/pc_mods/README.md",
-      "bytes": 11590,
-      "sha256": "55b5ba05e2afcc77d4b7d691d5db0b0b7145a34f9aa4181e96b65c33d58260cf",
-      "git_blob_sha": "121904d5cde4f5042fb136fa7b2d0ad0e8ca87d3",
+      "bytes": 11941,
+      "sha256": "892b300ba992dd636ee9192e7aa2546d251f37c6203792bcbf3ea6eefa818458",
+      "git_blob_sha": "e959b66645e31e9561253048a7ad791b1bb56bd8",
       "mode": "100644"
     },
     {
@@ -15271,9 +15880,9 @@
     },
     {
       "path": "Tools/pc_mods/profile_x_song.py",
-      "bytes": 12823,
-      "sha256": "e71dd1a76fde8604a6c362f9fafbaddfbb43495c930c755c07126858b1422e09",
-      "git_blob_sha": "0f871c109791d84b8ba2020e67e8696f0dc9cbcd",
+      "bytes": 13272,
+      "sha256": "be38b1b3046a3d355db63893d6df6247d14d6817cde2d38113b385bc4a071aa7",
+      "git_blob_sha": "c13a9ce8593434f131c75405c51db570a3ba59c7",
       "mode": "100644"
     },
     {
@@ -15295,6 +15904,13 @@
       "bytes": 7520,
       "sha256": "25791ed1a614e89fd0dfeb89c4c6486266e184834848d57919b22bf2e71723f3",
       "git_blob_sha": "e5c099e37d79093a65f1165fc9fc3595b3944a6f",
+      "mode": "100644"
+    },
+    {
+      "path": "Tools/pc_mods/x_song_stage_movies.py",
+      "bytes": 2282,
+      "sha256": "b3995d6f29ef277c824cfa08aca126b03565b18013e4eac43b97296470eb6e19",
+      "git_blob_sha": "f73b7d5543463260e57cbf7af1f06717d9648772",
       "mode": "100644"
     },
     {
@@ -15409,5 +16025,16 @@
     "test_platform": "iPad Pro simulator on Apple M3 Max",
     "physical_device_performance_verified": false,
     "report": "Reports/INTERNAL-1080P-20261125.md"
+  },
+  "release_0_2_0_build1_QA": {
+    "report": "Reports/RELEASE-0.2.0b1.md",
+    "original_archives_tested": 9,
+    "model_archives_imported": 5,
+    "model_archives_tested": 6,
+    "raw_song_packs_directly_activated": 0,
+    "song_archives_tested": 3,
+    "individually_adapted_songs_sampled": 2,
+    "fonts": "Google Sans and regional Noto Sans CJK",
+    "packages": "Unsigned iOS IPA and ad-hoc signed arm64 macOS DMG"
   }
 }

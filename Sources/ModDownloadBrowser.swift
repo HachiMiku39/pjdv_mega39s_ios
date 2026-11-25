@@ -33,7 +33,7 @@ final class ModDownloadBrowser:UIViewController,WKNavigationDelegate,WKUIDelegat
     }
     func webView(_ webView:WKWebView,decidePolicyFor response:WKNavigationResponse,decisionHandler:@escaping(WKNavigationResponsePolicy)->Void) {
         let mime=response.response.mimeType?.lowercased() ?? "",ext=response.response.url?.pathExtension.lowercased() ?? ""
-        if !response.canShowMIMEType || ["zip","7z","rar"].contains(ext) || ["application/zip","application/x-zip-compressed","application/x-7z-compressed","application/vnd.rar"].contains(mime) {
+        if !response.canShowMIMEType || ["zip","7z","rar"].contains(ext) || ["application/zip","application/x-zip-compressed","application/x-7z-compressed","application/vnd.rar","application/x-rar","application/x-rar-compressed"].contains(mime) {
             decisionHandler(.cancel)
             guard task==nil,!preparing,let url=response.response.url,["http","https"].contains(url.scheme?.lowercased() ?? "") else {return}
             beginDownload(url)
@@ -69,10 +69,11 @@ final class ModDownloadBrowser:UIViewController,WKNavigationDelegate,WKUIDelegat
     func urlSession(_ session:URLSession,downloadTask:URLSessionDownloadTask,didFinishDownloadingTo location:URL) {
         do {
             if let http=downloadTask.response as? HTTPURLResponse,!(200...299).contains(http.statusCode) {throw ModPackageError.invalidZIP}
-            let fm=FileManager.default,folder=ResourceLibrary.appDataRoot.appendingPathComponent("Mods/Downloads/"+UUID().uuidString,isDirectory:true)
+            guard let name = try ModInbox.downloadName(suggested:downloadTask.response?.suggestedFilename,file:location) else {
+                throw ModPackageError.unsupportedArchive
+            }
+            let fm=FileManager.default,folder=ModInbox.managedRoot(under:ResourceLibrary.appDataRoot).appendingPathComponent("Downloads/"+UUID().uuidString,isDirectory:true)
             try fm.createDirectory(at:folder,withIntermediateDirectories:true)
-            var name=((downloadTask.response?.suggestedFilename ?? "mod.zip") as NSString).lastPathComponent
-            if !["zip","7z","rar"].contains((name as NSString).pathExtension.lowercased()) {name="mod.zip"}
             let target=folder.appendingPathComponent(name)
             try fm.moveItem(at:location,to:target)
             task=nil;self.session=nil;session.finishTasksAndInvalidate()

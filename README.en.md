@@ -2,6 +2,22 @@
 
 [简体中文](README.md) | **English**
 
+## 0.2.0 release · build 1
+
+This release updates mod import, costume combinations and in-game fonts. It also fixes the upside-down scene in “Calc.” with the adapted X Song Pack. Existing players can update in place and keep their imported game and saves. [Download the iOS/iPadOS IPA or Apple Silicon Mac DMG](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.2.0b1)
+
+- **Models.** Five of the six original GameBanana model archives passed import. Install Racing Miku 2024 and 2025 directly from their authors’ ZIPs and enable them together. Each keeps its own costume and hair. Rekka Kohane from Sekai Mini Pack 7 appeared on stage in “Ai Kotoba” in the iPhone simulator.
+- **Songs.** The three original song archives tested still require adaptation. A developer sample played the Wonderlands×Showtime cover of “Miracle Paint”. “Hajimari no Mirai (Ergo ver.)” completed its full 4:20 HARD chart. The report lists the original import results, missing resources and authors’ download pages. [Nine-archive test report and screenshots](Reports/RELEASE-0.2.0b1.md#english)
+- **Fonts.** Select **Game Settings → Game font → Google Sans** for lyrics, costume names and song titles. Regional Noto Sans CJK glyphs supply Chinese, Japanese and Korean characters. The original game font is the default. [Missing-glyph comparison in “Calc.”](Reports/images/release-0.2.0b1/calc-lyrics.png)
+
+### Importing mods
+
+Import the MEGA39’s base game first. In **MOD Manager**, choose **Add ZIP or RAR**, or place an extracted mod folder in the app’s `mods/` directory and tap the package name in the manager. On iPhone and iPad, use **Files → On My iPhone/iPad → PJDV M39 → mods**. On Mac, you can also select a folder on an external drive.
+
+The app checks the files and converts supported resources locally. Select one or more ready packages and tap **Load**. Supported inputs include data-only RomFS overlays for the Japanese game, prepared packages, and supported PC costume and song formats. The manager names required Windows plug-ins. Single-volume ZIP, RAR4 and RAR5 archives are supported. For 7z, split or encrypted archives, extract the files first and select the main mod folder.
+
+### Previous releases
+
 **0.1.5 build27 lightweight preview · November 25, 2026**
 
 Choose **Quality → Internal 1080p Rendering (Experimental)** in the launcher. It defaults to off, takes effect when the next game session starts, and can be set independently of output resolution and MetalFX. The main character and stage targets render at 1920×1080. Shadows and bloom retain their original resolutions.
@@ -74,7 +90,7 @@ Raw Kimagure Mercy model and Tonny’s movie-song ZIPs received Mac samples. Com
 
 **Complete Eden pack sampling and cleanup, November 1, 2026 — unpublished source candidate:** Complete developer-adapted Heavy Metal (14 songs / 37 charts) and Rock (19 / 35) folders were independently imported and combined inside the App. Four preselected random EXTREME songs completed. Fixed Cosmos' 1916-pixel client-video layout crash and an incorrectly rejected valid IVF timebase; all three platform targets built. **Developer ID preparation remains necessary; direct raw Eden-pack import is not complete.** Generated trial copies from this and the previous Eden round were deleted as requested, measuring about 38.22 GB reclaimed while retaining original Mods, XCI, saves and evidence. [Bilingual results, screenshots and cleanup scope](Reports/EDEN-FULL-PACKS-20261101.md)
 
-The following entries retain their original dated version status. “Local candidate / public installer remains build19” describes that historical stage; the build22 summary above defines this release.
+The following entries retain their original dated version status. “Local candidate / public installer remains build19” describes that historical stage; the 0.2.0 build 1 summary at the top describes the current release.
 
 **Eden single-song composition, November 1, 2026 — unpublished source candidate:** One developer subset each from Beginner, Catchy Pop and Vibes was independently converted inside the App and enabled together. HARD/HARD/EXTREME completed with 686/607/665 COOL in disposable AutoPlay saves. Missing Chinese glyphs and independent playlist collisions were corrected; jackets, sampled subtitles and cold-launch selection were checked, and ordinary-save hashes stayed unchanged. **Temporary IDs 800–802 do not establish complete raw Eden import; persistent IDs, Core, module and 3D/Edit adapters remain pending.** [Bilingual evidence, screenshots and timing limits](Reports/EDEN-PLAYBACK-20261101.md)
 
@@ -169,6 +185,12 @@ The public build 7 baseline is **JP v1.0.9 / 589824, Title ID 0100F3100DA46000, 
 | GitHub Mac DMG | Lightweight arm64 application, ad hoc signed and not notarized. Import your own resources before playing. |
 
 Public packages contain no XCI, extracted game payload, `prod.keys`, personal saves or local development-signing configuration. Select your own keys locally during import. Following the October 24 cleanup request, this working project's obsolete large integrated archives and full-package staging directories have been removed. The original XCI, current extracted resources, save backups and lightweight installers were retained. Future automatic packaging is lightweight only.
+
+### Optional game font
+
+Before starting the game, open **Game Settings → Game font → Google Sans**. The choice applies to live lyrics, costume names and song titles in the base game, imported DLC and active mods. The original font is the default. Select it again in the launcher to switch back. Text baked into cover art, images or videos stays part of those assets.
+
+Latin text uses Google Sans. Chinese, Japanese and Korean text uses the corresponding regional face from Noto Sans CJK. Lyrics keep the language supplied by the song. [Google Sans](https://github.com/googlefonts/googlesans) · [Noto Sans CJK](https://github.com/notofonts/noto-cjk)
 
 ## Installing on iPad and launching for the first time
 

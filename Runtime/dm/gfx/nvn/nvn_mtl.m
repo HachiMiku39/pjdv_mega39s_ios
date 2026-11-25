@@ -2476,6 +2476,10 @@ static NSString *pjdv_vertex_output_defaults(NSString *source) {
 #endif
 }
 
+#if defined(DM_GAME_M39)
+#include "pjdv_transparency_origin.inc"
+#endif
+
 // Original NVN screen quads map positive clip Y to positive texture V.
 // Metal maps positive clip Y to the top of the attachment. Correct only
 // authenticated postprocess vertex-ID quads and captured image-filter quads;
@@ -2484,6 +2488,7 @@ static NSString *pjdv_postprocess_origin(NSString *source,NSString *path) {
 #if defined(DM_GAME_M39)
     const char *override=getenv("PJDV_POSTPROCESS_ORIGIN");
     if(override && !strcmp(override,"0"))return source;
+    if(pjdv_transparency_library(path))return pjdv_transparency_origin(source);
     if([source rangeOfString:@"// PJDV top-left screen quad"].location!=NSNotFound)return source;
     NSString *key=[[path lastPathComponent] stringByDeletingPathExtension];
     key=[[key componentsSeparatedByString:@"_"] firstObject];
@@ -2570,6 +2575,21 @@ static id<MTLLibrary> lib_from_file(NSString *path, NSError **err) {
         int k = atomic_fetch_add(&n, 1) + 1; long long tot = atomic_fetch_add(&us, dt) + dt;
         if (k == 1 || k % 100 == 0 || dt >= 300000) MLOG("着色器现编：第 %d 个 %.0f ms，累计 %.1f 秒", k, dt / 1e3, tot / 1e6);
         return l; }
+#endif
+    // Source caches are repaired above. The same shader in a precompiled
+    // cache must use the corrected vertex stage as well.
+#if defined(DM_GAME_M39)
+    if (pjdv_transparency_library(path)) {
+        const char *origin = getenv("PJDV_POSTPROCESS_ORIGIN");
+        if (!origin || strcmp(origin, "0")) {
+            munmap(m, len);
+            const char *depth = getenv("PJDV_GL_DEPTH");
+            MTLCompileOptions *options = [MTLCompileOptions new];
+            options.languageVersion = MTLLanguageVersion2_3;
+            NSString *source = pjdv_transparency_binary_source(!depth || strcmp(depth, "0"));
+            return [g_dev newLibraryWithSource:source options:options error:err];
+        }
+    }
 #endif
     dispatch_data_t d = dispatch_data_create(m, len, dispatch_get_global_queue(QOS_CLASS_UTILITY, 0), ^{ munmap(m, len); });
     return [g_dev newLibraryWithData:d error:err];

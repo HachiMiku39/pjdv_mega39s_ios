@@ -3,7 +3,7 @@ import UniformTypeIdentifiers
 
 extension RuntimeModCatalog {
     static var current: RuntimeModCatalog {
-        let root=ResourceLibrary.appDataRoot.appendingPathComponent("Mods/Ready",isDirectory:true)
+        let root=ModInbox.managedRoot(under:ResourceLibrary.appDataRoot).appendingPathComponent("Ready",isDirectory:true)
         #if targetEnvironment(macCatalyst)
         if ProcessInfo.processInfo.environment["PJDV_APP_DATA_TEST_ROOT"] != nil {
             // Developer trials may keep large packages on another volume while
@@ -23,9 +23,9 @@ extension RuntimeModCatalog {
 // runtime compatibility: importing never executes a PC DLL or unknown patch.
 final class ModImportController: UITableViewController, UIDocumentPickerDelegate {
     var onClose: (() -> Void)?
-    private let registry = ModRegistry(root: ResourceLibrary.appDataRoot.appendingPathComponent("Mods/Registrations", isDirectory: true))
+    private let registry = ModRegistry(root: ModInbox.managedRoot(under:ResourceLibrary.appDataRoot).appendingPathComponent("Registrations", isDirectory: true))
     private var records = [ModRegistration]()
-    private var downloads = [URL]()
+    private var sources = [ModInbox.Entry]()
     private var ready = [RuntimeMod]()
     private var unavailable = [RuntimeModCatalog.Unavailable]()
     private var pendingIDs=[UUID]()
@@ -33,7 +33,7 @@ final class ModImportController: UITableViewController, UIDocumentPickerDelegate
     private var selecting = false
     private var statusTimer:Timer?
     private var fraction:Float=0
-    private var status = L("ZIP／文件夹可导入；7z、RAR 请先解压。")
+    private var status = L("选择 ZIP、RAR 或已解压的 MOD 文件夹。")
     override var supportedInterfaceOrientations: UIInterfaceOrientationMask { .landscape }
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -42,37 +42,42 @@ final class ModImportController: UITableViewController, UIDocumentPickerDelegate
         preferredContentSize=CGSize(width:720,height:600)
         tableView.rowHeight=UITableView.automaticDimension;tableView.estimatedRowHeight=64
         navigationItem.rightBarButtonItem=UIBarButtonItem(title:L("加载"),style:.done,target:self,action:#selector(closePanel))
+        let refresh = UIRefreshControl()
+        refresh.addTarget(self, action:#selector(refreshSources), for:.valueChanged)
+        refreshControl = refresh
+        NotificationCenter.default.addObserver(self, selector:#selector(refreshSources), name:UIApplication.didBecomeActiveNotification, object:nil)
+        updateBusyState()
+        reloadRecords()
+    }
+    @objc private func refreshSources() {
+        defer { refreshControl?.endRefreshing() }
+        guard operation == nil && !selecting else { return }
         reloadRecords()
     }
     private func reloadRecords() {
         do { records=try registry.records() }
         catch { status=L(error.localizedDescription) }
-        do { let inventory=try RuntimeModCatalog.current.inventory();ready=inventory.ready;unavailable=inventory.unavailable }
-        catch { ready=[];unavailable=[];status=Self.userMessage(error) }
-        let root=ResourceLibrary.appDataRoot.appendingPathComponent("Mods/Downloads",isDirectory:true)
-        let fm=FileManager.default
-        downloads=[]
-        for folder in (try? fm.contentsOfDirectory(at:root,includingPropertiesForKeys:nil,options:.skipsHiddenFiles)) ?? [] {
-            guard UUID(uuidString:folder.lastPathComponent) != nil else {continue}
-            for file in (try? fm.contentsOfDirectory(at:folder,includingPropertiesForKeys:[.isRegularFileKey,.isSymbolicLinkKey],options:.skipsHiddenFiles)) ?? [] {
-                let values=try? file.resourceValues(forKeys:[.isRegularFileKey,.isSymbolicLinkKey])
-                if values?.isRegularFile==true && values?.isSymbolicLink != true && ["zip","7z","rar"].contains(file.pathExtension.lowercased()) {downloads.append(file)}
-                if downloads.count>=100 {break}
-            }
-            if downloads.count>=100 {break}
+        do {
+            let inventory = try RuntimeModCatalog.current.inventory()
+            ready = inventory.ready
+            unavailable = inventory.unavailable
+            let blocked = Set(unavailable.filter { $0.windowsRequirement != nil }.map(\.id))
+            pendingIDs.removeAll { blocked.contains($0) }
         }
-        downloads.sort{$0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending}
+        catch { ready=[];unavailable=[];status=Self.userMessage(error) }
+        do { sources = try ModInbox.sources(under:ResourceLibrary.appDataRoot) }
+        catch { status=L(error.localizedDescription) }
         tableView.reloadData()
     }
     override func numberOfSections(in tableView:UITableView)->Int { 5 }
     override func tableView(_ tableView:UITableView,numberOfRowsInSection section:Int)->Int {
-        section == 0 ? 5 : section == 1 ? ready.count+unavailable.count+1 : section == 2 ? max(1,records.count) : section == 3 ? max(1,downloads.count) : 1
+        section == 0 ? 5 : section == 1 ? ready.count+unavailable.count+1 : section == 2 ? max(1,records.count) : section == 3 ? max(1,sources.count) : 1
     }
     override func tableView(_ tableView:UITableView,titleForHeaderInSection section:Int)->String? {
-        L(section == 0 ? "添加 MOD" : section == 1 ? "启用 MOD" : section == 2 ? "暂不能加载" : section == 3 ? "已下载的压缩包" : "状态")
+        L(section == 0 ? "添加 MOD" : section == 1 ? "启用 MOD" : section == 2 ? "暂不能加载" : section == 3 ? "待导入的 MOD" : "状态")
     }
     override func tableView(_ tableView:UITableView,titleForFooterInSection section:Int)->String? {
-        section == 0 ? L("支持资源型模型包和常规视频歌曲包；特殊玩法及插件需适配。") : section == 1 ? L("可同时启用多个 MOD，加载时自动处理组合。") : section == 3 ? L("下载文件会保留，轻点可重新导入；7z／RAR 需先解压。") : nil
+        section == 0 ? L("支持资源型模型包和常规视频歌曲包；特殊玩法及插件需适配。") : section == 1 ? L("可同时启用多个 MOD，加载时自动处理组合。") : section == 3 ? L("将压缩包或解压后的单个 MOD 文件夹放入 mods，再轻点列表中的名称导入。") : nil
     }
     override func tableView(_ tableView:UITableView,cellForRowAt indexPath:IndexPath)->UITableViewCell {
         let cell=UITableViewCell(style:.subtitle,reuseIdentifier:nil)
@@ -80,10 +85,10 @@ final class ModImportController: UITableViewController, UIDocumentPickerDelegate
         cell.selectionStyle = .none
         if indexPath.section == 0 {
             if indexPath.row == 0 {
-                cell.textLabel?.text=L("ZIP／文件夹可导入；7z、RAR 请先解压。")
+                cell.textLabel?.text=L("选择 ZIP、RAR 或已解压的 MOD 文件夹。")
                 cell.textLabel?.font = .systemFont(ofSize:15)
             } else {
-                cell.textLabel?.text=L(indexPath.row == 1 ? "浏览／下载 MOD（GameBanana）" : indexPath.row == 2 ? "添加 ZIP 包" : indexPath.row == 3 ? "添加 MOD 文件夹" : "重新完整校验")
+                cell.textLabel?.text=L(indexPath.row == 1 ? "浏览／下载 MOD（GameBanana）" : indexPath.row == 2 ? "添加 ZIP 或 RAR 包" : indexPath.row == 3 ? "添加 MOD 文件夹" : "重新完整校验")
                 cell.accessibilityIdentifier=indexPath.row == 1 ? "mods.browse" : indexPath.row == 2 ? "mods.addZIP" : indexPath.row == 3 ? "mods.addFolder" : "mods.verify"
                 cell.textLabel?.textColor=operation == nil && !selecting ? .systemBlue : .secondaryLabel
                 cell.selectionStyle = .default
@@ -92,23 +97,32 @@ final class ModImportController: UITableViewController, UIDocumentPickerDelegate
             if records.isEmpty { cell.textLabel?.text=L("尚未登记 MOD。");cell.accessibilityIdentifier="mods.empty" }
             else {
                 let record=records[indexPath.row]
-                cell.textLabel?.text=record.name;cell.detailTextLabel?.text=L("此包目前不能加载。")
+                cell.textLabel?.text=record.name;cell.detailTextLabel?.text=record.windowsRequirement.map(Self.windowsMessage) ?? L("已登记，当前版本不能加载此包。")
                 cell.accessibilityIdentifier="mods.record."+record.id.uuidString
                 cell.accessoryType = .disclosureIndicator;cell.selectionStyle = .default
             }
         } else if indexPath.section == 3 {
-            if downloads.isEmpty {cell.textLabel?.text=L("暂无已下载的 MOD 压缩包。")}
-            else {
-                let file=downloads[indexPath.row];cell.textLabel?.text=file.lastPathComponent
-                cell.detailTextLabel?.text=L("重新导入");cell.textLabel?.textColor = .systemBlue
-                cell.accessibilityIdentifier="mods.download."+file.deletingLastPathComponent().lastPathComponent
+            if sources.isEmpty {
+                cell.textLabel?.text=L("mods 文件夹中暂无可导入的 MOD。")
+                cell.accessibilityIdentifier="mods.inbox.empty"
+            } else {
+                let source=sources[indexPath.row],file=source.url
+                cell.textLabel?.text=file.lastPathComponent
+                if source.origin == .download {
+                    cell.accessibilityIdentifier="mods.download."+file.deletingLastPathComponent().lastPathComponent
+                    cell.detailTextLabel?.text=L(file.pathExtension.lowercased()=="7z" ? "7z 请先解压，再添加 MOD 文件夹。" : "已下载 · 轻点导入")
+                } else {
+                    cell.accessibilityIdentifier="mods.inbox."+file.lastPathComponent
+                    cell.detailTextLabel?.text=L(source.isDirectory ? "文件夹 · 轻点导入" : "压缩包 · 轻点导入")
+                }
+                cell.textLabel?.textColor = .systemBlue
                 cell.accessoryType = .disclosureIndicator;cell.selectionStyle = .default
             }
         } else if indexPath.section == 1 {
             if indexPath.row>ready.count {
                 let item=unavailable[indexPath.row-ready.count-1]
                 cell.textLabel?.text=item.name;cell.textLabel?.textColor = .systemRed
-                cell.detailTextLabel?.text=L("文件损坏，无法加载。")
+                cell.detailTextLabel?.text=item.windowsRequirement.map(Self.windowsMessage) ?? L("文件损坏，无法加载。")
                 cell.accessoryType=pendingIDs.contains(item.id) ? .checkmark:.none
                 cell.accessibilityIdentifier="mods.unavailable."+item.id.uuidString;cell.selectionStyle = .default
                 return cell
@@ -137,7 +151,12 @@ final class ModImportController: UITableViewController, UIDocumentPickerDelegate
         else if indexPath.section == 0 && indexPath.row == 4 {verifyPackages()}
         else if indexPath.section == 0 && indexPath.row > 1 { pick(directory:indexPath.row == 3) }
         else if indexPath.section == 2 && !records.isEmpty { showRecord(records[indexPath.row]) }
-        else if indexPath.section == 3 && !downloads.isEmpty {inspect(ResourceAccess(downloads[indexPath.row]))}
+        else if indexPath.section == 3 && !sources.isEmpty {
+            let source=sources[indexPath.row]
+            if !source.isDirectory && source.url.pathExtension.lowercased()=="7z" {
+                presentImportNotice(L("7z 请先解压，再添加 MOD 文件夹。"))
+            } else { inspect(ResourceAccess(source.url)) }
+        }
         else if indexPath.section == 1 {
             do {
                 if indexPath.row==0 {pendingIDs=[]}
@@ -148,7 +167,7 @@ final class ModImportController: UITableViewController, UIDocumentPickerDelegate
                 else {
                     let item=unavailable[indexPath.row-ready.count-1]
                     pendingIDs.removeAll{$0==item.id}
-                    status=L("文件损坏，无法加载。");tableView.reloadData();return
+                    status=item.windowsRequirement.map(Self.windowsMessage) ?? L("文件损坏，无法加载。");tableView.reloadData();return
                 }
                 status=LF("已选择 %d 个 MOD",pendingIDs.count)
             } catch {status=Self.userMessage(error)}
@@ -158,21 +177,41 @@ final class ModImportController: UITableViewController, UIDocumentPickerDelegate
     }
     private func browse() {
         let browser=ModDownloadBrowser()
-        browser.onImport={ [weak self] url in self?.inspect(ResourceAccess(url)) }
+        browser.onImport={ [weak self] url in
+            if url.pathExtension.lowercased()=="7z" {
+                self?.reloadRecords()
+                self?.presentImportNotice(L("7z 请先解压，再添加 MOD 文件夹。"))
+            } else { self?.inspect(ResourceAccess(url)) }
+        }
         let panel=UINavigationController(rootViewController:browser);panel.modalPresentationStyle = .fullScreen
         present(panel,animated:true)
+    }
+    private func presentImportNotice(_ message:String) {
+        status=message
+        tableView.reloadSections(IndexSet(integer:4),with:.none)
+        guard viewIfLoaded?.window != nil, presentedViewController == nil else { return }
+        let alert=UIAlertController(title:L("无法加载 MOD"),message:message,preferredStyle:.alert)
+        alert.addAction(UIAlertAction(title:L("确定"),style:.default));present(alert,animated:true)
     }
     private func updateBusyState() {
         let busy=operation != nil || selecting
         navigationItem.prompt=operation == nil ? nil : status.components(separatedBy:"\n").first
         navigationItem.rightBarButtonItem?.isEnabled = !busy
-        navigationItem.leftBarButtonItem = operation == nil ? nil : UIBarButtonItem(title:L("取消"),style:.plain,target:self,action:#selector(cancelInspection))
+        if operation == nil {
+            let refresh=UIBarButtonItem(barButtonSystemItem:.refresh,target:self,action:#selector(refreshSources))
+            refresh.accessibilityLabel=L("刷新 MOD 列表")
+            refresh.accessibilityIdentifier="mods.refresh"
+            refresh.isEnabled = !selecting
+            navigationItem.leftBarButtonItem=refresh
+        } else {
+            navigationItem.leftBarButtonItem=UIBarButtonItem(title:L("取消"),style:.plain,target:self,action:#selector(cancelInspection))
+        }
         isModalInPresentation=busy;navigationController?.isModalInPresentation=busy
         tableView.reloadData()
     }
     private func verifyPackages() {
         let items=ready+unavailable.compactMap(\.item)
-        let unreadable=unavailable.filter{$0.item==nil}.map(\.name)
+        let unreadable=unavailable.filter{$0.item==nil && $0.windowsRequirement==nil}.map(\.name)
         guard !items.isEmpty else {status=unreadable.isEmpty ? L("没有可校验的 MOD。") : LF("这些 MOD 无法加载：%@",unreadable.joined(separator:"、"));tableView.reloadData();return}
         let catalog=RuntimeModCatalog.current,progress=Progress(totalUnitCount:1)
         operation=progress;fraction=0;status=L("正在校验 MOD…");updateBusyState()
@@ -198,7 +237,14 @@ final class ModImportController: UITableViewController, UIDocumentPickerDelegate
             }
         }
     }
+    private static func windowsMessage(_ reason:ModWindowsRequirement)->String {
+        switch reason {
+        case .declaredPlugin(let name): return LF("此 MOD 需要 Windows 插件“%@”，无法加载。",name)
+        case .executableOnly(let name): return LF("此 MOD 仅提供 Windows 程序“%@”，无法加载。",name)
+        }
+    }
     static func userMessage(_ error:Error)->String {
+        if let reason=error as? ModWindowsRequirement { return windowsMessage(reason) }
         if let e=error as? ModLoadError {
             if case .conflict(let names)=e {return LF("这些 MOD 不能同时加载：%@",names)}
             return L(e.localizedDescription)
@@ -219,7 +265,7 @@ final class ModImportController: UITableViewController, UIDocumentPickerDelegate
             let result=Result<Void,Error> {
                 let access=try ResourceLibrary.open();let layout=try ResourceLayout.locate(access.root)
                 _=try ModComposition.prepare(catalog.resolve(selection),catalog:catalog,base:layout.rom,dlc:layout.dlc,
-                    root:ResourceLibrary.appDataRoot.appendingPathComponent("Mods/Compositions",isDirectory:true),progress:progress)
+                    root:ModInbox.managedRoot(under:ResourceLibrary.appDataRoot).appendingPathComponent("Compositions",isDirectory:true),progress:progress)
                 withExtendedLifetime(access){}
             }
             DispatchQueue.main.async {
@@ -242,11 +288,12 @@ final class ModImportController: UITableViewController, UIDocumentPickerDelegate
               let bundle=Bundle(url:url),bundle.load(),let entry=bundle.principalClass as? MacFileSelectionPlugin.Type else {
             selecting=false;status=L("Mac 文件选择组件不可用，请重新安装完整的 App。");updateBusyState();return
         }
-        entry.chooseLocalItem(withTitle:L(directory ? "添加 MOD 文件夹" : "添加 ZIP 包"),directory:directory) { [weak self] url in
+        entry.chooseLocalItem(withTitle:L(directory ? "添加 MOD 文件夹" : "添加 ZIP 或 RAR 包"),directory:directory) { [weak self] url in
             self?.selected(url)
         }
         #else
-        let picker=UIDocumentPickerViewController(forOpeningContentTypes:directory ? [.folder] : [.zip,.item],asCopy:false)
+        let rar=UTType(filenameExtension:"rar") ?? UTType(importedAs:"com.rarlab.rar-archive")
+        let picker=UIDocumentPickerViewController(forOpeningContentTypes:directory ? [.folder] : [.zip,rar,.data],asCopy:false)
         picker.allowsMultipleSelection=false;picker.shouldShowFileExtensions=true;picker.delegate=self
         picker.modalPresentationStyle = .fullScreen;present(picker,animated:true)
         #endif
@@ -262,7 +309,8 @@ final class ModImportController: UITableViewController, UIDocumentPickerDelegate
         guard let url else { status=L("已取消选择；没有开始检查。");updateBusyState();return }
         inspect(access ?? ResourceAccess(url))
     }
-    private func inspect(_ access:ResourceAccess) {
+    private func inspect(_ access:ResourceAccess, retrying record:ModRegistration? = nil) {
+        guard operation == nil else { return }
         let progress=Progress(totalUnitCount:1);operation=progress;fraction=0
         status=L("正在检查 MOD 结构…");updateBusyState()
         let registry=self.registry
@@ -272,14 +320,14 @@ final class ModImportController: UITableViewController, UIDocumentPickerDelegate
                 // DLC belongs to the base XCI import. MOD installation is a
                 // separate workflow and must not write packages before a
                 // complete, usable base has been selected.
-                let baseAccess:ResourceAccess
-                do {let candidate=try ResourceLibrary.open();_=try ResourceLayout.locate(candidate.root);baseAccess=candidate}
+                let baseAccess:ResourceAccess,baseLayout:ResourceLayout
+                do {baseAccess=try ResourceLibrary.open();baseLayout=try ResourceLayout.locate(baseAccess.root)}
                 catch {throw ImportFailure.invalid(L("请先使用 XCI 和 prod.keys 完成本体导入，再添加 MOD。"))}
                 defer {withExtendedLifetime(baseAccess){}}
                 let coordinator=NSFileCoordinator(filePresenter:nil)
                 var coordinationError:NSError?, installed:Result<InstalledMod,Error>?
                 coordinator.coordinate(readingItemAt:access.root,options:.withoutChanges,error:&coordinationError) { url in
-                    installed=Result {try ModInstaller.install(url,under:ResourceLibrary.appDataRoot.appendingPathComponent("Mods/Installed",isDirectory:true),progress:progress) {update in
+                    installed=Result {try ModInstaller.install(url,under:ModInbox.managedRoot(under:ResourceLibrary.appDataRoot).appendingPathComponent("Installed",isDirectory:true),progress:progress) {update in
                         DispatchQueue.main.async { [weak self] in
                             guard let self else{return}
                             let bytes=ByteCountFormatter.string(fromByteCount:Int64(update.completed),countStyle:.file)
@@ -304,6 +352,20 @@ final class ModImportController: UITableViewController, UIDocumentPickerDelegate
                             self.tableView.reloadSections(IndexSet(integer:4),with:.none)
                         }
                     }) != nil { return true }
+                    if try ModSwitchOverlay.adopt(package,base:baseLayout.rom,catalog:RuntimeModCatalog.current,progress:progress) != nil {
+                        try? FileManager.default.removeItem(at:package.root)
+                        return true
+                    }
+                    func registerUnsupported() throws -> Bool {
+                        // Retain the user's original source for retry. In particular, do not keep a second
+                        // expanded copy of an archive that the runtime cannot use.
+                        if record == nil {
+                            try registry.register(access.root,inspection:package.inspection,name:package.name)
+                        }
+                        try FileManager.default.removeItem(at:package.root)
+                        return false
+                    }
+                    guard [.pluginAssets, .mixedAssets].contains(package.inspection.kind) else { return try registerUnsupported() }
                     let profileURL=Bundle.main.url(forResource:"PCModelProfiles",withExtension:"json")
                     let knownProfiles=try profileURL.map{try PCModelConverter.profiles($0)} ?? []
                     let recognizeReport:(ModInstallUpdate)->Void={update in
@@ -315,52 +377,64 @@ final class ModImportController: UITableViewController, UIDocumentPickerDelegate
                     }
                     if let candidate=try PCModelConverter.recognize(package.root,profiles:knownProfiles,progress:progress,report:recognizeReport)
                         ?? PCModelConverter.recognizeResourceModel(package.root,progress:progress,report:recognizeReport) {
-                        let resources=try ResourceLibrary.open(),layout=try ResourceLayout.locate(resources.root)
-                        _=try PCModelConverter.convert(candidate,base:layout.rom,dlc:layout.dlc,catalog:RuntimeModCatalog.current,progress:progress) {update in
+                        _=try PCModelConverter.convert(candidate,base:baseLayout.rom,dlc:baseLayout.dlc,catalog:RuntimeModCatalog.current,progress:progress) {update in
                             DispatchQueue.main.async { [weak self] in
                                 guard let self else{return};self.status=L(update.phase)
                                 self.fraction=update.total>0 ? Float(Double(update.completed)/Double(update.total)):0
                                 self.tableView.reloadSections(IndexSet(integer:4),with:.none)
                             }
                         }
-                        withExtendedLifetime(resources){}
                         // Only this importer's private copy is removed. The
                         // selected ZIP/folder, installed MODs and saves survive.
                         try? FileManager.default.removeItem(at:package.root)
                         return true
                     }
                     if let candidate=try PCSongConverter.recognize(package.root,progress:progress,report:recognizeReport) {
-                        let resources=try ResourceLibrary.open(),layout=try ResourceLayout.locate(resources.root)
-                        _=try PCSongConverter.convert(candidate,base:layout.rom,dlc:layout.dlc,catalog:RuntimeModCatalog.current,progress:progress) {update in
+                        _=try PCSongConverter.convert(candidate,base:baseLayout.rom,dlc:baseLayout.dlc,catalog:RuntimeModCatalog.current,progress:progress) {update in
                             DispatchQueue.main.async { [weak self] in
                                 guard let self else{return};self.status=L(update.phase)
                                 self.fraction=update.total>0 ? Float(Double(update.completed)/Double(update.total)):0
                                 self.tableView.reloadSections(IndexSet(integer:4),with:.none)
                             }
                         }
-                        withExtendedLifetime(resources){};try? FileManager.default.removeItem(at:package.root);return true
+                        try? FileManager.default.removeItem(at:package.root);return true
                     }
-                    try registry.register(package.root,inspection:package.inspection,name:package.name)
-                    return false
+                    return try registerUnsupported()
                 } catch {try? FileManager.default.removeItem(at:package.root);throw error}
+            }
+            if let record {
+                switch result {
+                case .failure(let error as ModWindowsRequirement): try? registry.setWindowsRequirement(error,for:record)
+                case .success(true): try? registry.remove(record)
+                case .success(false): try? registry.setWindowsRequirement(nil,for:record)
+                default: break
+                }
             }
             DispatchQueue.main.async { [weak self,access] in
                 guard let self else { return }
                 self.operation=nil
                 switch result {
-                case .success(let prepared):self.status=L(prepared ? "MOD 已导入。" : "此包目前不能加载。")
-                case .failure(let error):self.status=L(error.localizedDescription)
+                case .success(let prepared):
+                    self.status=L(prepared ? "MOD 已导入。" : "已登记，当前版本不能加载此包。")
+                case .failure(let error):
+                    self.status=(error as? ModWindowsRequirement).map(Self.windowsMessage) ?? L(error.localizedDescription)
                 }
                 self.updateBusyState();self.reloadRecords()
+                switch result {
+                case .failure(let reason as ModWindowsRequirement): self.presentImportNotice(Self.windowsMessage(reason))
+                case .success(false): self.presentImportNotice(L("已登记，当前版本不能加载此包。"))
+                default: break
+                }
                 withExtendedLifetime(access) {}
             }
         }
     }
     private func showRecord(_ record:ModRegistration) {
-        let alert=UIAlertController(title:record.name,message:L("此包目前不能加载。"),preferredStyle:.alert)
+        let message=record.windowsRequirement.map(Self.windowsMessage) ?? L("已登记，当前版本不能加载此包。")
+        let alert=UIAlertController(title:record.name,message:message,preferredStyle:.alert)
         alert.addAction(UIAlertAction(title:L("重新导入"),style:.default) { [weak self] _ in
             guard let self else{return}
-            do { self.inspect(ResourceAccess(try self.registry.source(record))) }
+            do { self.inspect(ResourceAccess(try self.registry.source(record)),retrying:record) }
             catch { self.status=L("MOD 源位置不可用，请重新添加。");self.tableView.reloadData() }
         })
         alert.addAction(UIAlertAction(title:L("移除登记（保留原文件）"),style:.destructive) { [weak self] _ in

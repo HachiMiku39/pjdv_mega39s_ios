@@ -6,8 +6,12 @@ import CryptoKit
 enum ModPackageError: LocalizedError {
     case unsupportedArchive, unknownStructure, unsafePath, invalidZIP, encryptedOrSplit
     case limitExceeded, specialFile, changedSource, invalidRecord, cancelled, preparedAlreadyInstalled
+    case invalidRAR, unsupportedRAR, wrongGame
     var errorDescription: String? {
         switch self {
+        case .wrongGame: return "此 MOD 的游戏编号与 MEGA39’s 不匹配。"
+        case .invalidRAR: return "RAR 包损坏或不完整，请重新下载。"
+        case .unsupportedRAR: return "此 RAR 使用了不支持的格式、加密或分卷，请选择完整的普通 RAR 或已解压的文件夹。"
         case .unsupportedArchive: return "此压缩格式暂不支持，请先解压后选择 MOD 文件夹。"
         case .unknownStructure: return "未识别 MOD 结构，请选择含 romfs 或 rom 的完整 MOD 文件夹。"
         case .unsafePath: return "MOD 路径不安全或存在大小写冲突。"
@@ -23,7 +27,10 @@ enum ModPackageError: LocalizedError {
     }
 }
 struct ModInspection: Codable {
-    enum Kind: String, Codable { case layeredFS, pluginAssets, mixedAssets, codeOnly }
+    enum Kind: String, Codable { case layeredFS, pluginAssets, mixedAssets, codeOnly, unrecognized }
+    func requireRecognized() throws {
+        guard kind != .unrecognized else { throw ModPackageError.unknownStructure }
+    }
     let kind: Kind
     let fileCount: Int
     let expandedBytes: UInt64
@@ -46,7 +53,7 @@ struct ModZIPEntry {
     let localOffset: UInt64
     let directoryOffset: UInt64
 }
-private struct ModDirectoryIndex {
+struct ModDirectoryIndex {
     private var paths = [String: String]()
     private var files = Set<String>(), directories = Set<String>()
     private var assetRoots = Set<String>()
@@ -119,7 +126,7 @@ private struct ModDirectoryIndex {
         else if layered { kind = .layeredFS }
         else if plugin { kind = .pluginAssets }
         else if code { kind = .codeOnly }
-        else { throw ModPackageError.unknownStructure }
+        else { kind = .unrecognized }
         guard fileCount > 0 else { throw ModPackageError.unknownStructure }
         return ModInspection(kind: kind, fileCount: fileCount, expandedBytes: expandedBytes,
             declaredTitleIDs: titleIDs.sorted(), containsCode: code, containsDatabases: database,
@@ -127,18 +134,32 @@ private struct ModDirectoryIndex {
     }
 }
 enum ModPackageInspector {
-    static func zipCatalog(_ url: URL, progress: Progress) throws -> (ModInspection, [ModZIPEntry]) {
+    static func zipCatalog(_ url: URL, progress: Progress, allowUnrecognized: Bool = false) throws -> (ModInspection, [ModZIPEntry]) {
         var entries=[ModZIPEntry]()
         let inspection=try inspectZIP(url,progress:progress,onEntry:{entries.append($0)})
+        if !allowUnrecognized { try inspection.requireRecognized() }
         return (inspection,entries)
     }
-    static func inspect(_ source: URL, progress: Progress = Progress(totalUnitCount: 1)) throws -> ModInspection {
+    static func inspect(_ source: URL, progress: Progress = Progress(totalUnitCount: 1), allowUnrecognized: Bool = false) throws -> ModInspection {
         guard source.isFileURL else { throw ModPackageError.unsupportedArchive }
         let attr = try FileManager.default.attributesOfItem(atPath: source.path)
-        if attr[.type] as? FileAttributeType == .typeDirectory { return try inspectFolder(source, progress: progress) }
-        guard attr[.type] as? FileAttributeType == .typeRegular else { throw ModPackageError.specialFile }
-        guard source.pathExtension.lowercased() == "zip" else { throw ModPackageError.unsupportedArchive }
-        return try inspectZIP(source, progress: progress)
+        let inspection: ModInspection
+        switch attr[.type] as? FileAttributeType {
+        case .typeDirectory:
+            inspection = try inspectFolder(source, progress: progress)
+        case .typeRegular:
+            switch source.pathExtension.lowercased() {
+            case "zip": inspection = try inspectZIP(source, progress: progress)
+            #if PJDV_EMBEDDED_RAR || canImport(PJDVArchive)
+            case "rar": inspection = try ModRARReader.read(source, progress: progress)
+            #endif
+            default: throw ModPackageError.unsupportedArchive
+            }
+        default:
+            throw ModPackageError.specialFile
+        }
+        if !allowUnrecognized { try inspection.requireRecognized() }
+        return inspection
     }
     private static func inspectFolder(_ root: URL, progress: Progress) throws -> ModInspection {
         let fm = FileManager.default
@@ -265,6 +286,7 @@ struct ModRegistration: Codable {
     let bookmark: Data
     let registeredAt: Date
     let inspection: ModInspection
+    var windowsRequirement: ModWindowsRequirement?
     // An enabled flag is intentionally absent: registration cannot activate a MOD.
 }
 struct ModRegistry {
@@ -296,6 +318,18 @@ struct ModRegistry {
         let bytes=try JSONEncoder().encode(r)
         guard bytes.count <= 256*1024 else { throw ModPackageError.limitExceeded }
         try bytes.write(to:root.appendingPathComponent(r.id.uuidString+".json"),options:.atomic)
+    }
+    func setWindowsRequirement(_ requirement: ModWindowsRequirement?, for record: ModRegistration) throws {
+        let url = root.appendingPathComponent(record.id.uuidString + ".json")
+        let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
+        guard attributes[.type] as? FileAttributeType == .typeRegular,
+              (attributes[.size] as? NSNumber)?.uint64Value ?? UInt64.max <= 256 * 1024 else { throw ModPackageError.invalidRecord }
+        var current = try JSONDecoder().decode(ModRegistration.self, from: Data(contentsOf: url))
+        guard current.schema == record.schema, current.id == record.id, current.sourceID == record.sourceID,
+              current.registeredAt == record.registeredAt else { throw ModPackageError.invalidRecord }
+        guard current.windowsRequirement != requirement else { return }
+        current.windowsRequirement = requirement
+        try JSONEncoder().encode(current).write(to:url,options:.atomic)
     }
     func remove(_ record: ModRegistration) throws {
         try FileManager.default.removeItem(at:root.appendingPathComponent(record.id.uuidString+".json"))
@@ -366,7 +400,12 @@ struct RuntimeModCatalog {
     func resolve(_ ids:[UUID])throws->[RuntimeMod] {
         if ids.isEmpty{return []}
         guard ids.count<=16,Set(ids).count==ids.count else {throw ModPackageError.limitExceeded}
-        let all=try records();return try ids.map{id in guard let value=all.first(where:{$0.id==id}) else {throw ModPackageError.invalidRecord};return value}
+        let inventory = try inventory()
+        return try ids.map { id in
+            if let value = inventory.ready.first(where: { $0.id == id }) { return value }
+            if let reason = inventory.unavailable.first(where: { $0.id == id })?.windowsRequirement { throw reason }
+            throw ModPackageError.invalidRecord
+        }
     }
     private func child(_ path: String, under folder: URL) throws -> URL {
         let parts = path.split(separator: "/", omittingEmptySubsequences: false)
@@ -418,10 +457,21 @@ struct RuntimeModCatalog {
             guard item.files.contains(where: {$0.path.hasPrefix(layer + "/")}) else { throw ModPackageError.invalidRecord }
         }
     }
+    private func checkPlatform(_ item:RuntimeMod, in directory:URL, progress:Progress) throws {
+        for layer in item.layers {
+            let prefix = layer + "/"
+            let paths = item.files.compactMap { $0.path.hasPrefix(prefix) ? String($0.path.dropFirst(prefix.count)) : nil }
+            if ModPlatformAnalyzer.needsRuntimeCheck(paths),
+               let requirement = try ModPlatformAnalyzer.windowsRequirement(in:try child(layer,under:directory),knownFiles:paths,progress:progress) {
+                throw requirement
+            }
+        }
+    }
     struct Unavailable {
         let id:UUID
         let name:String
         let item:RuntimeMod?
+        var windowsRequirement:ModWindowsRequirement?
     }
     struct Inventory {
         let ready:[RuntimeMod]
@@ -449,7 +499,10 @@ struct RuntimeModCatalog {
                 guard item.id==id else {throw ModPackageError.invalidRecord}
                 try validate(item);candidate=item
                 guard !fm.fileExists(atPath:invalidMarker(id).path) else {throw ModPackageError.changedSource}
+                try checkPlatform(item,in:folder,progress:Progress())
                 ready.append(item)
+            } catch let reason as ModWindowsRequirement {
+                unavailable.append(Unavailable(id:id,name:name,item:nil,windowsRequirement:reason))
             } catch {unavailable.append(Unavailable(id:id,name:name,item:candidate))}
         }
         return Inventory(ready:ready.sorted{$0.name.localizedStandardCompare($1.name) == .orderedAscending},
@@ -540,6 +593,7 @@ struct RuntimeModCatalog {
         }
         if let error = enumerationError { throw error }
         guard actual == expected else { throw ModPackageError.invalidRecord }
+        try checkPlatform(item,in:source,progress:progress)
         let total = item.files.reduce(UInt64(0)) { $0 + $1.bytes }
         progress.totalUnitCount = Int64(max(1,total)); progress.completedUnitCount = 0
         var lastReport = Date.distantPast
@@ -580,8 +634,9 @@ struct RuntimeModCatalog {
         try selectedMods().first
     }
     // Stream metadata checks and stat payloads. Never read a song/movie into RAM.
-    func overlayPaths(_ item: RuntimeMod, base: URL, dlc:URL?=nil) throws -> [String] {
+    func overlayPaths(_ item: RuntimeMod, base: URL, dlc:URL?=nil, progress:Progress = Progress()) throws -> [String] {
         try validate(item)
+        try checkPlatform(item,in:directory(item),progress:progress)
         let fm = FileManager.default
         guard !fm.fileExists(atPath:invalidMarker(item.id).path) else {throw ModPackageError.changedSource}
         func check(_ row: RuntimeMod.Check, under folder: URL, hash: Bool) throws {

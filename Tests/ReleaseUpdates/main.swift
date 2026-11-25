@@ -37,7 +37,9 @@ let suite="PJDV.ReleaseTests."+UUID().uuidString
 let defaults=UserDefaults(suiteName:suite)!
 defer {defaults.removePersistentDomain(forName:suite)}
 let config=URLSessionConfiguration.ephemeral;config.protocolClasses=[MockURL.self]
-func client() -> ReleaseUpdateChecker {ReleaseUpdateChecker(defaults:defaults,configuration:config,current:v("0.1.5b23"),assetExtension:".dmg")}
+func client(current: String = "0.1.5b23", ext: String = ".dmg") -> ReleaseUpdateChecker {
+    ReleaseUpdateChecker(defaults:defaults,configuration:config,current:v(current),assetExtension:ext)
+}
 func wait(_ predicate: () -> Bool) {
     let deadline=Date().addingTimeInterval(10)
     while !predicate(), Date()<deadline {RunLoop.current.run(until:Date().addingTimeInterval(0.01))}
@@ -57,6 +59,28 @@ if case .available = check(client()) {} else {fatalError("304 lost cached update
 precondition(MockURL.requests.last?.value(forHTTPHeaderField:"If-None-Match")=="\"fixture24\"")
 precondition(MockURL.requests.allSatisfy{$0.value(forHTTPHeaderField:"Authorization")==nil})
 print("PASS one request per launch, concurrent coalescing, ETag/304 across launches and no credentials")
+let stableTag = "v0.2.0b1"
+let stablePage = "https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/" + stableTag
+let stable: [String: Any] = [
+    "tag_name": stableTag, "html_url": stablePage, "draft": false, "prerelease": false,
+    "assets": [
+        ["name":"PJDVM39-0.2.0b1-iOS-unsigned.ipa","state":"uploaded"],
+        ["name":"PJDVM39-0.2.0b1-macOS.dmg","state":"uploaded"]
+    ]
+]
+for ext in [".ipa", ".dmg"] {
+    MockURL.status=200;MockURL.headers=["ETag":"\"stable020\""]
+    MockURL.data=payload([row("v0.1.5b27",ext:ext),stable])
+    guard case .available(let release) = check(client(current:"0.1.5b27",ext:ext)) else {
+        fatalError("Previous release missed the stable update for " + ext)
+    }
+    precondition(release.tag == stableTag && release.page.absoluteString == stablePage)
+    MockURL.status=304;MockURL.data=Data()
+    guard case .current = check(client(current:stableTag,ext:ext)) else {
+        fatalError("Upgraded app prompted again on cached stable release for " + ext)
+    }
+}
+print("PASS 0.1.5 build 27 to 0.2.0 build 1, stable IPA and DMG, no repeated prompt after upgrade")
 MockURL.status=200;MockURL.data=payload([row("v0.1.5b22")])
 if case .current = check(client()) {} else {fatalError("False downgrade prompt")}
 MockURL.data=Data("invalid".utf8)

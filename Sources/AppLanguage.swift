@@ -1,5 +1,14 @@
 import Foundation
 
+enum GameTextFontSelection {
+    private static let key = "gameTextFontGoogleSans"
+
+    static var usesGoogleSans: Bool {
+        get { UserDefaults.standard.bool(forKey: key) }
+        set { UserDefaults.standard.set(newValue, forKey: key) }
+    }
+}
+
 enum AppLanguage {
     private static let lock = NSLock()
     private static var activeCodes = Set(["ja"])

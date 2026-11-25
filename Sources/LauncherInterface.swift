@@ -26,7 +26,7 @@ final class LauncherInterface: UIView {
     private var wide: Bool?
 
     init(message: String, start: UIButton, resources: UIButton, mods: UIButton,
-         quality: UIButton, language: UIButton, sticks: UIButton, autoplay: UIButton,
+         quality: UIButton, language: UIButton, gameTextFont: UIButton, sticks: UIButton, autoplay: UIButton,
          experiments: UIButton, resourceStatus: UILabel, inboxStatus: UILabel, updates: UIButton) {
         self.resourceStatus = resourceStatus; resourceActions = [resources, mods]
         super.init(frame: .zero)
@@ -113,11 +113,12 @@ final class LauncherInterface: UIView {
 
         Self.style(quality, symbol: "slider.horizontal.3")
         Self.style(language, symbol: "globe")
+        Self.style(gameTextFont, symbol: "textformat")
         Self.style(sticks, symbol: "gamecontroller")
         Self.style(autoplay, symbol: "play.circle")
         experiments.setTitle(L("图形实验"), for: .normal)
         Self.style(experiments, symbol: "sparkles")
-        let settings = Self.group(title: L("游戏设置"), buttons: [quality, language, sticks])
+        let settings = Self.group(title: L("游戏设置"), buttons: [quality, language, gameTextFont, sticks])
         let labs = Self.group(title: L("实验功能"), buttons: [autoplay, experiments])
         preferences.axis = .horizontal; preferences.alignment = .fill; preferences.distribution = .fillEqually; preferences.spacing = 16
         preferences.addArrangedSubview(settings); preferences.addArrangedSubview(labs)

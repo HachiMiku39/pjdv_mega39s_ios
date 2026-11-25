@@ -44,6 +44,15 @@ let profile=PCModelConverter.Profile(id:"synthetic",name:"Synthetic model",files
 let suite="PJDV.PCModel.Tests."+UUID().uuidString,defaults=UserDefaults(suiteName:suite)!
 defer{defaults.removePersistentDomain(forName:suite)}
 let catalog=RuntimeModCatalog(root:root.appendingPathComponent("Ready"),defaults:defaults)
+let wrapper=source.deletingLastPathComponent()
+try put(wrapper.appendingPathComponent("README.md"),Data("Fixture".utf8))
+for extra in ["loader.asi","config.toml",".required"] {
+    let dependency=wrapper.appendingPathComponent(extra)
+    try put(dependency,Data("required".utf8))
+    require(try PCModelConverter.recognize(wrapper,profiles:[profile],progress:Progress())==nil)
+    require(try PCModelConverter.recognizeResourceModel(wrapper,progress:Progress())==nil)
+    try fm.removeItem(at:dependency)
+}
 let candidate=try PCModelConverter.recognize(source.deletingLastPathComponent(),profiles:[profile],progress:Progress())!
 let first=try PCModelConverter.convert(candidate,base:base,dlc:dlc,catalog:catalog,progress:Progress())
 require(!first.reused && catalog.selectedIDs.isEmpty && first.item.format=="pjdv-runtime-model-v1")
@@ -88,7 +97,7 @@ require(try Data(contentsOf:src)==sourceBefore && catalog.selectedIDs.isEmpty)
 require(!(try fm.contentsOfDirectory(at:catalog.root,includingPropertiesForKeys:nil)).contains{$0.lastPathComponent.hasPrefix(".converting-")})
 rejects{_=try PCModelConverter.translations(Data("cn.1 = \"a\"\ncn.1 = \"b\"".utf8))}
 rejects{_=try PCModelConverter.translations(Data("[cn]\n1='unsupported'".utf8))}
-require(try PCModelConverter.translations(Data("cn.1 = \"a\\nb\"".utf8))["cn"]?[1]=="a\nb")
+require(try PCModelConverter.translations(Data("cn.276 = \"a\\nb\"".utf8)).module(1, language: "cn")=="a\nb")
 print("PASS: cancellation, source mutation, unknown DLL, asset symlink, changed DLC metadata/folders, rollback, strict translation parsing and source preservation")
 
 // Unseen resource-only packs are selected by structure. Windows CRLF must not
@@ -108,3 +117,47 @@ let decoded=try F.archive(counted);require(decoded.count==1 && decoded[0].name==
 rejects{_=try F.archive(Data(counted.dropLast(20)))}
 var damaged=counted;damaged[100]^=0xff;rejects{_=try F.archive(damaged)}
 print("PASS: independent counted/CBC/gzip FARC fixture, truncation and damaged payload rejection")
+
+let groupedNames = try PCModelConverter.translations(Data("""
+cn.2103 = "Legacy 1828"
+cn.2764 = "Legacy accessory 1828"
+module.1828 = "Racing Miku"
+en.module.1828 = "2024 Race"
+sp.module.1828 = "Carrera"
+customize.1828 = "Race Hair"
+cn.customize.1828 = "赛车发型"
+cstm_item.1990 = "2025 Hair"
+cn.2265 = "Legacy 1990"
+""".utf8))
+require(groupedNames.module(1828, language: "en") == "2024 Race")
+require(groupedNames.module(1828, language: "cn") == "Racing Miku")
+require(groupedNames.module(1990, language: "cn") == "Legacy 1990")
+require(groupedNames.accessory(1828, language: "cn") == "赛车发型")
+require(groupedNames.accessory(1990, language: "en") == "2025 Hair")
+rejects { _ = try PCModelConverter.translations(Data("en.module.8=\"one\"\nen.module.8=\"two\"".utf8)) }
+for invalid in ["en..1", "unsupported.module.1", "en.btn_se.9", "cn.module.-1"] {
+    rejects { _ = try PCModelConverter.translations(Data((invalid + " = \"value\"").utf8)) }
+}
+
+// A large, sparse OPD fixture exercises the streaming path on disk. The same
+// size under a parsed database path must still fail before being read.
+let streamed = source.appendingPathComponent("rom/osage_play_data/test.farc")
+try put(streamed, Data())
+let handle = try FileHandle(forWritingTo: streamed)
+try handle.truncate(atOffset: UInt64(F.fileLimit + 1))
+try handle.close()
+require(try PCModelConverter.recognizeResourceModel(source, progress: Progress())?.profile.files.contains {
+    $0.path == "rom/osage_play_data/test.farc" && $0.bytes == UInt64(F.fileLimit + 1)
+} == true)
+let parsed = source.appendingPathComponent("rom/skin_param/mod_osage_setting.txt")
+try fm.createDirectory(at: parsed.deletingLastPathComponent(), withIntermediateDirectories: true)
+try fm.moveItem(at: streamed, to: parsed)
+rejects { _ = try PCModelConverter.recognizeResourceModel(source, progress: Progress()) }
+try fm.removeItem(at: parsed)
+print("PASS scoped DML model translations and streamed resource limits")
+
+let hair = ["id": "1990", "chara": "MIKU", "obj_id": "8525", "bind_module": "1990"]
+let otherHair = hair.merging(["id": "1991"]) { _, new in new }
+require(try PCModelConverter.uniqueAccessories([hair, otherHair, hair]) == [hair, otherHair])
+rejects { _ = try PCModelConverter.uniqueAccessories([hair, hair.merging(["obj_id": "999"]) { _, new in new }]) }
+print("PASS identical accessory rows and conflicting IDs")

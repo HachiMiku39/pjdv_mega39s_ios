@@ -1,8 +1,8 @@
 # 源码与构建 · 2026-11-25
 
-本仓库提供 PJDV M39 0.1.5 build27 的 Swift／UIKit 宿主、Mac 辅助组件、NVN → Metal／Horizon 兼容层、构建工具和测试。完整链接需要自行准备下列本地构建输入。
+本仓库提供 PJDV M39 0.2.0 build 1 的 Swift／UIKit 宿主、Mac 辅助组件、NVN → Metal／Horizon 兼容层、构建工具和测试。完整链接需要自行准备下列本地构建输入。
 
-The repository contains the Swift/UIKit host, Mac helpers, NVN-to-Metal and Horizon runtime, build tools and tests for PJDV M39 0.1.5 build27. The full app requires the local build inputs described below.
+The repository contains the Swift/UIKit host, Mac helpers, NVN-to-Metal and Horizon runtime, build tools and tests for PJDV M39 0.2.0 build 1. The full app requires the local build inputs described below.
 
 ## 源码目录
 
@@ -31,6 +31,14 @@ bash Scripts/test-core.sh
 测试目录必须尚未存在。脚本只生成小型合成容器和确定性的虚构密钥，验证导入版本识别、DLC 子集、改名 NCA、错误包拒绝、取消续导、语言回落、源文件不变，以及预检阶段的状态回调。这不代表商业游戏的渲染或性能验收。
 
 ## 构建完整游戏宿主前需要的本地输入
+
+构建带有可选游戏内字体的 App 前，在仓库根目录运行以下命令。脚本获取 Google Sans v14.000 和 Noto Sans CJK 2.004 的常规 400 字重，按 SHA-256 校验两份原始字体及各自的 SIL Open Font License 1.1。单个 Noto 字体集合覆盖日语、简体中文、繁体中文和韩语的地区字形。四个文件合计约 20.7 MiB。[Google Sans 官方发布](https://github.com/googlefonts/googlesans/releases/tag/v14.000) · [Noto 官方下载指南](https://github.com/notofonts/noto-cjk/blob/main/Sans/README.md)
+
+```sh
+python3 Scripts/prepare_google_sans.py
+```
+
+For an offline build, place the original `GoogleSans-Regular.ttf`, `NotoSansCJK-Regular.ttc`, `GoogleSans-OFL.txt` and `NotoSansCJK-OFL.txt` in one directory, then run `python3 Scripts/prepare_google_sans.py --from-dir /path/to/downloads`. The script verifies the pinned files before staging them in `Assets/GoogleSans/` for the App resource build phase.
 
 原始 XCI、NSO、提取后的资源、重写得到的 ARM64 段、生成的着色器及个人存档均不在仓库内。**只克隆源码还不能完成完整 App 的链接。** 运行程序仍固定到已适配的 JP v1.0.9；任意版本 XCI 导入不等于任意原程序可运行。
 

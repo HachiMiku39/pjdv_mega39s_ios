@@ -5,6 +5,22 @@ BETTER THAN MOST OF APPS
 
 **简体中文** | [English](README.en.md)
 
+## 0.2.0 正式版 · build 1
+
+本版更新了 Mod 导入、模型组合和游戏内字体，并修正了已适配 X Song Pack 中《Calc.》的画面倒置。已有玩家可以覆盖安装，沿用已导入的游戏和存档。[下载 iOS／iPadOS IPA 和 Apple Silicon Mac DMG](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.2.0b1)
+
+- **模型**。在 6 个 GameBanana 模型原包中，5 个通过导入。Racing Miku 2024、2025 均可直接从作者 ZIP 安装，同时启用时各自保留服装和发型。Sekai Mini Pack 7 的 Rekka Kohane 已在 iPhone 模拟器登上《愛言葉》的舞台。
+- **歌曲**。3 个曲包原档目前都需要适配。开发测试中，《Miracle Paint》播放了 Wonderlands×Showtime 的翻唱，电影歌曲《はじまりの未来 (Ergo ver.)》在 HARD 完成约 4 分 20 秒的整曲。整包导入结果、缺失资源及作者下载页见报告。[九个原包的测试结果与截图](Reports/RELEASE-0.2.0b1.md)
+- **字体**。启动页的「游戏设置 → 游戏字体 → Google Sans」可以替换歌词、服装名和歌名。中日韩文字按游戏语言使用 Noto Sans CJK 补字，默认保留游戏原版字体。[《Calc.》缺字修复对照](Reports/images/release-0.2.0b1/calc-lyrics.png)
+
+### 如何导入 Mod
+
+先导入 MEGA39’s 本体，再进入启动页的「MOD 管理」。点「添加 ZIP 或 RAR 包」选择原档，或将单个解压文件夹放进 App 的 `mods/`，回到管理页点击包名。iPhone 和 iPad 上可在「文件 → 我的 iPhone／iPad → PJDV M39 → mods」找到该目录。Mac 也可直接选择外置盘上的文件夹。
+
+App 会在本地检查并转换可用资源。勾选已就绪的一个或多个包后点「加载」。支持日版游戏的纯资源 RomFS 覆盖、已适配包，以及转换器支持的 PC 模型与歌曲。需要 Windows 插件的包会显示依赖名称。支持单卷 ZIP、RAR4 和 RAR5。使用 7z、分卷或加密包时，请先自行解压并选择主 Mod 文件夹。
+
+### 历史版本
+
 **0.1.5 build27 精简预览 · 2026-11-25**
 
 启动页新增 **画质 → 内部 1080p 渲染（实验）**。默认关闭，开启后在下次启动游戏时生效，可与输出分辨率、MetalFX 分别设置。人物和舞台的主渲染目标提升到 1920×1080，阴影图、辉光等效果保留原有分辨率。
@@ -77,7 +93,7 @@ Kimagure Mercy 模型与 Tonny’s 视频歌曲原始 ZIP 已在 Mac 抽样。Ed
 
 **Eden 完整曲包抽样与清理（2026-11-01，未发布源码候选）：** Heavy Metal 14 首／37 谱面、Rock 19 首／35 谱面完整开发适配后由 App 分别导入并组合，预先随机抽取四首 EXTREME 均完整结算。修复 Cosmos 的 1916 像素视频布局崩溃及合法 IVF 时间基准误拒绝，三平台编译通过。**仍需开发侧临时编号，不代表原始 Eden 整包直接导入已完成。** 按要求删除本轮及上一轮 Eden 移植测试副本，实测释放约 38.22 GB，保留原始 Mod、XCI、存档及证据。[中英结果、截图与清理范围](Reports/EDEN-FULL-PACKS-20261101.md)
 
-以下记录保留验证当日的版本状态；“本地候选／公开包仍为 build19”等表述是历史状态。本次发布范围以上方 build22 说明为准。
+以下记录保留验证当日的版本状态；“本地候选／公开包仍为 build19”等表述是历史状态。当前发布范围见本页开头的 0.2.0 build 1 说明。
 
 **Eden 单曲组合播放（2026-11-01，未发布源码候选）：** Beginner、Catchy Pop、Vibes 各取一首开发子集，由 App 分别转换后同时加载；HARD／HARD／EXTREME 均完整结算（686／607／665 COOL，AutoPlay 临时档）。修复中文歌词方框和独立曲包列表冲突，封面、字幕与冷启动配置已检查，普通存档哈希未变。**临时 800–802 编号不代表完整 Eden 原包可直接导入；持久编号、Core、模型及 3D／Edit 适配仍待完成。** [中英报告、截图与显示计时边界](Reports/EDEN-PLAYBACK-20261101.md)
 
@@ -173,6 +189,12 @@ GitHub 公开 build7 的基线是 **JP v1.0.9 / 589824、Title ID 0100F3100DA460
 | GitHub Mac DMG | 轻量、arm64、ad hoc 签名，未公证；首次运行需导入自己的资源 |
 
 GitHub 轻量包没有 XCI、提取后的大型游戏资源、prod.keys 或本机开发签名配置。导入时需在本机选择自己的密钥。按 2026-10-24 的清理要求，本工作项目内的旧大型整合包及旧全量打包目录已删除；原始 XCI、当前提取资源、存档备份和精简包保留。后续仅生成精简包。
+
+### 可选游戏字体
+
+进入游戏前，打开 **游戏设置 → 游戏字体 → Google Sans**，然后启动游戏。此设置适用于本体、随 XCI 导入的 DLC 和已加载的 Mod，只处理动态歌词、服装名与歌名。默认使用原版字体，可随时在启动页切回。烘焙在视频、封面或图片中的文字随原资源显示。
+
+英文和拉丁字母优先用 Google Sans，中日韩文字按当前游戏语言使用 Noto Sans CJK 对应地区的字形。歌词内容沿用歌曲包提供的语言。[Google Sans](https://github.com/googlefonts/googlesans) · [Noto Sans CJK](https://github.com/notofonts/noto-cjk)
 
 ## iPad 安装与首次启动
 

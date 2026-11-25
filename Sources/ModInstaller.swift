@@ -63,9 +63,37 @@ enum ModInstaller {
     static func install(_ source:URL, under root:URL, progress:Progress,
                         report:@escaping(ModInstallUpdate)->Void) throws -> InstalledMod {
         let fm=FileManager.default
-        let inspected=try ModPackageInspector.inspect(source,progress:progress)
+        // A player can pick the entire Files container. Never stage inside the
+        // selected directory; compare directory identity across case/volume aliases.
+        let sourceType = try fm.attributesOfItem(atPath:source.path)[.type] as? FileAttributeType
+        if sourceType == .typeDirectory {
+            var selected = stat()
+            guard stat(source.path, &selected) == 0 else { throw ModPackageError.changedSource }
+            var ancestor = root.standardizedFileURL.resolvingSymlinksInPath()
+            while true {
+                var item = stat()
+                if stat(ancestor.path, &item) == 0, selected.st_dev == item.st_dev, selected.st_ino == item.st_ino {
+                    throw ModPackageError.unsafePath
+                }
+                let parent = ancestor.deletingLastPathComponent()
+                if parent.path == ancestor.path || ancestor.path == "/" { break }
+                ancestor = parent
+            }
+        }
+        #if PJDV_EMBEDDED_RAR || canImport(PJDVArchive)
+        if source.pathExtension.lowercased() == "rar", sourceType == .typeRegular {
+            return try installRAR(source,under:root,progress:progress,report:report)
+        }
+        #endif
+        let inspected=try ModPackageInspector.inspect(source,progress:progress,allowUnrecognized:true)
         guard inspected.expandedBytes<=maximumExpanded else {throw ModInstallError.tooLarge}
         guard !inspected.unusualCompression else {throw ModInstallError.unsupportedCompression}
+        let attr=try fm.attributesOfItem(atPath:source.path)
+        if attr[.type] as? FileAttributeType == .typeDirectory && (inspected.containsCode || inspected.kind == .unrecognized) {
+            // Refuse a directory with a required Windows plug-in before copying its assets.
+            if let requirement = try ModPlatformAnalyzer.windowsRequirement(in:source,progress:progress) { throw requirement }
+            try inspected.requireRecognized()
+        }
         try fm.createDirectory(at:root,withIntermediateDirectories:true)
         // Inspection rejects a selected symlink; normalize trusted ancestor
         // aliases before comparing enumerated paths or returning the copy.
@@ -90,7 +118,6 @@ enum ModInstaller {
                 try checkSpace(root,0)
             }
         }
-        let attr=try fm.attributesOfItem(atPath:source.path)
         if attr[.type] as? FileAttributeType == .typeDirectory {
             guard let enumerator=fm.enumerator(at:source,includingPropertiesForKeys:nil) else {throw ModPackageError.unknownStructure}
             let prefix=source.standardizedFileURL.path+"/"
@@ -125,7 +152,7 @@ enum ModInstaller {
                 }
             }
         } else {
-            let (_,entries)=try ModPackageInspector.zipCatalog(source,progress:progress)
+            let (_,entries)=try ModPackageInspector.zipCatalog(source,progress:progress,allowUnrecognized:true)
             let input=try FileHandle(forReadingFrom:source);defer {try? input.close()}
             let length=(attr[.size] as? NSNumber)?.uint64Value ?? 0
             func read(_ offset:UInt64,_ size:Int)throws->Data {
@@ -209,11 +236,48 @@ enum ModInstaller {
                   (attr[.modificationDate] as? Date)==(after[.modificationDate] as? Date) else {throw ModPackageError.changedSource}
         }
         try check();guard done==inspected.expandedBytes else {throw ModInstallError.integrity}
-        let verified=try ModPackageInspector.inspect(stage,progress:progress)
+        let result = try publish(stage, to: final, named: source, inspected: inspected,
+                                 checkedArchive: attr[.type] as? FileAttributeType == .typeRegular,
+                                 progress: progress, report: report)
+        committed = true
+        return result
+    }
+
+    #if PJDV_EMBEDDED_RAR || canImport(PJDVArchive)
+    private static func installRAR(_ source:URL, under root:URL, progress:Progress,
+                                   report:@escaping(ModInstallUpdate)->Void) throws -> InstalledMod {
+        let fm=FileManager.default
+        try fm.createDirectory(at:root,withIntermediateDirectories:true)
+        let id=UUID().uuidString
+        let stage=root.appendingPathComponent(".staging-"+id,isDirectory:true)
+        let destination=root.appendingPathComponent(id,isDirectory:true)
+        try fm.createDirectory(at:stage,withIntermediateDirectories:false)
+        defer { try? fm.removeItem(at:stage) }
+        let inspected=try ModRARReader.read(source,to:stage,progress:progress,reserve:{ needed in
+            try checkSpace(root,needed)
+        },report:{ path, completed, total in
+            report(ModInstallUpdate(phase:"解压／校验 MOD",file:path,completed:completed,total:total))
+        })
+        return try publish(stage,to:destination,named:source,inspected:inspected,checkedArchive:true,
+                           progress:progress,report:report)
+    }
+    #endif
+
+    private static func publish(_ stage:URL, to final:URL, named source:URL, inspected:ModInspection,
+                                checkedArchive:Bool, progress:Progress,
+                                report:(ModInstallUpdate)->Void) throws -> InstalledMod {
+        let done=inspected.expandedBytes
+        let verified=try ModPackageInspector.inspect(stage,progress:progress,allowUnrecognized:true)
         guard verified.fileCount==inspected.fileCount,verified.expandedBytes==inspected.expandedBytes else {throw ModInstallError.integrity}
-        try fm.moveItem(at:stage,to:final);committed=true
+        let titles = Set(inspected.declaredTitleIDs + verified.declaredTitleIDs)
+        guard titles.allSatisfy({ $0 == Mega39Content.title(Mega39Content.applicationID) }) else { throw ModPackageError.wrongGame }
+        report(ModInstallUpdate(phase:"正在检查 MOD 平台兼容性…",file:"",completed:done,total:done))
+        if let requirement = try ModPlatformAnalyzer.windowsRequirement(in:stage,progress:progress) { throw requirement }
+        try verified.requireRecognized()
+        if progress.isCancelled {throw ModPackageError.cancelled}
+        try FileManager.default.moveItem(at:stage,to:final)
         report(ModInstallUpdate(phase:"MOD 已导入",file:"",completed:done,total:done))
-        let report=ModInspection(kind:verified.kind,fileCount:verified.fileCount,expandedBytes:verified.expandedBytes,declaredTitleIDs:verified.declaredTitleIDs,containsCode:verified.containsCode,containsDatabases:verified.containsDatabases,unusualCompression:false,contentIntegrityChecked:source.pathExtension.lowercased()=="zip")
-        return InstalledMod(root:final,name:source.deletingPathExtension().lastPathComponent,inspection:report)
+        let report=ModInspection(kind:verified.kind,fileCount:verified.fileCount,expandedBytes:verified.expandedBytes,declaredTitleIDs:titles.sorted(),containsCode:verified.containsCode,containsDatabases:verified.containsDatabases,unusualCompression:false,contentIntegrityChecked:checkedArchive)
+        return InstalledMod(root:final,name:checkedArchive ? source.deletingPathExtension().lastPathComponent : source.lastPathComponent,inspection:report)
     }
 }

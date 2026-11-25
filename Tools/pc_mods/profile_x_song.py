@@ -3,7 +3,8 @@
 Classic database structures follow the pinned MikuMikuLibrary readers saved
 in Reference/. X Charts Pack remains quarantined until New Classics exists.
 """
-import sys, os, re, json, struct, shutil, copy
+import sys, json, struct, copy
+from x_song_stage_movies import install_stage_movie, stage_movie_inputs
 from pathlib import Path
 import profile_model as lib
 from profile_model import u,z,Writer,entries,sha,obj_read,obj_write,tex_read,tex_write,properties,propbytes,group,setgroup,farc_write,objset,textures
@@ -103,6 +104,12 @@ def stage_merge(base,delta,objmap,texmap):
     out[20:22]=b'\1\2'
     return bytes(out),stages
 def main():
+    pv=properties((SRC/'rom/mod_pv_db.txt').read_bytes())
+    pv_ids=sorted({int(k.split('.')[0][3:]) for k in pv})
+    assert pv_ids==list(range(800,832))
+    movies=stage_movie_inputs(SRC, pv)
+    # When the source supplies both formats, the declared MP4 takes precedence.
+    consumed_movies = set(movies) | {SRC / rel.with_suffix('.usm') for rel in movies.values()}
     OVER.mkdir(exist_ok=True)
     obj_paths=list(BASE.glob('*/rom/objset/*obj_db.bin'))+list(lib.DLC.glob('*/**/rom/objset/*obj_db.bin'))
     tex_paths=list(BASE.glob('*/rom/objset/*tex_db.bin'))+list(lib.DLC.glob('*/**/rom/objset/*tex_db.bin'))
@@ -117,8 +124,10 @@ def main():
         before=tex_read(p.read_bytes());assert not {t['id'] for t in before}&set(texmap.values());write(p.relative_to(BASE),tex_write(before+modtex))
     print('Registered',len(modobj),'object sets',len(modtex),'textures',flush=True)
     changes=[]
+    for source, relative in movies.items():
+        outputs.append(install_stage_movie(source, relative, OVER, WORK, '--tables-only' in sys.argv))
     for p in sorted((SRC/'rom').rglob('*')):
-        if not p.is_file() or p.name.startswith('.') or '备份' in p.parts:continue
+        if not p.is_file() or p in consumed_movies or p.name.startswith('.') or '备份' in p.parts:continue
         rel=p.relative_to(SRC/'rom')
         if p.name.startswith(('mod_','spr_fnt_')) or str(rel)=='fontmap.farc' or 'lang2' in rel.parts:continue
         if '--tables-only' in sys.argv:
@@ -172,7 +181,6 @@ def main():
         for v in delta:
             i=int(v['org_uid']);assert i>=oldlen;rows[i]={k:x for k,x in v.items() if k!='org_uid'}
         d=setgroup(setgroup(d,'category',cats),'uid',rows);write(p.relative_to(BASE),b'#A3DA__________\n'+propbytes(d))
-    pv=properties((SRC/'rom/mod_pv_db.txt').read_bytes());pv_ids=sorted({int(k.split('.')[0][3:]) for k in pv});assert pv_ids==list(range(800,832))
     for name,delta in [('pv_db.txt',pv),('pv_field.txt',properties((SRC/'rom/mod_pv_field.txt').read_bytes()))]:
         for p in BASE.glob('*/rom/'+name):
             d=properties(p.read_bytes());assert not set(d)&set(delta),('PV collision',p);d.update(delta);write(p.relative_to(BASE),propbytes(d))

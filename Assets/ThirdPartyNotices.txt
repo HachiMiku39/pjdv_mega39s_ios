@@ -80,3 +80,95 @@ ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 
 For more information, please refer to <https://unlicense.org>
+
+libarchive 3.8.11 — statically linked RAR reader
+https://github.com/libarchive/libarchive/releases/tag/v3.8.11
+
+Copyright (c) 2002 Thomas Moestl <tmm@FreeBSD.org>
+Copyright (c) 2003-2006 Tim Kientzle
+Copyright (c) 2003-2007 Tim Kientzle
+Copyright (c) 2003-2008 Tim Kientzle
+Copyright (c) 2003-2010 Tim Kientzle
+Copyright (c) 2003-2011 Tim Kientzle
+Copyright (c) 2009 Joerg Sonnenberger
+Copyright (c) 2009-2011 Michihiro NAKAJIMA
+Copyright (c) 2009-2012,2014 Michihiro NAKAJIMA
+Copyright (c) 2010-2011 Michihiro NAKAJIMA
+Copyright (c) 2011 Andres Mejia
+Copyright (c) 2011 Michihiro NAKAJIMA
+Copyright (c) 2011 Tim Kientzle
+Copyright (c) 2011-2012 Michihiro NAKAJIMA
+Copyright (c) 2011-2012 libarchive Project
+Copyright (c) 2014 Michihiro NAKAJIMA
+Copyright (c) 2016 Martin Matuska
+Copyright (c) 2018 Grzegorz Antoniak (http://antoniak.org)
+Copyright (c) 2025 Tobias Stoeckmann
+Copyright (c) 2026 Tobias Stoeckmann
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+1. Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer
+   in this position and unchanged.
+2. Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE AUTHOR(S) ``AS IS'' AND ANY EXPRESS OR
+IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+IN NO EVENT SHALL THE AUTHOR(S) BE LIABLE FOR ANY DIRECT, INDIRECT,
+INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+Copyright (c) 1993
+The Regents of the University of California.  All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+1. Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+4. Neither the name of the University nor the names of its contributors
+   may be used to endorse or promote products derived from this software
+   without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+SUCH DAMAGE.
+
+BLAKE2 reference implementation. Copyright 2012, Samuel Neves.
+Used under CC0 1.0 Universal, https://creativecommons.org/publicdomain/zero/1.0/.
+
+PPMd decoder. Igor Pavlov (2010), based on PPMd var.H by Dmitry Shkarin (2001). Public domain.
+
+Google Sans and Noto Sans CJK in-game text
+
+Google Sans Regular v14.000
+Copyright 2025 The Google Sans Project Authors (github.com/googlefonts/googlesans).
+https://github.com/googlefonts/googlesans/releases/tag/v14.000
+
+Noto Sans CJK Regular 2.004
+© 2014–2021 Adobe (http://www.adobe.com/).
+https://github.com/notofonts/noto-cjk/tree/Sans2.004
+
+Both original fonts are licensed under the SIL Open Font License 1.1.
+The official license texts and notices accompany the fonts as
+GoogleSans/GoogleSans-OFL.txt and GoogleSans/NotoSansCJK-OFL.txt.

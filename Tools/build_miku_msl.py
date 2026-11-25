@@ -54,7 +54,8 @@ def initialize_screen_quad_origin(source, source_name):
             raise ValueError('Image-filter output unavailable')
         return (source[:position] + '    // PJDV top-left screen quad\n'
                 '    out.gl_Position.y = -out.gl_Position.y;\n' + source[position:])
-    if not source_name.startswith(('postprocess/', 'postprocess_dof/')) or source_name in (
+    transparency = source_name == 'postprocess_transparency/transparency.bnsh'
+    if not (source_name.startswith(('postprocess/', 'postprocess_dof/')) or transparency) or source_name in (
             'postprocess_dof/dof_extend_right_bottom1.bnsh',
             'postprocess_dof/dof_extend_right_bottom2.bnsh',
             'postprocess/right_bottom_edge.bnsh', 'postprocess/sun.bnsh',
@@ -66,6 +67,10 @@ def initialize_screen_quad_origin(source, source_name):
             not re.search(r'out\.gl_Position\.x = _\d+;', source) or
             not re.search(r'out\.gl_Position\.y = _\d+;', source) or
             '// PJDV top-left screen quad' in source):
+        return source
+    if transparency and not re.search(
+            r'out\.gl_Position\.y = (_\d+);\s*out\.\w+\.y = spvFMul\(fma\(\1, 0\.5, 0\.5\),',
+            source):
         return source
     position = source.rfind('    return out;')
     if position < 0:

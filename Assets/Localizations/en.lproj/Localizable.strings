@@ -207,6 +207,23 @@
 "ZIP／文件夹可检查登记；7z、RAR 请先解压。" = "Inspect/register a ZIP or folder. Extract 7z/RAR first.";
 "当前只登记文件位置与检查结果，不复制、不解压、不加载 MOD。" = "Only the source location and inspection result are saved. No copying, extraction or MOD loading.";
 "尚未登记 MOD。" = "No MODs registered.";
+"RAR 包损坏或不完整，请重新下载。" = "This RAR archive is damaged or incomplete. Download it again.";
+"此 RAR 使用了不支持的格式、加密或分卷，请选择完整的普通 RAR 或已解压的文件夹。" = "This RAR uses an unsupported format, encryption, or multiple volumes. Choose a standard single-volume RAR or an extracted folder.";
+"此 MOD 的游戏编号与 MEGA39’s 不匹配。" = "This MOD targets a different game ID from MEGA39’s.";
+"正在检查 MOD 平台兼容性…" = "Checking MOD platform compatibility…";
+"此 MOD 需要 Windows 插件“%@”，无法加载。" = "This MOD requires the Windows plug-in “%@” and cannot be loaded.";
+"此 MOD 仅提供 Windows 程序“%@”，无法加载。" = "This MOD contains only Windows software (“%@”) and cannot be loaded.";
+"选择 ZIP、RAR 或已解压的 MOD 文件夹。" = "Choose a ZIP, RAR, or extracted MOD folder.";
+"待导入的 MOD" = "Available to import";
+"将压缩包或解压后的单个 MOD 文件夹放入 mods，再轻点列表中的名称导入。" = "Place an archive or an extracted MOD folder in mods, then tap its name here to import it.";
+"添加 ZIP 或 RAR 包" = "Add ZIP or RAR";
+"mods 文件夹中暂无可导入的 MOD。" = "No MODs available to import from the mods folder.";
+"7z 请先解压，再添加 MOD 文件夹。" = "Extract the 7z archive, then add its MOD folder.";
+"已下载 · 轻点导入" = "Downloaded · Tap to import";
+"文件夹 · 轻点导入" = "Folder · Tap to import";
+"压缩包 · 轻点导入" = "Archive · Tap to import";
+"刷新 MOD 列表" = "Refresh MOD list";
+"已登记，当前版本不能加载此包。" = "Registered. This version of the app cannot load this MOD.";
 "正在检查 MOD 结构…" = "Inspecting MOD structure…";
 "已取消检查。原文件保持不变。" = "Inspection cancelled. Source files are unchanged.";
 "结构已识别，已登记；加载未启用。" = "Structure recognized and registered. Loading is inactive.";
@@ -344,3 +361,9 @@
 "图形实验" = "Graphics Experiments";
 
 "游戏设置" = "Game Settings";
+
+"游戏字体 · %@" = "Game font · %@";
+"原版字体" = "Original font";
+"下次开始游戏时，用于歌词、服装名和曲名。" = "Applies to lyrics, outfit names, and song titles the next time you start the game.";
+"Google Sans 字体无法应用，本次使用游戏原字体。" = "Google Sans could not be applied. The original game font is in use for this session.";
+"中日韩文字使用 Noto Sans CJK 补字" = "Noto Sans CJK supplies Chinese, Japanese, and Korean glyphs";

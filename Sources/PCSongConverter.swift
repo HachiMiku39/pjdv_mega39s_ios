@@ -7,13 +7,8 @@ enum PCSongConverter {
     typealias Props=[String:String]
     static let profile="resource-video-song-7"
     static func recognize(_ installed:URL,progress:Progress,report:((ModInstallUpdate)->Void)?=nil)throws->PCModelConverter.Candidate? {
-        let fm=FileManager.default;var root=installed.standardizedFileURL.resolvingSymlinksInPath()
-        for _ in 0..<4 {
-            if fm.fileExists(atPath:root.appendingPathComponent("rom/mod_pv_db.txt").path){break}
-            let dirs=try fm.contentsOfDirectory(at:root,includingPropertiesForKeys:nil,options:.skipsHiddenFiles).filter{(try? fm.attributesOfItem(atPath:$0.path)[.type]) as? FileAttributeType == .typeDirectory}
-            guard dirs.count==1 else{return nil};root=dirs[0];guard root.resolvingSymlinksInPath()==root else{throw ModPackageError.specialFile}
-        }
-        guard fm.fileExists(atPath:root.appendingPathComponent("rom/mod_pv_db.txt").path) else{return nil}
+        let fm=FileManager.default
+        guard let root=try PCModelConverter.packageRoot(installed,marker:"rom/mod_pv_db.txt",maximumDepth:4,progress:progress) else {return nil}
         var failure:Error?
         guard let it=fm.enumerator(at:root,includingPropertiesForKeys:nil,options:[],errorHandler:{_,e in failure=e;return false}) else{throw ModLoadError.invalid}
         var inputs=[(String,URL)](),total:UInt64=0

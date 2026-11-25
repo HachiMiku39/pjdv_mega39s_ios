@@ -876,6 +876,7 @@ final class HostLaunchController: UIViewController {
     private let resourceStatus = UILabel()
     private let start = UIButton(type: .system)
     private let language = UIButton(type: .system)
+    private let gameTextFont = UIButton(type: .system)
     private let autoplay = UIButton(type: .system)
     private var startedExperiment = false
     private var launchDuoProfile = "phone"
@@ -926,6 +927,9 @@ final class HostLaunchController: UIViewController {
         })
         language.accessibilityIdentifier = "launcher.language"; language.showsMenuAsPrimaryAction = true
         updateLanguageMenu()
+        gameTextFont.accessibilityIdentifier = "launcher.gameTextFont"
+        gameTextFont.showsMenuAsPrimaryAction = true
+        updateGameTextFontMenu()
         let sticks = UIButton(type: .system); sticks.setTitle(L("虚拟按键：大小与位置"), for: .normal); sticks.accessibilityIdentifier = "launcher.stickLayout"
         sticks.addTarget(self, action: #selector(editSticks), for: .touchUpInside)
         autoplay.accessibilityIdentifier = "launcher.autoplay"
@@ -949,7 +953,7 @@ final class HostLaunchController: UIViewController {
         updates.accessibilityIdentifier = "launcher.updates"
         updates.addTarget(self, action: #selector(updatePressed), for: .touchUpInside)
         let interface = LauncherInterface(message: message, start: start, resources: resources, mods: mods,
-            quality: quality, language: language, sticks: sticks, autoplay: autoplay, experiments: experiments,
+            quality: quality, language: language, gameTextFont: gameTextFont, sticks: sticks, autoplay: autoplay, experiments: experiments,
             resourceStatus: resourceStatus, inboxStatus: inboxStatus, updates: updates)
         interface.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(interface); launcherInterface = interface
@@ -1073,6 +1077,23 @@ final class HostLaunchController: UIViewController {
             UIAction(title:label,state:AppLanguage.current==key ? .on:.off) {[weak self] _ in
                 AppLanguage.select(key);self?.view.window?.rootViewController=HostLaunchController()
             }
+        })
+    }
+    private func updateGameTextFontMenu() {
+        let selected = GameTextFontSelection.usesGoogleSans
+        let original = L("原版字体")
+        let scope = L("下次开始游戏时，用于歌词、服装名和曲名。")
+        gameTextFont.setTitle(LF("游戏字体 · %@", selected ? "Google Sans" : original), for: .normal)
+        gameTextFont.accessibilityHint = scope
+        gameTextFont.menu = UIMenu(title: scope, children: [false, true].map { useGoogleSans in
+            let action = UIAction(title: useGoogleSans ? "Google Sans" : original, state: useGoogleSans == selected ? .on : .off) { [weak self] _ in
+                GameTextFontSelection.usesGoogleSans = useGoogleSans
+                self?.updateGameTextFontMenu()
+            }
+            if #available(iOS 15.0, macCatalyst 16.0, *), useGoogleSans {
+                action.subtitle = L("中日韩文字使用 Noto Sans CJK 补字")
+            }
+            return action
         })
     }
     @objc private func manageMods() {
