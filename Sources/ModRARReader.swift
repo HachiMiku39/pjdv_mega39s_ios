@@ -59,6 +59,14 @@ enum ModRARReader {
                     try fm.createDirectory(at: url, withIntermediateDirectories: true)
                     return
                 }
+                let member=parts.joined(separator:"/")
+                func reportPosition() {
+                    let position=min(length,UInt64(max(0,archive_filter_bytes(reader,-1))))
+                    progress.completedUnitCount=Int64(position)
+                    report(member,position,length)
+                }
+                reportPosition()
+                if progress.isCancelled {throw ModPackageError.cancelled}
                 try reserve(UInt64(size))
                 try fm.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
                 let output = url.withUnsafeFileSystemRepresentation { open($0!, O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW | O_CLOEXEC, 0o600) }
@@ -80,9 +88,7 @@ enum ModRARReader {
                     remaining -= UInt64(n)
                     if Date().timeIntervalSince(lastReport) >= 0.25 {
                         lastReport = Date()
-                        let position = min(length, UInt64(max(0, archive_filter_bytes(reader, -1))))
-                        progress.completedUnitCount = Int64(position)
-                        report(path,position,length)
+                        reportPosition()
                     }
                 }
                 guard remaining == 0 else { throw ModPackageError.invalidRAR }

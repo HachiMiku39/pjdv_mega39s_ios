@@ -314,12 +314,7 @@ final class ModImportController: UITableViewController, UIDocumentPickerDelegate
 
     private func installDownload(_ url: URL) {
         guard !busy else { return }
-        navigationController?.popToViewController(self, animated: false)
-        if url.pathExtension.lowercased() == "7z" {
-            presentImportNotice(L("7z 请先解压，再添加 MOD 文件夹。"))
-        } else {
-            inspect(ResourceAccess(url))
-        }
+        inspect(ResourceAccess(url))
     }
     private func presentImportNotice(_ message:String) {
         status=message
@@ -446,12 +441,37 @@ final class ModImportController: UITableViewController, UIDocumentPickerDelegate
     }
     private func inspect(_ access:ResourceAccess, retrying record:ModRegistration? = nil) {
         guard operation == nil else { return }
-        let progress=Progress(totalUnitCount:1);operation=progress;fraction=0
-        status=L("正在检查 MOD 结构…");updateBusyState()
-        let registry=self.registry
-        let started=Date()
-        DispatchQueue.global(qos:.utility).async { [weak self,access] in
-            let result=Result<Bool,Error> {
+        let presenter = navigationController?.topViewController ?? self
+        // A retry starts from a dismissing alert. Wait for that transition so
+        // UIKit can attach the installation sheet to the visible controller.
+        if let closing = presenter.presentedViewController, closing.isBeingDismissed,
+           let transition = closing.transitionCoordinator {
+            transition.animate(alongsideTransition: nil) { [weak self] _ in
+                self?.inspect(access, retrying: record)
+            }
+            return
+        }
+        guard presenter.viewIfLoaded?.window != nil, presenter.presentedViewController == nil else { return }
+        let progress = Progress(totalUnitCount: 1)
+        let sheet = ModInstallationController(source: access.root.lastPathComponent, progress: progress)
+        let panel = UINavigationController(rootViewController: sheet)
+        panel.modalPresentationStyle = .formSheet
+        panel.preferredContentSize = CGSize(width: 640, height: 460)
+        panel.isModalInPresentation = true
+        presenter.present(panel, animated: true)
+        operation = progress
+        fraction = 0
+        status = L("正在检查 MOD 结构…")
+        updateBusyState()
+        let registry = self.registry
+        let delivery = ModInstallDelivery(sheet)
+        let report: (ModInstallUpdate) -> Void = delivery.submit
+        DispatchQueue.global(qos:.utility).async { [weak self, weak sheet, access] in
+            let result = Result<RuntimeMod?, Error> {
+                if access.root.pathExtension.lowercased() == "7z",
+                   (try? access.root.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) != true {
+                    throw ImportFailure.invalid(L("7z 请先解压，再添加 MOD 文件夹。"))
+                }
                 // DLC belongs to the base XCI import. MOD installation is a
                 // separate workflow and must not write packages before a
                 // complete, usable base has been selected.
@@ -462,77 +482,49 @@ final class ModImportController: UITableViewController, UIDocumentPickerDelegate
                 let coordinator=NSFileCoordinator(filePresenter:nil)
                 var coordinationError:NSError?, installed:Result<InstalledMod,Error>?
                 coordinator.coordinate(readingItemAt:access.root,options:.withoutChanges,error:&coordinationError) { url in
-                    installed=Result {try ModInstaller.install(url,under:ModInbox.managedRoot(under:ResourceLibrary.appDataRoot).appendingPathComponent("Installed",isDirectory:true),progress:progress) {update in
-                        DispatchQueue.main.async { [weak self] in
-                            guard let self else{return}
-                            let bytes=ByteCountFormatter.string(fromByteCount:Int64(update.completed),countStyle:.file)
-                            let total=ByteCountFormatter.string(fromByteCount:Int64(update.total),countStyle:.file)
-                            let speed=ByteCountFormatter.string(fromByteCount:Int64(Double(update.completed)/max(1,Date().timeIntervalSince(started))),countStyle:.file)
-                            self.status=L(update.phase)+"\n"+update.file+"\n"+bytes+" / "+total+" · "+speed+"/s"
-                            self.fraction=update.total>0 ? Float(Double(update.completed)/Double(update.total)) : 0
-                            self.tableView.reloadSections(IndexSet(integer: Section.status.rawValue),with:.none)
-                        }
-                    }}
+                    installed = Result {
+                        try ModInstaller.install(url, under: ModInbox.managedRoot(under: ResourceLibrary.appDataRoot)
+                            .appendingPathComponent("Installed", isDirectory: true), progress: progress, report: report)
+                    }
                 }
                 if let error=coordinationError { throw error }
                 guard let installed else { throw ModPackageError.invalidZIP }
                 let package=try installed.get()
                 do {
                     if progress.isCancelled {throw ModPackageError.cancelled}
-                    if try RuntimeModCatalog.current.adoptPrepared(from:package.root,progress:progress,report:{ completed,total in
-                        DispatchQueue.main.async { [weak self] in
-                            guard let self else { return }
-                            self.status=L("正在校验已适配包…")+"\n"+ByteCountFormatter.string(fromByteCount:Int64(completed),countStyle:.file)+" / "+ByteCountFormatter.string(fromByteCount:Int64(total),countStyle:.file)
-                            self.fraction=total>0 ? Float(Double(completed)/Double(total)) : 0
-                            self.tableView.reloadSections(IndexSet(integer: Section.status.rawValue),with:.none)
-                        }
-                    }) != nil { return true }
-                    if try ModSwitchOverlay.adopt(package,base:baseLayout.rom,catalog:RuntimeModCatalog.current,progress:progress) != nil {
-                        try? FileManager.default.removeItem(at:package.root)
-                        return true
+                    let catalog = RuntimeModCatalog.current
+                    if let item = try catalog.adoptPrepared(from: package.root, progress: progress, activity: report) {
+                        return item
                     }
-                    func registerUnsupported() throws -> Bool {
+                    if let item = try ModSwitchOverlay.adopt(package, base: baseLayout.rom, catalog: catalog,
+                                                             progress: progress, activity: report) {
+                        try? FileManager.default.removeItem(at: package.root)
+                        return item
+                    }
+                    func registerUnsupported() throws -> RuntimeMod? {
                         // Retain the user's original source for retry. In particular, do not keep a second
                         // expanded copy of an archive that the runtime cannot use.
                         if record == nil {
                             try registry.register(access.root,inspection:package.inspection,name:package.name)
                         }
                         try FileManager.default.removeItem(at:package.root)
-                        return false
+                        return nil
                     }
                     guard [.pluginAssets, .mixedAssets].contains(package.inspection.kind) else { return try registerUnsupported() }
                     let profileURL=Bundle.main.url(forResource:"PCModelProfiles",withExtension:"json")
                     let knownProfiles=try profileURL.map{try PCModelConverter.profiles($0)} ?? []
-                    let recognizeReport:(ModInstallUpdate)->Void={update in
-                        DispatchQueue.main.async { [weak self] in
-                            guard let self else{return};self.status=L(update.phase)
-                            self.fraction=update.total>0 ? Float(Double(update.completed)/Double(update.total)):0
-                            self.tableView.reloadSections(IndexSet(integer: Section.status.rawValue),with:.none)
-                        }
+                    if let candidate = try PCModelConverter.recognize(package.root, profiles: knownProfiles, progress: progress, report: report)
+                        ?? PCModelConverter.recognizeResourceModel(package.root, progress: progress, report: report) {
+                        let converted = try PCModelConverter.convert(candidate, base: baseLayout.rom, dlc: baseLayout.dlc,
+                            catalog: catalog, progress: progress, report: report)
+                        try? FileManager.default.removeItem(at: package.root)
+                        return converted.item
                     }
-                    if let candidate=try PCModelConverter.recognize(package.root,profiles:knownProfiles,progress:progress,report:recognizeReport)
-                        ?? PCModelConverter.recognizeResourceModel(package.root,progress:progress,report:recognizeReport) {
-                        _=try PCModelConverter.convert(candidate,base:baseLayout.rom,dlc:baseLayout.dlc,catalog:RuntimeModCatalog.current,progress:progress) {update in
-                            DispatchQueue.main.async { [weak self] in
-                                guard let self else{return};self.status=L(update.phase)
-                                self.fraction=update.total>0 ? Float(Double(update.completed)/Double(update.total)):0
-                                self.tableView.reloadSections(IndexSet(integer: Section.status.rawValue),with:.none)
-                            }
-                        }
-                        // Only this importer's private copy is removed. The
-                        // selected ZIP/folder, installed MODs and saves survive.
-                        try? FileManager.default.removeItem(at:package.root)
-                        return true
-                    }
-                    if let candidate=try PCSongConverter.recognize(package.root,progress:progress,report:recognizeReport) {
-                        _=try PCSongConverter.convert(candidate,base:baseLayout.rom,dlc:baseLayout.dlc,catalog:RuntimeModCatalog.current,progress:progress) {update in
-                            DispatchQueue.main.async { [weak self] in
-                                guard let self else{return};self.status=L(update.phase)
-                                self.fraction=update.total>0 ? Float(Double(update.completed)/Double(update.total)):0
-                                self.tableView.reloadSections(IndexSet(integer: Section.status.rawValue),with:.none)
-                            }
-                        }
-                        try? FileManager.default.removeItem(at:package.root);return true
+                    if let candidate = try PCSongConverter.recognize(package.root, progress: progress, report: report) {
+                        let converted = try PCSongConverter.convert(candidate, base: baseLayout.rom, dlc: baseLayout.dlc,
+                            catalog: catalog, progress: progress, report: report)
+                        try? FileManager.default.removeItem(at: package.root)
+                        return converted.item
                     }
                     return try registerUnsupported()
                 } catch {try? FileManager.default.removeItem(at:package.root);throw error}
@@ -540,37 +532,60 @@ final class ModImportController: UITableViewController, UIDocumentPickerDelegate
             if let record {
                 switch result {
                 case .failure(let error as ModWindowsRequirement): try? registry.setWindowsRequirement(error,for:record)
-                case .success(true): try? registry.remove(record)
-                case .success(false): try? registry.setWindowsRequirement(nil,for:record)
+                case .success(.some): try? registry.remove(record)
+                case .success(nil): try? registry.setWindowsRequirement(nil,for:record)
                 default: break
                 }
             }
-            DispatchQueue.main.async { [weak self,access] in
-                guard let self else { return }
-                self.operation=nil
+            DispatchQueue.main.async { [weak self, weak sheet, access] in
+                guard let self, self.operation === progress else { return }
+                delivery.flush()
+                self.operation = nil
                 switch result {
-                case .success(let prepared):
-                    self.status=L(prepared ? "MOD 已导入。" : "已登记，当前版本不能加载此包。")
+                case .success(let item?):
+                    self.status = L("MOD 已导入。")
+                    sheet?.finish(title: L("安装完成"), message: L("可在 MOD 管理中勾选并加载。"),
+                                  installed: item, symbol: "checkmark.circle.fill", color: .systemGreen)
+                case .success(nil):
+                    self.status = L("已登记，当前版本不能加载此包。")
+                    sheet?.finish(title: L("无法加载 MOD"), message: self.status,
+                                  symbol: "exclamationmark.circle", color: .systemOrange)
                 case .failure(let error):
-                    self.status=(error as? ModWindowsRequirement).map(Self.windowsMessage) ?? L(error.localizedDescription)
+                    let cancelled = progress.isCancelled
+                    self.status = cancelled ? L("已取消安装") : Self.importMessage(error)
+                    sheet?.finish(title: cancelled ? self.status : L("安装失败"), message: cancelled ? nil : self.status,
+                                  symbol: cancelled ? "minus.circle" : "exclamationmark.triangle", color: .systemOrange)
                 }
-                self.updateBusyState();self.reloadRecords()
-                switch result {
-                case .failure(let reason as ModWindowsRequirement): self.presentImportNotice(Self.windowsMessage(reason))
-                case .success(false): self.presentImportNotice(L("已登记，当前版本不能加载此包。"))
-                default: break
-                }
+                self.updateBusyState()
+                self.reloadRecords()
                 withExtendedLifetime(access) {}
             }
         }
     }
+
+    private static func importMessage(_ error: Error) -> String {
+        if let reason = error as? ModWindowsRequirement { return windowsMessage(reason) }
+        if let known = error as? LocalizedError, let message = known.errorDescription { return L(message) }
+        let problem = error as NSError
+        if problem.domain == NSCocoaErrorDomain && problem.code == CocoaError.fileWriteOutOfSpace.rawValue {
+            return L(ModInstallError.storage.localizedDescription)
+        }
+        return L("MOD 文件无法读取，请重新导入。")
+    }
+
     private func showRecord(_ record:ModRegistration) {
         let message=record.windowsRequirement.map(Self.windowsMessage) ?? L("已登记，当前版本不能加载此包。")
         let alert=UIAlertController(title:record.name,message:message,preferredStyle:.alert)
-        alert.addAction(UIAlertAction(title:L("重新导入"),style:.default) { [weak self] _ in
-            guard let self else{return}
-            do { self.inspect(ResourceAccess(try self.registry.source(record)),retrying:record) }
-            catch { self.status=L("MOD 源位置不可用，请重新添加。");self.tableView.reloadData() }
+        alert.addAction(UIAlertAction(title: L("重新导入"), style: .default) { [weak self, weak alert] _ in
+            guard let self else { return }
+            let retry = { [weak self] in
+                guard let self else { return }
+                do { self.inspect(ResourceAccess(try self.registry.source(record)), retrying: record) }
+                catch { self.status = L("MOD 源位置不可用，请重新添加。"); self.tableView.reloadData() }
+            }
+            if let alert, alert.presentingViewController != nil {
+                alert.dismiss(animated: true, completion: retry)
+            } else { retry() }
         })
         alert.addAction(UIAlertAction(title:L("移除登记（保留原文件）"),style:.destructive) { [weak self] _ in
             guard let self else{return}
@@ -579,4 +594,245 @@ final class ModImportController: UITableViewController, UIDocumentPickerDelegate
         })
         alert.addAction(UIAlertAction(title:L("取消"),style:.cancel));present(alert,animated:true)
     }
+}
+
+// The importer can report many files while UIKit is presenting the sheet.
+// Keep the delivery queue bounded even if the main thread is temporarily busy.
+private final class ModInstallDelivery {
+    private let lock = NSLock()
+    private var pending = [ModInstallUpdate]()
+    private var scheduled = false
+    private weak var sheet: ModInstallationController?
+
+    init(_ sheet: ModInstallationController) { self.sheet = sheet }
+
+    func submit(_ event: ModInstallUpdate) {
+        lock.lock()
+        if let last = pending.last, last.phase == event.phase,
+           last.file == event.file, last.destination == event.destination {
+            pending[pending.count - 1] = event
+        } else {
+            if pending.count == 48 { pending.removeFirst() }
+            pending.append(event)
+        }
+        let notify = !scheduled
+        scheduled = true
+        lock.unlock()
+        if notify { DispatchQueue.main.async { [weak self] in self?.flush() } }
+    }
+
+    @MainActor func flush() {
+        lock.lock()
+        let events = pending
+        pending.removeAll(keepingCapacity: true)
+        scheduled = false
+        lock.unlock()
+        sheet?.receive(events)
+    }
+}
+
+private final class ModInstallationController: UIViewController {
+    private let source: String
+    private let operation: Progress
+    private let nameLabel = UILabel()
+    private let phaseLabel = UILabel()
+    private let amountLabel = UILabel()
+    private let icon = UIImageView()
+    private let spinner = UIActivityIndicatorView(style: .medium)
+    private let meter = UIProgressView(progressViewStyle: .default)
+    private let console = UITextView()
+    private var lines = [String]()
+    private var stage = ""
+    private var route = ""
+    private var firstCount: UInt64 = 0
+    private var phaseStart = ProcessInfo.processInfo.systemUptime
+    private var finished = false
+
+    init(source: String, progress: Progress) {
+        self.source = source
+        operation = progress
+        super.init(nibName: nil, bundle: nil)
+    }
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+    override var supportedInterfaceOrientations: UIInterfaceOrientationMask { .landscape }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        title = L("安装 MOD")
+        view.accessibilityIdentifier = "mods.install.sheet"
+        view.accessibilityViewIsModal = true
+        view.backgroundColor = .systemGroupedBackground
+        navigationController?.navigationBar.tintColor = LauncherInterface.accent
+        let cancel = UIBarButtonItem(title: L("取消"), style: .plain, target: self, action: #selector(requestCancel))
+        cancel.accessibilityIdentifier = "mods.install.cancel"
+        navigationItem.leftBarButtonItem = cancel
+
+        nameLabel.font = .preferredFont(forTextStyle: .headline)
+        nameLabel.adjustsFontForContentSizeCategory = true
+        nameLabel.lineBreakMode = .byTruncatingMiddle
+        nameLabel.text = Self.display(source)
+        nameLabel.accessibilityIdentifier = "mods.install.package"
+        phaseLabel.font = .preferredFont(forTextStyle: .body)
+        phaseLabel.adjustsFontForContentSizeCategory = true
+        phaseLabel.numberOfLines = 2
+        phaseLabel.accessibilityIdentifier = "mods.install.phase"
+        amountLabel.font = .preferredFont(forTextStyle: .footnote)
+        amountLabel.adjustsFontForContentSizeCategory = true
+        amountLabel.numberOfLines = 2
+        amountLabel.textColor = .secondaryLabel
+        amountLabel.isHidden = true
+        icon.isHidden = true
+        icon.contentMode = .scaleAspectFit
+        icon.setContentHuggingPriority(.required, for: .horizontal)
+        spinner.color = LauncherInterface.accent
+        spinner.hidesWhenStopped = true
+        spinner.startAnimating()
+        let status = UIStackView(arrangedSubviews: [spinner, icon, phaseLabel])
+        status.alignment = .center
+        status.spacing = 8
+        meter.progressTintColor = LauncherInterface.accent
+        meter.accessibilityIdentifier = "mods.install.progress"
+        meter.isHidden = true
+
+        console.backgroundColor = UIColor(red: 0.06, green: 0.08, blue: 0.10, alpha: 1)
+        console.textColor = UIColor(white: 0.94, alpha: 1)
+        console.layer.cornerRadius = 12
+        console.layer.cornerCurve = .continuous
+        console.font = UIFontMetrics(forTextStyle: .footnote)
+            .scaledFont(for: .monospacedSystemFont(ofSize: 13, weight: .regular))
+        console.adjustsFontForContentSizeCategory = true
+        console.isEditable = false
+        console.isSelectable = false
+        console.isAccessibilityElement = true
+        console.textContainerInset = UIEdgeInsets(top: 12, left: 10, bottom: 12, right: 10)
+        console.accessibilityLabel = L("安装记录")
+        console.accessibilityIdentifier = "mods.install.log"
+        let contents = UIStackView(arrangedSubviews: [nameLabel, status, meter, amountLabel, console])
+        contents.axis = .vertical
+        contents.spacing = 7
+        contents.translatesAutoresizingMaskIntoConstraints = false
+        console.setContentHuggingPriority(.defaultLow, for: .vertical)
+        console.setContentCompressionResistancePriority(.defaultLow, for: .vertical)
+        for label in [nameLabel, phaseLabel, amountLabel] {
+            label.setContentHuggingPriority(.required, for: .vertical)
+        }
+        view.addSubview(contents)
+        let guide = view.safeAreaLayoutGuide
+        NSLayoutConstraint.activate([
+            contents.leadingAnchor.constraint(equalTo: guide.leadingAnchor, constant: 16),
+            contents.trailingAnchor.constraint(equalTo: guide.trailingAnchor, constant: -16),
+            contents.topAnchor.constraint(equalTo: guide.topAnchor, constant: 10),
+            contents.bottomAnchor.constraint(equalTo: guide.bottomAnchor, constant: -12)
+        ])
+        stage = "正在检查 MOD 结构…"
+        phaseLabel.text = L(stage)
+        append(L(stage))
+        renderLog()
+    }
+
+    private static func display(_ value: String) -> String {
+        var clean = value.components(separatedBy: .controlCharacters).joined(separator: " ")
+        // Routes supplied by importers are relative and may include long archive names.
+        // Fall back to the leaf if a file provider supplies an absolute display name.
+        if clean.hasPrefix("/") { clean = (clean as NSString).lastPathComponent }
+        return clean.count <= 240 ? clean : "…" + String(clean.suffix(239))
+    }
+
+    private func append(_ text: String) {
+        guard !text.isEmpty else { return }
+        if lines.count >= 64 { lines.removeFirst() }
+        lines.append(text)
+    }
+
+    private func renderLog() {
+        let follow = console.contentOffset.y + console.bounds.height >= console.contentSize.height - 20
+        console.text = lines.joined(separator: "\n")
+        console.accessibilityValue = console.text
+        if follow && !console.isDragging && !console.isDecelerating {
+            let count = (console.text as NSString).length
+            if count > 0 { console.scrollRangeToVisible(NSRange(location: count - 1, length: 1)) }
+        }
+    }
+
+    func receive(_ events: [ModInstallUpdate]) {
+        guard !events.isEmpty, !finished, !operation.isCancelled else { return }
+        loadViewIfNeeded()
+        var changed = false
+        for update in events {
+            if stage != update.phase {
+                stage = update.phase
+                route = ""
+                firstCount = update.completed
+                phaseStart = ProcessInfo.processInfo.systemUptime
+                phaseLabel.text = L(stage)
+                append(L(stage))
+                changed = true
+            }
+            let from = Self.display(update.file)
+            let to = Self.display(update.destination ?? "")
+            let entry = [from, to].filter { !$0.isEmpty }.joined(separator: " → ")
+            if !entry.isEmpty && route != entry {
+                route = entry
+                append("  " + entry)
+                changed = true
+            }
+        }
+        if changed { renderLog() }
+        guard let update = events.last else { return }
+        let measured = update.total > 0
+        meter.isHidden = !measured
+        amountLabel.isHidden = !measured
+        guard measured else { return }
+        let fraction = min(1, Double(update.completed) / Double(update.total))
+        meter.progress = Float(fraction)
+        if ["复制／校验 MOD", "解压／校验 MOD", "正在校验已适配包…", "正在校验 MOD…"].contains(update.phase) {
+            func size(_ value: UInt64) -> String {
+                ByteCountFormatter.string(fromByteCount: Int64(clamping: value), countStyle: .file)
+            }
+            var amount = size(update.completed) + " / " + size(update.total)
+            let elapsed = ProcessInfo.processInfo.systemUptime - phaseStart
+            if elapsed >= 1 && update.completed > firstCount {
+                amount += " · " + size(UInt64(Double(update.completed - firstCount) / elapsed)) + "/s"
+            }
+            amountLabel.text = amount
+        } else {
+            amountLabel.text = NumberFormatter.localizedString(from: NSNumber(value: fraction), number: .percent)
+        }
+    }
+
+    @objc private func requestCancel() {
+        guard !finished, !operation.isCancelled else { return }
+        operation.cancel()
+        navigationItem.leftBarButtonItem?.isEnabled = false
+        phaseLabel.text = L("正在取消…")
+    }
+
+    func finish(title: String, message: String?, installed: RuntimeMod? = nil, symbol: String, color: UIColor) {
+        loadViewIfNeeded()
+        finished = true
+        if let installed {
+            let path = RuntimeModCatalog.current.directory(installed)
+            let location = path.pathComponents.suffix(3).joined(separator: "/")
+            append("  " + Self.display(source) + " → " + Self.display(location))
+        }
+        phaseLabel.text = title
+        amountLabel.text = message
+        amountLabel.isHidden = message == nil
+        spinner.stopAnimating()
+        icon.image = UIImage(systemName: symbol)
+        icon.tintColor = color
+        icon.isHidden = false
+        meter.isHidden = true
+        append(title)
+        if let message { append(message) }
+        renderLog()
+        navigationItem.leftBarButtonItem = nil
+        let back = UIBarButtonItem(title: L("返回"), style: .done, target: self, action: #selector(close))
+        back.accessibilityIdentifier = "mods.install.back"
+        navigationItem.rightBarButtonItem = back
+        navigationController?.isModalInPresentation = false
+        UIAccessibility.post(notification: .layoutChanged, argument: phaseLabel)
+    }
+
+    @objc private func close() { dismiss(animated: true) }
 }

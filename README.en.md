@@ -1,32 +1,30 @@
-# PJDV M39 · iPadOS / iOS / macOS preview
+# PJDV M39 · iPadOS / iOS / macOS
 
 [简体中文](README.md) | **English**
 
-## 0.2.0 · build 6
+## 0.2.1 · build 7
 
-Large mod combinations can now keep both song lists and their cover art while adding more costumes. An M3 Max Mac loaded **13 model packs and 2 song packs** together. The combined game data contained **49 added costumes and 34 added songs**. [Build 6 release](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.2.0b6) · [Validation and wardrobe screenshot](Reports/RELEASE-0.2.0b6.md#english)
+The mod installer shows file names and destinations during extraction, followed by conversion progress. When installation finishes, choose **Back** to return to the list. If a mod requires a Windows plug-in, the installer names the DLL. [Download 0.2.1](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.2.1)
 
-- Hinomori Shizuku was equipped in the “Ghost Rule” wardrobe and still appeared at song select after a normal restart. The combination used its own save, and the original save checksums were unchanged.
-- The adapted X Song Pack 1.21 and Tonny’s pack contributed 32 and 2 songs respectively. All five cover indexes retained entries from both packs. The full set of 34 songs was verified in the database. The hands-on test sampled the wardrobe and song select.
-- With Google Sans enabled in Simplified Chinese, the last character in 日野森雫 still appears as a square. The model and portrait render correctly. Testing this 15-pack combination on physical iPhones and iPads is still pending.
+On an M3 Max Mac, we installed Racing Miku 2024 from the author’s ZIP, equipped it in the wardrobe and saw it on stage in “Ai Kotoba” (NORMAL). The iPhone 18 Pro simulator also passed the install, Windows plug-in rejection and return-to-list checks. Testing on physical iPhones and iPads is still pending. [Test results and screenshots](Reports/RELEASE-0.2.1.md#english)
 
-### Updating to build 6
+### Updating to 0.2.1
 
-The offline updates require an original **0.2.0 build 1** package. Build 1’s update checker looks for direct IPA or DMG assets, so download the ZIP for your platform manually. Back up your saves before updating an existing installation. [Build 6 release](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.2.0b6)
+Both offline update ZIPs use your **original 0.2.0 build 1 installer**. If your device is already on build 6, use the original build 1 file to generate 0.2.1 directly. You can keep build 6 installed during this step. The update checkers in builds 1 and 6 only recognize direct IPA or DMG assets, so download the ZIP for your platform from the release page. [0.2.1 release](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.2.1)
 
-**Apple Silicon Mac.** Extract `PJDVM39-0.2.0b6-macOS-update-from-b1.zip`, open `Update-PJDVM39-Mac.command`, then select your original build 1 DMG and an output folder. The updater uses Python 3.9 or later and creates a separate `PJDVM39-build6.app`. Alternatively, run the command below from the extracted directory. The original build 1 `.app` also works as the first argument. Choose an output path that does not yet exist.
+**Apple Silicon Mac.** Extract `PJDVM39-0.2.1-macOS-update-from-b1.zip`, open `Update-PJDVM39-Mac.command` and choose the original build 1 DMG and an output folder. The updater requires Python 3.9 or later. After it creates `PJDVM39-0.2.1.app`, quit the running version and open the new app. You can also run the command below from the extracted directory. An unmodified build 1 `.app` also works as the first argument. Choose a new output path.
 
 ```sh
-python3 pjdv_macos_update.py "/path/to/PJDVM39-0.2.0b1-macOS.dmg" "/path/to/PJDVM39-build6.app"
+python3 pjdv_macos_update.py "/path/to/PJDVM39-0.2.0b1-macOS.dmg" "/path/to/PJDVM39-0.2.1.app"
 ```
 
-**iPhone and iPad.** Have your original unsigned build 1 IPA ready. Download and extract `PJDVM39-0.2.0b6-iOS-update-from-b1.zip`. Run this command from the extracted directory, leaving the inner ZIP intact. Sign the resulting IPA with your own identity before installation. IPA generation works offline with Python 3.9 or later on macOS, Windows or Linux. Allow at least 0.6 GB of free space. A re-signed or otherwise modified base IPA will fail verification.
+**iPhone and iPad.** Extract `PJDVM39-0.2.1-iOS-update-from-b1.zip` and keep the inner update ZIP intact. On a computer with Python 3.9 or later, run the command below from the extracted directory with your original unsigned build 1 IPA. Back up your saves, sign the resulting IPA with the same identity and application identifier as your current installation, then install it over the existing app.
 
 ```sh
-python3 pjdv_ios_update.py "/path/to/local-build1-unsigned.ipa" PJDVM39-0.2.0b1-to-b6-iOS-host-update.zip "/path/to/PJDVM39-0.2.0b6-iOS-unsigned.ipa"
+python3 pjdv_ios_update.py "/path/to/local-build1-unsigned.ipa" PJDVM39-0.2.0b1-to-0.2.1-iOS-host-update.zip "/path/to/PJDVM39-0.2.1-iOS-unsigned.ipa"
 ```
 
-**First installation or a different base package.** Build from source with the program and rendering inputs prepared from your own game copy. Once built, the app can import your XCI and keys. [Local build requirements](BUILDING.md)
+**First installation or missing base package.** Follow the build guide to prepare the local inputs from your own game copy. [Local build guide](BUILDING.md)
 
 ### Importing mods
 
@@ -41,6 +39,14 @@ Open **MOD Manager → GameBanana**, visit the author's page and choose **Manual
 Final game output is capped to the current display’s physical pixels for standard scaling, MetalFX, and desktop matching. Moving the game to a smaller display updates the effective size in the quality menu and the on-screen output indicator. Moving it back restores the selected preset. A 3840×2400 display can show up to 3840×2160 of 16:9 game content. The default remains 1920×1080.
 
 ### Previous releases
+
+**0.2.0 build 6 · November 25, 2026**
+
+Large mod combinations can now keep both song lists and their cover art while adding more costumes. An M3 Max Mac loaded **13 model packs and 2 song packs** together. The combined game data contained **49 added costumes and 34 added songs**. [Build 6 release](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.2.0b6) · [Validation and wardrobe screenshot](Reports/RELEASE-0.2.0b6.md#english)
+
+- Hinomori Shizuku was equipped in the “Ghost Rule” wardrobe and still appeared at song select after a normal restart. The combination used its own save, and the original save checksums were unchanged.
+- The adapted X Song Pack 1.21 and Tonny’s pack contributed 32 and 2 songs respectively. All five cover indexes retained entries from both packs. The full set of 34 songs was verified in the database. The hands-on test sampled the wardrobe and song select.
+- With Google Sans enabled in Simplified Chinese, the last character in 日野森雫 still appears as a square. The model and portrait render correctly. Testing this 15-pack combination on physical iPhones and iPads is still pending.
 
 **0.2.0 build 1 · November 25, 2026**
 
@@ -122,7 +128,7 @@ Raw Kimagure Mercy model and Tonny’s movie-song ZIPs received Mac samples. Com
 
 **Complete Eden pack sampling and cleanup, November 1, 2026 — unpublished source candidate:** Complete developer-adapted Heavy Metal (14 songs / 37 charts) and Rock (19 / 35) folders were independently imported and combined inside the App. Four preselected random EXTREME songs completed. Fixed Cosmos' 1916-pixel client-video layout crash and an incorrectly rejected valid IVF timebase; all three platform targets built. **Developer ID preparation remains necessary; direct raw Eden-pack import is not complete.** Generated trial copies from this and the previous Eden round were deleted as requested, measuring about 38.22 GB reclaimed while retaining original Mods, XCI, saves and evidence. [Bilingual results, screenshots and cleanup scope](Reports/EDEN-FULL-PACKS-20261101.md)
 
-The following entries retain their original dated version status. “Local candidate / public installer remains build19” describes that historical stage; the 0.2.0 build 6 section above describes the current release.
+The following entries retain their original dated version status. “Local candidate / public installer remains build19” describes that historical stage; the 0.2.1 section above describes the current release.
 
 **Eden single-song composition, November 1, 2026 — unpublished source candidate:** One developer subset each from Beginner, Catchy Pop and Vibes was independently converted inside the App and enabled together. HARD/HARD/EXTREME completed with 686/607/665 COOL in disposable AutoPlay saves. Missing Chinese glyphs and independent playlist collisions were corrected; jackets, sampled subtitles and cold-launch selection were checked, and ordinary-save hashes stayed unchanged. **Temporary IDs 800–802 do not establish complete raw Eden import; persistent IDs, Core, module and 3D/Edit adapters remain pending.** [Bilingual evidence, screenshots and timing limits](Reports/EDEN-PLAYBACK-20261101.md)
 
@@ -162,7 +168,7 @@ An Apple Silicon compatibility-port research project for the **Japanese Switch v
 
 The runtime still uses the adapted JP v1.0.9 program; it does not execute arbitrary NSOs from a newly imported XCI. Removing import version restrictions does **not** establish runtime compatibility with every resource version or other regional executables. The launcher flags unknown resource versions as unverified. New imports record their contents in `game-content.json`; existing v1.0.9 folders remain supported. Separate ticket/TitleKey encryption needs further work. Missing required keys, conflicting updates and incomplete packages stop the import without modifying the source XCI.
 
-[Historical build 19 preview](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b19) · [Build 18](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b18) · [Build 17](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b17) · [Build 14](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b14) · [Build 10](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b10) · [Original build 7](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5) · [Installation guide](#installing-build-6)
+[Historical build 19 preview](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b19) · [Build 18](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b18) · [Build 17](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b17) · [Build 14](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b14) · [Build 10](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b10) · [Original build 7](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5) · [Installation guide](#installing-021)
 
 [Demo video on bilibili](https://www.bilibili.com/video/BV1KGni6YEZd/)
 
@@ -207,13 +213,13 @@ The runtime still uses the adapted JP v1.0.9 program; it does not execute arbitr
 | Exit | Only the original eShop entry is remapped to “Exit game.” Confirmation saves and shuts down the session. |
 | Monitoring | Floating FPS, CPU and RAM display. Simulator rates and sustained device performance are evaluated separately. |
 
-The public build 7 baseline is **JP v1.0.9 / 589824, Title ID 0100F3100DA46000, one base game + one update + 27 DLC**. Build 10 removes filename, version-number and DLC-count restrictions for imports with the same Title ID; other regional programs and resource versions require separate runtime validation. Full visual fidelity across every song/costume, audiovisual synchronization and sustained real 60 FPS remain under investigation.
+The baseline for the earlier 0.1.5 build 7 was **JP v1.0.9 / 589824, Title ID 0100F3100DA46000, one base game + one update + 27 DLC**. Build 10 removes filename, version-number and DLC-count restrictions for imports with the same Title ID; other regional programs and resource versions require separate runtime validation. Full visual fidelity across every song/costume, audiovisual synchronization and sustained real 60 FPS remain under investigation.
 
-## Installing build 6
+## Installing 0.2.1
 
 | What you already have | How to install |
 | --- | --- |
-| Matching original Mac build 1 package | Apply the Mac offline update to generate a separate build 6 app. |
+| Matching original Mac build 1 package | Apply the Mac offline update to generate a separate 0.2.1 app. |
 | Matching original iOS/iPadOS build 1 package | Apply the iOS offline update locally, sign the resulting IPA and install it on an authorized device. |
 | First installation or a different base package | Build the app from source with the program, rendering inputs and game resources you supply locally. [Build requirements](BUILDING.md) |
 

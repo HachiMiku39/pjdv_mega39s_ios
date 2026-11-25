@@ -29,9 +29,11 @@ enum PCSongConverter {
         if let failure{throw failure}
         guard !inputs.isEmpty,Set(inputs.map{$0.0.lowercased()}).count==inputs.count else{throw ModPackageError.unsafePath}
         var checks=[RuntimeMod.Check](),done:UInt64=0
+        let events=ModInstallReporter(report);defer {events.flush()}
         for (rel,url) in inputs.sorted(by:{$0.0<$1.0}) {
+            events.update(.init(phase:"正在识别 MOD…",file:rel,completed:done,total:total))
             let h=try PCModelConverter.hash(url,progress:progress);checks.append(.init(path:rel,bytes:h.bytes,sha256:h.sha256));done+=h.bytes
-            report?(.init(phase:"正在识别 MOD…",file:"",completed:done,total:total))
+            events.update(.init(phase:"正在识别 MOD…",file:rel,completed:done,total:total))
         }
         let name=try PCModelConverter.displayName(root,fallback:"Song MOD"),raw=checks.map{$0.path+":"+String($0.bytes)+":"+$0.sha256}.joined(separator:"\n")
         return .init(root:root,profile:.init(id:profile,name:name,files:checks),sourceSHA256:F.sha(Data(raw.utf8)))
@@ -39,6 +41,8 @@ enum PCSongConverter {
     static func convert(_ candidate:PCModelConverter.Candidate,base baseURL:URL,dlc dlcURL:URL,catalog:RuntimeModCatalog,progress:Progress,report:((ModInstallUpdate)->Void)?=nil)throws->PCModelConverter.Outcome {
         let base=baseURL.standardizedFileURL.resolvingSymlinksInPath(),dlc=dlcURL.standardizedFileURL.resolvingSymlinksInPath()
         let fm=FileManager.default;try PCModelConverter.check(progress)
+        let events=ModInstallReporter(report);defer {events.flush()}
+        events.update(.init(phase:"正在转换 MOD…",file:"",completed:0,total:0))
         var snapshot=try PCModelConverter.baseline(base:base,dlc:dlc,progress:progress)
         let folders=try fm.contentsOfDirectory(at:base,includingPropertiesForKeys:nil,options:.skipsHiddenFiles).filter{$0.lastPathComponent.hasPrefix("rom_")}
         var urls=snapshot.urls,baseRows=snapshot.base
@@ -55,12 +59,14 @@ enum PCSongConverter {
         let id=try PCModelConverter.identity(candidate,snapshot),receipt=RuntimeMod.Conversion(converter:PCModelConverter.revision,profile:profile,sourceSHA256:candidate.sourceSHA256,base:snapshot.base,dlc:snapshot.dlc,dlcFolders:snapshot.folders)
         if fm.fileExists(atPath:catalog.root.appendingPathComponent(id.uuidString).path) {
             guard let item=try catalog.records().first(where:{$0.id==id}),item.format=="pjdv-runtime-song-v1" else{throw ModPackageError.changedSource}
-            try catalog.verifyFully(item,progress:progress);_=try catalog.overlayPaths(item,base:base,dlc:dlc);return .init(item:item,reused:true)
+            try catalog.verifyFully(item,progress:progress);_=try catalog.overlayPaths(item,base:base,dlc:dlc)
+            events.update(.init(phase:"MOD 已导入。",file:"",completed:0,total:0,destination:ModInstallUpdate.storePath(catalog.root,id.uuidString)))
+            return .init(item:item,reused:true)
         }
         try fm.createDirectory(at:catalog.root,withIntermediateDirectories:true)
         let stage=catalog.root.appendingPathComponent(".converting-"+UUID().uuidString),input=stage.appendingPathComponent(".input")
         try fm.createDirectory(at:input,withIntermediateDirectories:true);defer{try? fm.removeItem(at:stage)}
-        let builder=PCModelConverter.Builder(candidate:candidate,snapshot:snapshot,input:input,base:base,dlc:dlc,progress:progress)
+        let builder=PCModelConverter.Builder(candidate:candidate,snapshot:snapshot,input:input,base:base,dlc:dlc,progress:progress,events:events)
         var pv=try F.properties(builder.source("rom/mod_pv_db.txt")),ids=Set<Int>()
         for key in pv.keys {
             let head=key.split(separator:".").first.map(String.init) ?? ""
@@ -122,7 +128,13 @@ enum PCSongConverter {
             }
             let outputMovie=(movie as NSString).deletingPathExtension+".mp4",target=input.appendingPathComponent(outputMovie)
             try fm.createDirectory(at:target.deletingLastPathComponent(),withIntermediateDirectories:true)
-            if builder.files[outputMovie] != nil {} else if movie.hasSuffix(".usm") {try PCModVideo.convert(candidate.root.appendingPathComponent(movie),to:target,progress:progress,report:report)}
+            if builder.files[outputMovie] != nil {} else if movie.hasSuffix(".usm") {
+                let displayTarget=builder.targetPath(outputMovie)
+                events.update(.init(phase:"正在转换 MOD 视频…",file:movie,completed:0,total:0,destination:displayTarget))
+                try PCModVideo.convert(candidate.root.appendingPathComponent(movie),to:target,progress:progress) { u in
+                    events.update(.init(phase:u.phase,file:movie,completed:u.completed,total:u.total,destination:displayTarget))
+                }
+            }
             else if movie.hasSuffix(".mp4") {try builder.copy(movie,outputMovie)}
             else{throw ModLoadError.unsupported}
             if builder.files[outputMovie]==nil {let h=try PCModelConverter.hash(target,progress:progress);builder.files[outputMovie] = .init(url:target,check:.init(path:outputMovie,bytes:h.bytes,sha256:h.sha256))}
@@ -220,8 +232,8 @@ enum PCSongConverter {
         let files=worker.records.sorted{$0.path<$1.path}.map{RuntimeMod.Check(path:"0/"+$0.path,bytes:$0.bytes,sha256:$0.sha256)}
         let item=RuntimeMod(format:draft.format,id:id,name:draft.name,notes:"",layers:["0"],baseChecks:draft.baseChecks,files:files,conversion:receipt)
         let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys];try encoder.encode(item).write(to:stage.appendingPathComponent("runtime.json"))
-        guard let adopted=try catalog.adoptPrepared(from:stage,progress:progress) else{throw ModLoadError.invalid}
-        report?(.init(phase:"MOD 已导入。",file:"",completed:1,total:1));return .init(item:adopted,reused:false)
+        guard let adopted=try catalog.adoptPrepared(from:stage,progress:progress,activity:events.update) else{throw ModLoadError.invalid}
+        return .init(item:adopted,reused:false)
     }
     static func safeAsset(_ path:String)->Bool {path.hasPrefix("rom/") && !path.contains("\\") && !path.contains(":") && path.split(separator:"/",omittingEmptySubsequences:false).allSatisfy{!$0.isEmpty && !$0.hasPrefix(".")}}
     static func movieInput(_ declared:String,available:Set<String>)throws->String {

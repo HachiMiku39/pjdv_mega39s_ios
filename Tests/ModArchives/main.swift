@@ -62,7 +62,13 @@ for name in ["Directory", "Layer.zip", "Layer4.rar", "Layer5.rar"] {
     test(name + " to verified layer") {
         let installRoot = work.appendingPathComponent("Installed-" + name)
         let cat = RuntimeModCatalog(root: work.appendingPathComponent("Ready-" + name), defaults: defaults)
-        let item = try install(fixtures.appendingPathComponent(name), in: installRoot)
+        var importEvents=[ModInstallUpdate]()
+        let item = try install(fixtures.appendingPathComponent(name), in: installRoot) {importEvents.append($0)}
+        let copied=importEvents.filter{!$0.file.isEmpty && $0.destination != nil}
+        try require(!copied.isEmpty && copied.allSatisfy {
+            $0.destination==installRoot.lastPathComponent+"/.staging-"+item.root.lastPathComponent+"/"+$0.file &&
+            fm.fileExists(atPath:item.root.appendingPathComponent($0.file).path)
+        },"unreadable or inaccurate member path")
         try require(item.inspection.declaredTitleIDs == [title], "missing or wrong title")
         try require(item.inspection.expandedBytes == UInt64(expected.values.reduce(0) { $0 + $1.utf8.count }), "missing member bytes")
         guard let ready = try ModSwitchOverlay.adopt(item, base: base, catalog: cat, progress: Progress()) else {

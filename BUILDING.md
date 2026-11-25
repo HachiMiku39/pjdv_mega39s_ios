@@ -1,8 +1,8 @@
 # 源码与构建 · 2026-11-25
 
-本仓库提供 PJDV M39 0.2.0 build 6 的 Swift／UIKit 宿主、Mac 辅助组件、NVN → Metal／Horizon 兼容层、构建工具和测试。完整链接需要自行准备下列本地构建输入。
+本仓库提供 PJDV M39 0.2.1 build 7 的 Swift／UIKit 宿主、Mac 辅助组件、NVN → Metal／Horizon 兼容层、构建工具和测试。完整链接需要自行准备下列本地构建输入。
 
-The repository contains the Swift/UIKit host, Mac helpers, NVN-to-Metal and Horizon runtime, build tools and tests for PJDV M39 0.2.0 build 6. The full app requires the local build inputs described below.
+The repository contains the Swift/UIKit host, Mac helpers, NVN-to-Metal and Horizon runtime, build tools and tests for PJDV M39 0.2.1 build 7. The full app requires the local build inputs described below.
 
 ## 源码目录
 

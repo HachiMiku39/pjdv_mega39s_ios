@@ -5,8 +5,10 @@ import CryptoKit
 /// converted packs. Only the owned staging copy is rearranged.
 enum ModSwitchOverlay {
     static func adopt(_ package: InstalledMod, base: URL, catalog: RuntimeModCatalog,
-                      progress: Progress) throws -> RuntimeMod? {
+                      progress: Progress, activity: ((ModInstallUpdate)->Void)? = nil) throws -> RuntimeMod? {
         let fm = FileManager.default
+        let events = ModInstallReporter(activity)
+        defer { events.flush() }
         let expectedTitle = Mega39Content.title(Mega39Content.applicationID)
         guard package.inspection.declaredTitleIDs.allSatisfy({ $0 == expectedTitle }),
               !package.inspection.containsCode else { return nil }
@@ -61,6 +63,7 @@ enum ModSwitchOverlay {
                 if meta.isDirectory == true { continue }
                 guard meta.isRegularFile == true else { throw ModPackageError.specialFile }
                 let rel = String(file.path.dropFirst(folder.path.count + 1))
+                events.update(.init(phase:"正在识别 MOD…",file:rel,completed:0,total:0))
                 let row = try PCModelConverter.hash(file,progress:progress)
                 files.append(.init(path:"0/"+rel,bytes:row.bytes,sha256:row.sha256))
             }
@@ -83,8 +86,14 @@ enum ModSwitchOverlay {
         defer { try? fm.removeItem(at:scratch) }
         let layer = scratch.appendingPathComponent("0")
         try fm.createDirectory(at:layer,withIntermediateDirectories:false)
-        for root in roots { try fm.moveItem(at:root,to:layer.appendingPathComponent(root.lastPathComponent)) }
+        for root in roots {
+            let relative=String(root.path.dropFirst(package.root.path.count+1))
+            let to=scratch.lastPathComponent+"/0/"+root.lastPathComponent
+            events.update(.init(phase:"正在转换 MOD…",file:relative,completed:0,total:0,
+                                destination:ModInstallUpdate.storePath(scratch.deletingLastPathComponent(),to)))
+            try fm.moveItem(at:root,to:layer.appendingPathComponent(root.lastPathComponent))
+        }
         try JSONEncoder().encode(mod).write(to:scratch.appendingPathComponent("runtime.json"),options:.atomic)
-        return try catalog.adoptPrepared(from:scratch,progress:progress)
+        return try catalog.adoptPrepared(from:scratch,progress:progress,activity:events.update)
     }
 }

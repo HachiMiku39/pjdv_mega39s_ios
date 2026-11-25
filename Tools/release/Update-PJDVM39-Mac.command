@@ -9,4 +9,4 @@ fi
 
 source_dmg=$(/usr/bin/osascript -e 'POSIX path of (choose file with prompt "Choose your original PJDV M39 build 1 DMG / 选择原版 build 1 DMG" of type {"dmg"})')
 destination=$(/usr/bin/osascript -e 'POSIX path of (choose folder with prompt "Save the new app in a folder / 选择保存新版应用的文件夹")')
-python3 ./pjdv_macos_update.py "$source_dmg" "${destination%/}/PJDVM39-build6.app"
+python3 ./pjdv_macos_update.py "$source_dmg" "${destination%/}/PJDVM39-0.2.1.app"

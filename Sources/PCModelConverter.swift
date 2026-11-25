@@ -102,10 +102,12 @@ enum PCModelConverter {
             }
         };guard !matches.isEmpty else {return nil}
         let total=matches[0].files.reduce(UInt64(0)){$0+$1.bytes};var done:UInt64=0,checks=[RuntimeMod.Check]()
+        let events=ModInstallReporter(report);defer {events.flush()}
         for rel in actual.keys.sorted() {
+            events.update(.init(phase:"正在识别 MOD…",file:rel,completed:done,total:total))
             let value=try hash(actual[rel]!,progress:progress);done+=value.bytes
             checks.append(.init(path:rel,bytes:value.bytes,sha256:value.sha256))
-            report?(.init(phase:"正在识别 MOD…",file:"",completed:done,total:total))
+            events.update(.init(phase:"正在识别 MOD…",file:rel,completed:done,total:total))
         }
         let expected=checks.map{$0.path+":"+String($0.bytes)+":"+$0.sha256}
         guard let profile=matches.first(where:{$0.files.sorted{$0.path<$1.path}.map{$0.path+":"+String($0.bytes)+":"+$0.sha256}==expected}) else {return nil}
@@ -145,9 +147,11 @@ enum PCModelConverter {
         }
         guard !inputs.isEmpty,Set(inputs.map{$0.0.lowercased()}).count==inputs.count else{throw ModPackageError.unsafePath}
         var checks=[RuntimeMod.Check](),done:UInt64=0
+        let events=ModInstallReporter(report);defer {events.flush()}
         for (rel,url,_) in inputs.sorted(by:{$0.0<$1.0}) {
+            events.update(.init(phase:"正在识别 MOD…",file:rel,completed:done,total:total))
             let h=try hash(url,progress:progress);checks.append(.init(path:rel,bytes:h.bytes,sha256:h.sha256));done+=h.bytes
-            report?(.init(phase:"正在识别 MOD…",file:"",completed:done,total:total))
+            events.update(.init(phase:"正在识别 MOD…",file:rel,completed:done,total:total))
         }
         // Decode the resource tables before allocating any installed package.
         _=try F.objects(F.read(root.appendingPathComponent("rom/objset/mod_obj_db.bin")))
@@ -219,7 +223,8 @@ enum PCModelConverter {
     static func convert(_ candidate:Candidate,base:URL,dlc:URL,catalog:RuntimeModCatalog,progress:Progress,
                         report:((ModInstallUpdate)->Void)?=nil)throws->Outcome {
         let fm=FileManager.default;try check(progress)
-        report?(.init(phase:"正在转换 MOD…",file:"",completed:0,total:1))
+        let events=ModInstallReporter(report);defer {events.flush()}
+        events.update(.init(phase:"正在转换 MOD…",file:"",completed:0,total:0))
         let base=base.standardizedFileURL.resolvingSymlinksInPath(),dlc=dlc.standardizedFileURL.resolvingSymlinksInPath()
         let snapshot=try baseline(base:base,dlc:dlc,progress:progress),id=try identity(candidate,snapshot)
         let receipt=RuntimeMod.Conversion(converter:revision,profile:candidate.profile.id,sourceSHA256:candidate.sourceSHA256,base:snapshot.base,dlc:snapshot.dlc,dlcFolders:snapshot.folders)
@@ -229,12 +234,13 @@ enum PCModelConverter {
             let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys]
             guard try encoder.encode(saved)==encoder.encode(receipt) else {throw ModPackageError.changedSource}
             try catalog.verifyFully(existing,progress:progress);_=try catalog.overlayPaths(existing,base:base,dlc:dlc)
-            report?(.init(phase:"MOD 已导入。",file:"",completed:1,total:1));return .init(item:existing,reused:true)
+            events.update(.init(phase:"MOD 已导入。",file:"",completed:0,total:0,destination:ModInstallUpdate.storePath(catalog.root,id.uuidString)))
+            return .init(item:existing,reused:true)
         }
         try fm.createDirectory(at:catalog.root,withIntermediateDirectories:true)
         let stage=catalog.root.appendingPathComponent(".converting-"+UUID().uuidString),input=stage.appendingPathComponent(".input")
         try fm.createDirectory(at:input,withIntermediateDirectories:true);defer{try? fm.removeItem(at:stage)}
-        let builder=Builder(candidate:candidate,snapshot:snapshot,input:input,base:base,dlc:dlc,progress:progress)
+        let builder=Builder(candidate:candidate,snapshot:snapshot,input:input,base:base,dlc:dlc,progress:progress,events:events)
         try builder.normalize()
         let draft=RuntimeMod(format:"pjdv-runtime-model-v1",id:id,name:candidate.profile.name,notes:"",layers:["0"],baseChecks:[snapshot.base[0]],files:[],conversion:receipt)
         let pack=ModComposition.Pack(draft,builder.files)
@@ -246,26 +252,33 @@ enum PCModelConverter {
         let files=worker.records.sorted{$0.path<$1.path}.map{RuntimeMod.Check(path:"0/"+$0.path,bytes:$0.bytes,sha256:$0.sha256)}
         let item=RuntimeMod(format:draft.format,id:id,name:draft.name,notes:"",layers:["0"],baseChecks:draft.baseChecks,files:files,conversion:receipt)
         let encoder=JSONEncoder();encoder.outputFormatting=[.sortedKeys];try encoder.encode(item).write(to:stage.appendingPathComponent("runtime.json"))
-        guard let adopted=try catalog.adoptPrepared(from:stage,progress:progress) else {throw ModLoadError.invalid}
-        report?(.init(phase:"MOD 已导入。",file:"",completed:1,total:1));return .init(item:adopted,reused:false)
+        guard let adopted=try catalog.adoptPrepared(from:stage,progress:progress,activity:events.update) else {throw ModLoadError.invalid}
+        return .init(item:adopted,reused:false)
     }
 
     final class Builder {
         let candidate:Candidate,snapshot:Baseline,input:URL,base:URL,dlc:URL,progress:Progress
+        let events:ModInstallReporter
         let fm=FileManager.default
         var files=[String:ModComposition.File](),consumed=Set<String>()
-        init(candidate:Candidate,snapshot:Baseline,input:URL,base:URL,dlc:URL,progress:Progress){self.candidate=candidate;self.snapshot=snapshot;self.input=input;self.base=base;self.dlc=dlc;self.progress=progress}
+        init(candidate:Candidate,snapshot:Baseline,input:URL,base:URL,dlc:URL,progress:Progress,events:ModInstallReporter){self.candidate=candidate;self.snapshot=snapshot;self.input=input;self.base=base;self.dlc=dlc;self.progress=progress;self.events=events}
+        func targetPath(_ path:String)->String {
+            let stage=input.deletingLastPathComponent()
+            return ModInstallUpdate.storePath(stage.deletingLastPathComponent(),stage.lastPathComponent+"/"+input.lastPathComponent+"/"+path)
+        }
         func source(_ path:String)throws->Data {
             try check(progress);guard let row=candidate.profile.files.first(where:{$0.path==path}) else {throw ModLoadError.unsupported}
             let b=try F.read(candidate.root.appendingPathComponent(path));guard UInt64(b.count)==row.bytes,F.sha(b)==row.sha256 else {throw ModPackageError.changedSource};consumed.insert(path);return b
         }
         func put(_ path:String,_ data:Data)throws {
             try check(progress);guard files[path]==nil else {throw ModLoadError.invalid}
+            events.update(.init(phase:"正在转换 MOD…",file:"",completed:0,total:0,destination:targetPath(path)))
             let p=input.appendingPathComponent(path);try fm.createDirectory(at:p.deletingLastPathComponent(),withIntermediateDirectories:true);try data.write(to:p)
             files[path] = .init(url:p,check:.init(path:path,bytes:UInt64(data.count),sha256:F.sha(data)))
         }
         func copy(_ sourcePath:String,_ path:String)throws {
             guard let row=candidate.profile.files.first(where:{$0.path==sourcePath}) else {throw ModLoadError.invalid}
+            events.update(.init(phase:"正在转换 MOD…",file:sourcePath,completed:0,total:0,destination:targetPath(path)))
             let target=input.appendingPathComponent(path);try fm.createDirectory(at:target.deletingLastPathComponent(),withIntermediateDirectories:true)
             let source=candidate.root.appendingPathComponent(sourcePath)
             let cloned=try ModStorage.cloneRegularFile(source,to:target)

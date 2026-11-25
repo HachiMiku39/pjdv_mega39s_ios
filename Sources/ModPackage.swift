@@ -554,6 +554,7 @@ struct RuntimeModCatalog {
     // manifest and inventory. This is not a converter for raw PC databases.
     // Source ZIPs stay untouched; failed validation never changes Ready.
     func adoptPrepared(from installed: URL, progress: Progress,
+                       activity: ((ModInstallUpdate)->Void)? = nil,
                        report: ((UInt64,UInt64)->Void)? = nil) throws -> RuntimeMod? {
         let fm = FileManager.default
         var source = installed
@@ -598,9 +599,16 @@ struct RuntimeModCatalog {
         progress.totalUnitCount = Int64(max(1,total)); progress.completedUnitCount = 0
         var lastReport = Date.distantPast
         report?(0,total)
+        let events=ModInstallReporter(activity)
+        defer {events.flush()}
         for row in item.files {
             try autoreleasepool {
                 let url = try child(row.path, under: source)
+                func reportFile() {
+                    events.update(.init(phase:"正在校验已适配包…",file:row.path,
+                                        completed:UInt64(progress.completedUnitCount),total:total))
+                }
+                reportFile()
                 let before = try fm.attributesOfItem(atPath: url.path)
                 guard (before[.size] as? NSNumber)?.uint64Value == row.bytes else { throw ModPackageError.changedSource }
                 let input = try FileHandle(forReadingFrom: url); defer { try? input.close() }
@@ -613,7 +621,7 @@ struct RuntimeModCatalog {
                     }
                     if count == 0 { break }; progress.completedUnitCount += Int64(count)
                     if Date().timeIntervalSince(lastReport) >= 0.2 {
-                        lastReport = Date(); report?(UInt64(progress.completedUnitCount),total)
+                        lastReport = Date(); report?(UInt64(progress.completedUnitCount),total);reportFile()
                     }
                 }
                 guard digest.finalize().map({String(format:"%02x",$0)}).joined() == row.sha256 else { throw ModPackageError.changedSource }
@@ -628,6 +636,8 @@ struct RuntimeModCatalog {
         try fm.moveItem(at: source, to: directory(item))
         if source != installed { try? fm.removeItem(at: installed) }
         report?(total,total)
+        events.update(.init(phase:"MOD 已导入。",file:"",completed:total,total:total,
+                            destination:ModInstallUpdate.storePath(root,item.id.uuidString)))
         return item
     }
     func selected() throws -> RuntimeMod? {

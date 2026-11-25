@@ -54,7 +54,10 @@ for extra in ["loader.asi","config.toml",".required"] {
     try fm.removeItem(at:dependency)
 }
 let candidate=try PCModelConverter.recognize(source.deletingLastPathComponent(),profiles:[profile],progress:Progress())!
-let first=try PCModelConverter.convert(candidate,base:base,dlc:dlc,catalog:catalog,progress:Progress())
+var conversionEvents=[ModInstallUpdate]()
+let first=try PCModelConverter.convert(candidate,base:base,dlc:dlc,catalog:catalog,progress:Progress()) {conversionEvents.append($0)}
+require(conversionEvents.contains{$0.phase=="正在转换 MOD…" && $0.destination?.contains("/.input/")==true && $0.total==0})
+require(conversionEvents.last?.destination==ModInstallUpdate.storePath(catalog.root,first.item.id.uuidString))
 require(!first.reused && catalog.selectedIDs.isEmpty && first.item.format=="pjdv-runtime-model-v1")
 let paths=try catalog.overlayPaths(first.item,base:base,dlc:dlc),output=URL(fileURLWithPath:paths[0])
 let modules=try F.archive(F.read(output.appendingPathComponent(rel+"gm_module_tbl.farc"))).flatMap{try F.group(F.properties($0.data),"module")}

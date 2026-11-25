@@ -1,35 +1,33 @@
-# PJDV M39 · iPadOS / iOS / macOS 测试版
+# PJDV M39 · iPadOS / iOS / macOS
 
 NOW SUPPORT IPHONE DUO
 BETTER THAN MOST OF APPS
 
 **简体中文** | [English](README.en.md)
 
-## 0.2.0 · build 6
+## 0.2.1 · build 7
 
-大型 Mod 组合现在可以同时保留两份曲包的歌单、封面和更多服装。M3 Max 实机同时启用 **13 个模型包和 2 个曲包**，在衣柜和选曲数据中核对到 **49 套新增服装、34 首新增歌曲**。[build 6 发布页](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.2.0b6) · [验证记录与衣柜截图](Reports/RELEASE-0.2.0b6.md)
+安装 Mod 时可以看到当前解压的文件、写入目录和转换进度。安装完成后点「返回」回到原列表。若包依赖 Windows 插件，窗口会显示具体的 DLL 名称。[下载 0.2.1](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.2.1)
 
-- 在《ゴーストルール》的衣柜装备日野森雫后，正常重启仍能在选曲页看到她。组合使用独立存档，原版存档校验值一致。
-- 已适配的 X Song Pack 1.21 和 Tonny 可同时启用。两个曲包分别新增 32 首和 2 首，五份封面索引均保留了两包的条目。34 首已核对入库，本轮只抽查了衣柜与选曲界面。
-- 简体中文开启 Google Sans 时，「日野森雫」的最后一字仍会显示为方框。模型和头像均可显示。15 包组合已在 Mac 实测；iPhone、iPad 真机验证仍待完成。
+在 M3 Max Mac 上，从原作者 ZIP 安装 Racing Miku 2024 后，我们在衣柜装备了这套服装，并在《愛言葉》NORMAL 的舞台上看到了它。iPhone 18 Pro 模拟器也通过了安装成功、拒绝 Windows 插件和返回列表的测试。手机和平板的真机验证仍待完成。[实测记录和截图](Reports/RELEASE-0.2.1.md)
 
-### 更新到 build 6
+### 更新到 0.2.1
 
-build 6 提供针对 **0.2.0 build 1** 的离线差量包。build 1 的应用内更新检测只识别直接发布的 IPA／DMG，请手动下载与你的平台对应的 ZIP。覆盖安装前建议备份存档。[build 6 发布页](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.2.0b6)
+本次提供两个离线升级 ZIP，均使用你保留的 **0.2.0 build 1 原始安装文件**。即使设备已装 build 6，仍用原始 build 1 直接生成 0.2.1，无需先在设备上重装旧版。build 1 和 build 6 的更新检测只识别直接发布的 IPA／DMG，请手动下载对应 ZIP。[0.2.1 发布页](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.2.1)
 
-**Apple Silicon Mac。** 解压 `PJDVM39-0.2.0b6-macOS-update-from-b1.zip`，双击 `Update-PJDVM39-Mac.command`，选择已有的原版 build 1 DMG 和输出目录。更新器使用 Python 3.9 或更高版本，生成独立的 `PJDVM39-build6.app`。也可在解压目录运行下列命令，第一项可换成原始 build 1 `.app`。输出路径须尚未存在。
+**Apple Silicon Mac**。解压 `PJDVM39-0.2.1-macOS-update-from-b1.zip`，双击 `Update-PJDVM39-Mac.command`，选择原始 build 1 DMG 和输出目录。需要 Python 3.9 或更高版本。生成 `PJDVM39-0.2.1.app` 后，退出运行中的旧版，再打开新 App。也可在解压目录运行下列命令，第一项可换成未修改的原始 build 1 `.app`。选择尚未存在的输出路径。
 
 ```sh
-python3 pjdv_macos_update.py "/path/to/PJDVM39-0.2.0b1-macOS.dmg" "/path/to/PJDVM39-build6.app"
+python3 pjdv_macos_update.py "/path/to/PJDVM39-0.2.0b1-macOS.dmg" "/path/to/PJDVM39-0.2.1.app"
 ```
 
-**iPhone／iPad。** 准备原始未签名的 build 1 IPA，下载并解压 `PJDVM39-0.2.0b6-iOS-update-from-b1.zip`。在解压目录运行以下命令，保留内层差量 ZIP 的原样。生成后使用自己的有效签名安装。生成步骤可在装有 Python 3.9 或更高版本的 Mac、Windows 或 Linux 上离线运行，磁盘至少预留约 0.6 GB。已重签或修改过的旧 IPA 无法通过校验。
+**iPhone／iPad**。解压 `PJDVM39-0.2.1-iOS-update-from-b1.zip`，保留内层差量 ZIP。在装有 Python 3.9 或更高版本的电脑上，从解压目录运行下列命令，输入原始未签名的 build 1 IPA。备份存档后，用与当前安装相同的应用标识和签名身份给新 IPA 签名，再覆盖安装。
 
 ```sh
-python3 pjdv_ios_update.py "/path/to/local-build1-unsigned.ipa" PJDVM39-0.2.0b1-to-b6-iOS-host-update.zip "/path/to/PJDVM39-0.2.0b6-iOS-unsigned.ipa"
+python3 pjdv_ios_update.py "/path/to/local-build1-unsigned.ipa" PJDVM39-0.2.0b1-to-0.2.1-iOS-host-update.zip "/path/to/PJDVM39-0.2.1-iOS-unsigned.ipa"
 ```
 
-**首次使用或底包不匹配。** 可从源码构建。完整链接需要从自己的游戏副本准备程序和渲染输入，构建后的 App 可导入自己的 XCI 和密钥。[本地构建说明](BUILDING.md)
+**首次使用或缺少匹配底包**。可按构建说明，使用自己的游戏副本准备本地所需输入。[本地构建说明](BUILDING.md)
 
 ### 如何导入 Mod
 
@@ -44,6 +42,14 @@ App 会在本地检查并转换可用资源。勾选已就绪的一个或多个�
 游戏的最终输出受当前屏幕的物理像素限制，普通放大、MetalFX 和桌面匹配均适用。切到较小的显示器时，画质菜单和顶部状态会显示生效的尺寸。移回大屏后自动恢复所选档位。例如，3840×2400 显示器的 16:9 游戏画面最高为 3840×2160，默认档仍为 1920×1080。
 
 ### 历史版本
+
+**0.2.0 build 6 · 2026-11-25**
+
+大型 Mod 组合现在可以同时保留两份曲包的歌单、封面和更多服装。M3 Max 实机同时启用 **13 个模型包和 2 个曲包**，在衣柜和选曲数据中核对到 **49 套新增服装、34 首新增歌曲**。[build 6 发布页](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.2.0b6) · [验证记录与衣柜截图](Reports/RELEASE-0.2.0b6.md)
+
+- 在《ゴーストルール》的衣柜装备日野森雫后，正常重启仍能在选曲页看到她。组合使用独立存档，原版存档校验值一致。
+- 已适配的 X Song Pack 1.21 和 Tonny 可同时启用。两个曲包分别新增 32 首和 2 首，五份封面索引均保留了两包的条目。34 首已核对入库，本轮只抽查了衣柜与选曲界面。
+- 简体中文开启 Google Sans 时，「日野森雫」的最后一字仍会显示为方框。模型和头像均可显示。15 包组合已在 Mac 实测；iPhone、iPad 真机验证仍待完成。
 
 **0.2.0 build 1 · 2026-11-25**
 
@@ -125,7 +131,7 @@ Kimagure Mercy 模型与 Tonny’s 视频歌曲原始 ZIP 已在 Mac 抽样。Ed
 
 **Eden 完整曲包抽样与清理（2026-11-01，未发布源码候选）：** Heavy Metal 14 首／37 谱面、Rock 19 首／35 谱面完整开发适配后由 App 分别导入并组合，预先随机抽取四首 EXTREME 均完整结算。修复 Cosmos 的 1916 像素视频布局崩溃及合法 IVF 时间基准误拒绝，三平台编译通过。**仍需开发侧临时编号，不代表原始 Eden 整包直接导入已完成。** 按要求删除本轮及上一轮 Eden 移植测试副本，实测释放约 38.22 GB，保留原始 Mod、XCI、存档及证据。[中英结果、截图与清理范围](Reports/EDEN-FULL-PACKS-20261101.md)
 
-以下记录保留验证当日的版本状态；“本地候选／公开包仍为 build19”等表述是历史状态。当前发布范围见本页开头的 0.2.0 build 6 说明。
+以下记录保留验证当日的版本状态；“本地候选／公开包仍为 build19”等表述是历史状态。当前发布范围见本页开头的 0.2.1 说明。
 
 **Eden 单曲组合播放（2026-11-01，未发布源码候选）：** Beginner、Catchy Pop、Vibes 各取一首开发子集，由 App 分别转换后同时加载；HARD／HARD／EXTREME 均完整结算（686／607／665 COOL，AutoPlay 临时档）。修复中文歌词方框和独立曲包列表冲突，封面、字幕与冷启动配置已检查，普通存档哈希未变。**临时 800–802 编号不代表完整 Eden 原包可直接导入；持久编号、Core、模型及 3D／Edit 适配仍待完成。** [中英报告、截图与显示计时边界](Reports/EDEN-PLAYBACK-20261101.md)
 
@@ -166,7 +172,7 @@ Kimagure Mercy 模型与 Tonny’s 视频歌曲原始 ZIP 已在 Mac 抽样。Ed
 运行端仍使用已适配的 JP v1.0.9 程序，不执行新 XCI 中的任意 NSO；因此解除导入版本限制不等于所有资源版本、其他地区代码均已兼容。未知资源版本在启动页明确提示待验证。新导入记录写入 `game-content.json`，已有 v1.0.9 文件夹继续兼容。独立票据／TitleKey 加密仍需后续支持；缺少所需密钥、冲突更新和不完整包会停止导入，不修改原 XCI。
 
 
-[历史 build19 预览版](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b19) · [build18](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b18) · [build17](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b17) · [build14](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b14) · [build10](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b10) · [原 build7](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5) · [安装与测试指南](#build-6-安装方式)
+[历史 build19 预览版](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b19) · [build18](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b18) · [build17](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b17) · [build14](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b14) · [build10](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5b10) · [原 build7](https://github.com/HachiMiku39/pjdv_mega39s_ios/releases/tag/v0.1.5) · [安装与测试指南](#021-安装方式)
 
 [演示视频（bilibili）](https://www.bilibili.com/video/BV1KGni6YEZd/)
 
@@ -211,13 +217,13 @@ Kimagure Mercy 模型与 Tonny’s 视频歌曲原始 ZIP 已在 Mac 抽样。Ed
 | 退出 | 原 eShop 入口仅重映射为“退出游戏”，确认后保存并停止会话 |
 | 监测 | FPS、CPU、RAM 浮窗；模拟器 FPS 与真机稳定性能分别评估 |
 
-GitHub 公开 build7 的基线是 **JP v1.0.9 / 589824、Title ID 0100F3100DA46000、1 基础版＋1 更新＋27 DLC**。build10 导入端已解除同一 Title ID 的导入文件名、版本号和 DLC 数量限制；其他地区代码及不同资源版本的运行兼容需分别验证。全曲、全服装的原版画质一致性、音画同步及持续真实 60 FPS 仍在验证。
+早期 0.1.5 build 7 的基线是 **JP v1.0.9 / 589824、Title ID 0100F3100DA46000、1 基础版＋1 更新＋27 DLC**。build10 导入端已解除同一 Title ID 的导入文件名、版本号和 DLC 数量限制；其他地区代码及不同资源版本的运行兼容需分别验证。全曲、全服装的原版画质一致性、音画同步及持续真实 60 FPS 仍在验证。
 
-## build 6 安装方式
+## 0.2.1 安装方式
 
 | 本地已有的内容 | 操作 |
 | --- | --- |
-| 匹配的 Mac build 1 原始包 | 应用 Mac 离线差量更新，在单独位置生成 build 6 App。 |
+| 匹配的 Mac build 1 原始包 | 应用 Mac 离线差量更新，在单独位置生成 0.2.1 App。 |
 | 匹配的 iOS／iPadOS build 1 原始包 | 在本机应用 iOS 离线差量更新，给生成的 IPA 自行签名，安装到获授权的设备。 |
 | 首次使用或底包不匹配 | 从源码构建，在本机准备自己的游戏程序、渲染输入和运行资源。[构建说明](BUILDING.md) |
 

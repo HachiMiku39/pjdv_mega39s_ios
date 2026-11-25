@@ -13,8 +13,8 @@ from contextlib import contextmanager
 
 
 DMG_SHA256 = "23959b54c1a1023b178ad53f34b493f4042c39ce00134750d71a571691375c71"
-PATCH_SHA256 = "3583f2e937ef146f4bb0913c4c3697b320bb12ea508ae442a45802b2adf5133d"
-BUILD6_EXECUTABLE_SHA256 = "e5a0dae12ac2178998f1b7282fa23bc1aa53ba49dfeda8d14a044630f780f77c"
+PATCH_SHA256 = "9f8f27ea40fd4d31b74e36e91a02247a1165bb67f0f8732015c7726668de92e1"
+TARGET_EXECUTABLE_SHA256 = "e664facf13d89b899f353a606d84707260dda03eb56bc2895b0f1382fa35f179"
 SCRIPT_DIR = Path(__file__).resolve().parent
 
 
@@ -29,10 +29,10 @@ def digest(path):
 def verify_app(app, build):
     info = plistlib.loads((app / "Contents/Info.plist").read_bytes())
     if (info.get("CFBundleShortVersionString"), info.get("CFBundleVersion"),
-            info.get("CFBundleIdentifier")) != ("0.2.0", build, "com.local.switchioslab"):
-        raise ValueError("This updater requires the original PJDV M39 0.2.0 build " + build)
+            info.get("CFBundleIdentifier")) != ({"1": "0.2.0", "7": "0.2.1"}[build], build, "com.local.switchioslab"):
+        raise ValueError("Unexpected PJDV M39 app version for build " + build)
     subprocess.run(["/usr/bin/codesign", "--verify", "--deep", "--strict", str(app)], check=True)
-    if build == "6" and digest(app / "Contents/MacOS/PJDVM39") != BUILD6_EXECUTABLE_SHA256:
+    if build == "7" and digest(app / "Contents/MacOS/PJDVM39") != TARGET_EXECUTABLE_SHA256:
         raise ValueError("The reconstructed executable differs from the verified release candidate")
 
 
@@ -74,7 +74,7 @@ def rebuild(source, patch, target):
     if target.suffix.lower() != ".app" or os.path.lexists(target) or source in target.parents:
         raise ValueError("Choose a new .app path outside the original app")
     if not patch.is_file() or digest(patch) != PATCH_SHA256:
-        raise ValueError("The host update does not match the build 6 release")
+        raise ValueError("The host update does not match the 0.2.1 release")
     # Verify and publish on the destination volume, even when the input is a DMG.
     with tempfile.TemporaryDirectory(prefix=".pjdv-update-", dir=target.parent) as work:
         candidate = Path(work) / "PJDVM39.app"
@@ -82,7 +82,7 @@ def rebuild(source, patch, target):
             verify_app(base, "1")
             subprocess.run([sys.executable, str(SCRIPT_DIR / "pjdv_host_update.py"), "apply",
                             "mac", str(base), str(patch), str(candidate)], check=True)
-        verify_app(candidate, "6")
+        verify_app(candidate, "7")
         publish(candidate, target)
     print("Ready:", target)
 

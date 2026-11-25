@@ -12,8 +12,8 @@ import zipfile
 from pjdv_host_update import apply, check, file_hash
 
 BASE_SHA = "31b99dc74980bd8288ae125bf8a09f849bf9801895a4102ff07e4487d00786e2"
-PATCH_SHA = "07a4a44e477c8ae6431d6976fceb40218988150684c454a92c1623c46641ce1d"
-OUTPUT_SHA = "8a913bffdb4418079f5945d46e7978ab90d2d9ac68349647eb41fe62d5449f68"
+PATCH_SHA = "d877d8366763d318786955e75ae0d51b320273600595ef7c3ff307beed7fd145"
+OUTPUT_SHA = "befcacab2d42e2aa28de711a20aaa83d8524a9b44086cb1cf6ebca6581289a2b"
 PREFIX = "Payload/PJDVM39.app/"
 
 
@@ -55,7 +55,7 @@ def main():
     cli=argparse.ArgumentParser(description=__doc__)
     cli.add_argument("base",type=Path,help="Original unsigned build 1 IPA")
     cli.add_argument("patch",type=Path,help="Published iOS host update ZIP")
-    cli.add_argument("output",type=Path,help="Path for a new unsigned build 6 IPA")
+    cli.add_argument("output",type=Path,help="Path for a new unsigned 0.2.1 (build 7) IPA")
     a=cli.parse_args()
     check(not a.output.exists() and not a.output.is_symlink(), "Output IPA already exists")
     check(file_hash(a.patch) == PATCH_SHA, "Unexpected iOS update file or digest")

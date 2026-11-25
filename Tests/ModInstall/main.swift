@@ -7,9 +7,17 @@ func run(_ name:String,progress:Progress=Progress(totalUnitCount:1),report:@esca
     try ModInstaller.install(root.appendingPathComponent(name),under:installed,progress:progress,report:report)
 }
 for name in ["stored.zip","deflated.zip","chunk-boundary.zip","FolderMod","zip64.zip"] {
-    let r=try run(name)
+    var updates=[ModInstallUpdate]()
+    let r=try run(name) {updates.append($0)}
     precondition(r.inspection.fileCount>0 && !r.root.lastPathComponent.hasPrefix(".staging"))
     precondition(r.inspection.contentIntegrityChecked == name.hasSuffix(".zip"))
+    precondition(updates.first?.phase=="正在检查 MOD 结构…")
+    precondition(updates.last?.destination=="Installed/"+r.root.lastPathComponent)
+    let members=updates.filter{!$0.file.isEmpty && $0.destination != nil}
+    precondition(!members.isEmpty && members.allSatisfy {
+        !$0.file.hasPrefix("/") && $0.destination=="Installed/.staging-"+r.root.lastPathComponent+"/"+$0.file &&
+        fm.fileExists(atPath:r.root.appendingPathComponent($0.file).path)
+    })
     try fm.removeItem(at:r.root)
 }
 for name in ["bad-crc.zip","local-name.zip","declared-short.zip","too-large.zip","traversal.zip","symlink.zip"] {
@@ -23,7 +31,9 @@ catch let e as ModPackageError {precondition(e.localizedDescription==ModPackageE
 let afterCancel=try fm.contentsOfDirectory(at:installed,includingPropertiesForKeys:nil)
 precondition(afterCancel.isEmpty)
 var last:UInt64=0
-let large=try run("large.zip") {u in precondition(u.completed>=last && u.completed<=u.total);last=u.completed}
+let large=try run("large.zip") {u in
+    if u.total>0 {precondition(u.completed>=last && u.completed<=u.total);last=u.completed}
+}
 let file=large.root.appendingPathComponent("Pack/rom/objset/large.farc")
 let expandedAttributes=try fm.attributesOfItem(atPath:file.path)
 precondition((expandedAttributes[.size] as! NSNumber).uint64Value==256*1024*1024)
@@ -45,8 +55,10 @@ try JSONEncoder().encode(item).write(to:fixture.appendingPathComponent("runtime.
 let copied=try ModInstaller.install(alias.appendingPathComponent("PreparedFixture"),under:alias.appendingPathComponent("AliasInstalled"),progress:Progress()) {_ in}
 let defaults=UserDefaults(suiteName:"PJDV.ImportAlias."+UUID().uuidString)!
 let catalog=RuntimeModCatalog(root:root.appendingPathComponent("AliasReady"),defaults:defaults)
-let adopted=try catalog.adoptPrepared(from:copied.root,progress:Progress())
+var readyEvents=[ModInstallUpdate]()
+let adopted=try catalog.adoptPrepared(from:copied.root,progress:Progress(),activity:{readyEvents.append($0)})
 precondition(adopted?.id==item.id)
+precondition(readyEvents.contains{$0.file==relative} && readyEvents.last?.destination=="AliasReady/"+item.id.uuidString)
 let link=root.appendingPathComponent("SelectedLink")
 try fm.createSymbolicLink(at:link,withDestinationURL:fixture)
 do {_=try ModInstaller.install(link,under:installed,progress:Progress()){_ in};fatalError("Selected symlink accepted")}catch{}
@@ -69,6 +81,17 @@ let afterEdit=try Data(contentsOf:cloneTarget);precondition(afterEdit==original)
 do {_=try ModStorage.cloneRegularFile(cloneSource,to:cloneTarget);fatalError("Overwrote an existing clone")}catch{}
 let afterCollision=try Data(contentsOf:cloneTarget);precondition(afterCollision==original)
 print("PASS: APFS copy-on-write uses independent inodes, survives in-place source edits and refuses overwrite")
+
+// Thousands of tiny entries must not flood the UI queue. The final observed
+// member reaches the callback before the next phase even within the throttle.
+let clock=ProcessInfo.processInfo.systemUptime
+var burst=[ModInstallUpdate]()
+let sink=ModInstallReporter{burst.append($0)}
+for i in 0..<10000 {sink.update(.init(phase:"copy",file:"file-\(i)",completed:UInt64(i),total:10000))}
+sink.update(.init(phase:"verify",file:"",completed:0,total:0))
+precondition(burst.count<=12+Int((ProcessInfo.processInfo.systemUptime-clock)*4))
+precondition(burst.first?.file=="file-0" && burst.dropLast().last?.file=="file-9999" && burst.last?.phase=="verify")
+print("PASS: truthful staging and published member paths, bounded delivery and final observed file")
 
 if let folder=ProcessInfo.processInfo.environment["PJDV_CROSS_VOLUME_SOURCE"] {
     let source=URL(fileURLWithPath:folder),relative="rom/objset/example.farc"

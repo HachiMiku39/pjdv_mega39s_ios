@@ -36,7 +36,11 @@ reject{try PCSongConverter.validateVideoChart(Data(chart(valid).dropLast()))}
 let fm=FileManager.default,root=URL(fileURLWithPath:CommandLine.arguments[1]);try fm.createDirectory(at:root.appendingPathComponent("rom"),withIntermediateDirectories:true)
 try Data("name = \"Unseen song pack\"\n".utf8).write(to:root.appendingPathComponent("config.toml"))
 try Data("pv_701.song_name=Test\r\n".utf8).write(to:root.appendingPathComponent("rom/mod_pv_db.txt"))
-let candidate=try PCSongConverter.recognize(root,progress:Progress())!
+var songEvents=[ModInstallUpdate]()
+let recognized=try PCSongConverter.recognize(root,progress:Progress()){songEvents.append($0)}
+let candidate=recognized!
+require(!songEvents.isEmpty && songEvents.allSatisfy{!$0.file.isEmpty && !$0.file.hasPrefix("/") && $0.completed<=$0.total})
+require(songEvents.last?.completed==songEvents.last?.total)
 require(candidate.profile.name=="Unseen song pack" && candidate.profile.id==PCSongConverter.profile)
 let wrapper=root.appendingPathComponent("Enclosure"),inner=wrapper.appendingPathComponent("Pack")
 try fm.createDirectory(at:inner,withIntermediateDirectories:true)

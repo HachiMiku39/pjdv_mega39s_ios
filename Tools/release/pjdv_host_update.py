@@ -127,16 +127,20 @@ def restore(packed, guest, layout):
     return output
 
 
-def version(root, path, build):
+BASE_VERSION = ("0.2.0", "1")
+RELEASE_VERSION = ("0.2.1", "7")
+
+
+def version(root, path, expected):
     info = plistlib.loads((root/path).read_bytes())
     check((info.get("CFBundleShortVersionString"), info.get("CFBundleVersion"), info.get("CFBundleIdentifier")) ==
-          ("0.2.0", build, "com.local.switchioslab"), "Unexpected app version or identifier")
+          (*expected, "com.local.switchioslab"), "Unexpected app version or identifier")
 
 
 def make(platform, base, target, output):
     exe, info, allow = settings(platform)
-    version(base, info, "1")
-    version(target, info, "6")
+    version(base, info, BASE_VERSION)
+    version(target, info, RELEASE_VERSION)
     source, final = inventory(base), inventory(target)
     check(set(source) == set(final), "File list differs")
     changed = sorted(k for k in final if source[k] != final[k])
@@ -151,7 +155,7 @@ def make(platform, base, target, output):
     common = min(len(host), len(new_host))
     difference = (int.from_bytes(host[:common], "little") ^ int.from_bytes(new_host[:common], "little")).to_bytes(common, "little")
     payload = difference + new_host[common:]
-    manifest = {"schema": SCHEMA, "platform": platform, "old_tree": tree_hash(source),
+    manifest = {"schema": SCHEMA, "platform": platform, "version": RELEASE_VERSION, "old_tree": tree_hash(source),
                 "new_tree": tree_hash(final), "changed": {k: final[k] for k in changed},
                 "layout": layout, "guest": {k: sha(v) for k,v in old_guest.items()},
                 "source_host_bytes": len(host), "target_host_bytes": len(new_host)}
@@ -166,7 +170,7 @@ def make(platform, base, target, output):
 
 def apply(platform, base, patch, target):
     exe, info, allow = settings(platform)
-    version(base, info, "1")
+    version(base, info, BASE_VERSION)
     source = inventory(base)
     check(not target.exists() and not target.is_symlink(), "Output exists")
     check(not target.resolve().is_relative_to(base.resolve()), "Output must be outside input")
@@ -178,6 +182,9 @@ def apply(platform, base, patch, target):
         m=json.loads(z.read("manifest.json"))
         check(m["schema"] == SCHEMA and m["platform"] == platform, "Update platform mismatch")
         check(tree_hash(source) == m["old_tree"], "Input files do not match the original unsigned iOS or ad-hoc Mac build 1")
+        # The original build 6 manifest predates the explicit version field.
+        expected = tuple(m.get("version", ("0.2.0", "6")))
+        check(expected in (("0.2.0", "6"), RELEASE_VERSION), "Unsupported update version")
         changed=m["changed"]
         check({info,exe} <= changed.keys() <= allow and changed.keys() <= source.keys(), "Unapproved changed path")
         check(names == {"manifest.json", "host.xor"} | {"files/"+r for r in changed if r!=exe}, "Unexpected update entries")
@@ -201,12 +208,12 @@ def apply(platform, base, patch, target):
                     check(sha(data)==changed[rel], "File digest mismatch: "+rel)
                     new.write_bytes(data)
                     shutil.copymode(base/rel,new)
-            version(target,info,"6")
+            version(target, info, expected)
             check(tree_hash(inventory(target)) == m["new_tree"], "Final app digest mismatch")
         except BaseException:
             shutil.rmtree(target)
             raise
-    print("Verified build 6 application:",target)
+    print(f"Verified {expected[0]} (build {expected[1]}) application:", target)
 
 
 def main():

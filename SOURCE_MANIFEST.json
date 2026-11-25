@@ -1,9 +1,9 @@
 {
   "format": "pjdv-public-source-v1",
   "date": "2026-11-25",
-  "source_build": "0.2.0 build6",
-  "public_release": "v0.2.0b6",
-  "source_parent_commit": "90fd85d15b29603be2fbdad6369976dac14b7ccc",
+  "source_build": "0.2.1 build7",
+  "public_release": "v0.2.1",
+  "source_parent_commit": "522a349f538be0490d444b2679931a99d3439a65",
   "native_resource_model_and_movie_song_import": true,
   "Eden_raw_ID_over_999_import": false,
   "universal_PC_Mod_compatibility": false,
@@ -74,37 +74,37 @@
     },
     {
       "path": "Assets/Localizations/en.lproj/Localizable.strings",
-      "bytes": 28855,
-      "sha256": "3e308d2206c2146243a3a1407e10eadeb918e1f958958f16758f7ec78b513f08",
-      "git_blob_sha": "f463d99c44c19207b8fc0b27335a70fcf977b76e",
+      "bytes": 29284,
+      "sha256": "4330fb511846c52d9ba8d7b45dad87a06df82d31ba565939738a9d8ebccda979",
+      "git_blob_sha": "e07b4f842b1e7f990db0731e842a9efda304fcc3",
       "mode": "100644"
     },
     {
       "path": "Assets/Localizations/ja.lproj/Localizable.strings",
-      "bytes": 34333,
-      "sha256": "3a2508f532618eddbe7e49ab6875e0c26e0890a153b0bfc60f0378d1b9228252",
-      "git_blob_sha": "723dc8996ff2dfc5d8fc82029ed79d7dcb66d60f",
+      "bytes": 34860,
+      "sha256": "18e62c6afff6c309c11888a78dfb5b6ac2c0811e21703a4bf76e6aa244f8effc",
+      "git_blob_sha": "5d00dc66b88c86061a969b13d6b1417be2979386",
       "mode": "100644"
     },
     {
       "path": "Assets/Localizations/ko.lproj/Localizable.strings",
-      "bytes": 31711,
-      "sha256": "b9561d87a87214b3687fd41a51a001401f7e81938a481a50ee324afaf7091f30",
-      "git_blob_sha": "4e2614405125b1b14cf8f0b2d01f048226b05bae",
+      "bytes": 32165,
+      "sha256": "61426b9d5f857aa6778c0812a1ba3596961e0333c9c1296f14f784d2bafd0f8d",
+      "git_blob_sha": "528ed9863972883c5ee15deb73e75007e9390cc7",
       "mode": "100644"
     },
     {
       "path": "Assets/Localizations/zh-Hans.lproj/Localizable.strings",
-      "bytes": 27519,
-      "sha256": "bb983e3af54bb373926924494c17ecb7c69921ddff5db8ff8c2efd2af6ba977f",
-      "git_blob_sha": "d9591e1378c928c798752a511f01bd3b67108424",
+      "bytes": 27903,
+      "sha256": "d10f6ee076eab021962ebd2a3ec46da99de26a18ea351d15e7ca70a4c41aae43",
+      "git_blob_sha": "d574faebc10982dbb1da06bccf1e13da1c99e046",
       "mode": "100644"
     },
     {
       "path": "Assets/Localizations/zh-Hant.lproj/Localizable.strings",
-      "bytes": 28137,
-      "sha256": "a51efa686d09b0dd3c7b6564af402690105afec451e62f11737a6487dd981bec",
-      "git_blob_sha": "444d5fafdf31e24400cef42dea50cbedc38ce650",
+      "bytes": 28534,
+      "sha256": "7315b148bd10452b038f916ee838510802949d31e75b8d48709316720b187f80",
+      "git_blob_sha": "4e4ee5919ad79fe3b87dbbc78b9245d7f2c73827",
       "mode": "100644"
     },
     {
@@ -131,15 +131,15 @@
     {
       "path": "BUILDING.md",
       "bytes": 19589,
-      "sha256": "d608b16e6e24a3b452f72382f4cd60970bf78454daf7b8069e065d15edadb455",
-      "git_blob_sha": "6dc1f66499f2176962f60eab40e6a2ebaf00b69f",
+      "sha256": "b286955c3c36c0f95fa121d8ec74740b501730301d588f1f5f9c163dac67031b",
+      "git_blob_sha": "9bfc88f53a2f497b8bf07c6b9dec89ab0ccec00c",
       "mode": "100644"
     },
     {
       "path": "Info.plist",
       "bytes": 2881,
-      "sha256": "f8a2f3c3c8c1db408cca86e27f8cf1f74a2edbc3426351d7f6b2f6279f600f62",
-      "git_blob_sha": "25533af053128e648f371a3104184bfc2c3ae34a",
+      "sha256": "170af2de3c6dabe4d286c5d98e70e4d36b41e081477f6c4327a6c2edc42650de",
+      "git_blob_sha": "e0df5b8d321d9b5526c450dcadb8953225b4f41e",
       "mode": "100644"
     },
     {
@@ -151,16 +151,16 @@
     },
     {
       "path": "README.en.md",
-      "bytes": 76108,
-      "sha256": "417cd29efbd4b73aa832791c581853e0d4fd29a30606d89addb01fd1103b5b4b",
-      "git_blob_sha": "d097ae03e0a47b1225e8f4877d96e4279a453733",
+      "bytes": 76836,
+      "sha256": "4c6bbb1699dfb346764c41088a10827e118fa59d36a9ee29a2a20e3f4d7bc6a7",
+      "git_blob_sha": "41450ff83f21b5134df8ccc3b98b6379cb6c5fb3",
       "mode": "100644"
     },
     {
       "path": "README.md",
-      "bytes": 67399,
-      "sha256": "379783dfdebf27a2a50989907df5730744b464a2555d001488df29b2a9183a66",
-      "git_blob_sha": "c57cf02b57cea111c9a0f63ca753b7bb6f2e283d",
+      "bytes": 68013,
+      "sha256": "2d142013685cf95e61aabcd602b9eb159e6858cb74e48f8faba0d37d7935c3d9",
+      "git_blob_sha": "befb8eb5dbe4ebc7ef4c5352da8e07e598edd633",
       "mode": "100644"
     },
     {
@@ -336,6 +336,13 @@
       "bytes": 5284,
       "sha256": "3a98775d4328929394b0b38ac48a3b6649421e0adad28bb7b402f4c64a9c09ad",
       "git_blob_sha": "b56f1cdc764ce2f82f101ba28f59de4a8b7e6aa0",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/RELEASE-0.2.1.md",
+      "bytes": 3886,
+      "sha256": "e0a5b80bdb317a987d3c5327074e9c9eb3d2f8ce8e834d9a7e849f0bafb5095e",
+      "git_blob_sha": "ad589995b29236234cc1ffeecba014b1ecd322ba",
       "mode": "100644"
     },
     {
@@ -1113,6 +1120,27 @@
       "bytes": 313552,
       "sha256": "52fb6de773a7ce2f633acee77796e5c8e3c7ccfbc7b37b159b10423d53872b9d",
       "git_blob_sha": "877d3f82fe5a20ee62efed4c2a16764ee0efb1a3",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/release-0.2.1/install-complete.png",
+      "bytes": 608841,
+      "sha256": "6b456a25707c585c32be7590bc8abd0f716dc369206184db4837b1a29efeef38",
+      "git_blob_sha": "b0770770979205f3b667c98bda41020a76a9664c",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/release-0.2.1/racing-miku-2024-ai-kotoba.jpg",
+      "bytes": 165999,
+      "sha256": "3d43fa1c2cb0a78256b40a6ca92015f8b4b70a9048449223f11d0d816401862e",
+      "git_blob_sha": "4a8a051b0a8a5485a7f48352ece5dee861541b07",
+      "mode": "100644"
+    },
+    {
+      "path": "Reports/images/release-0.2.1/windows-plugin.png",
+      "bytes": 621650,
+      "sha256": "437c339b3f6ca2b186944a9e4eb8bf72191368863ed0aada795abd3458d354fb",
+      "git_blob_sha": "5944746e0e9d7e259666af7f38412c83a1734b77",
       "mode": "100644"
     },
     {
@@ -6003,9 +6031,9 @@
     },
     {
       "path": "Sources/ModImportController.swift",
-      "bytes": 34209,
-      "sha256": "137dc8a1597a82687849bf78286c224c97ac62184f76a3cedfd2ce41458f2fd4",
-      "git_blob_sha": "44776edb8d1f49c45f3284815b8b12786871cc70",
+      "bytes": 44881,
+      "sha256": "24b89d1ca46ecd4a1b50fbe4858617af4e3399810a6177be29f59453877a70c4",
+      "git_blob_sha": "5447c56616110fc67e37e70a1cc5bcf3b24ff0b9",
       "mode": "100644"
     },
     {
@@ -6017,16 +6045,16 @@
     },
     {
       "path": "Sources/ModInstaller.swift",
-      "bytes": 18855,
-      "sha256": "7666bbb169b732a5866497c380a45f16da55bfc19356a4d79612734bbbed0fab",
-      "git_blob_sha": "6ebf71fab535cba08b9d1a7001c398b1d4385cb7",
+      "bytes": 22374,
+      "sha256": "4233f5bacbb0f3d5726016134bddc246ac016194a18dac0b477d3c222d3d0701",
+      "git_blob_sha": "d3cba34a75e61a11a769ad9d3acd21d7b6350579",
       "mode": "100644"
     },
     {
       "path": "Sources/ModPackage.swift",
-      "bytes": 45351,
-      "sha256": "453ac1fd25dfb2019e245a26afdf1a808c7d23640860426daccb345c5e8eb6cb",
-      "git_blob_sha": "fb6f7fe7b1021151f7ce42e5db422aaa1ea1f757",
+      "bytes": 45969,
+      "sha256": "231098c45c7d904caa3efd2851b525b556a5d8d353fa7dbfb94da0d4090cbf4f",
+      "git_blob_sha": "d283b9e22b76e4ddf29ef19dedd7f0ba9f53d215",
       "mode": "100644"
     },
     {
@@ -6038,16 +6066,16 @@
     },
     {
       "path": "Sources/ModRARReader.swift",
-      "bytes": 8530,
-      "sha256": "0962eece6e56cdd19958150809e01d8068fd6eb735fe7231a81ef81cc31520d9",
-      "git_blob_sha": "9fce4acfc761b2cbfd0fc98a351304091c1b73ca",
+      "bytes": 8774,
+      "sha256": "14c873dc39693217e168e2e80064e33b00b6aaade4d40e88516b4ceb99fd2dd9",
+      "git_blob_sha": "c38d060e7d1821b768532581335007974aae62cd",
       "mode": "100644"
     },
     {
       "path": "Sources/ModSwitchOverlay.swift",
-      "bytes": 6404,
-      "sha256": "6a75c25cbeaf84ce71bc849d91a36b7c38a97fd080e229a86e616b5216790c0f",
-      "git_blob_sha": "4bb2fced6cc9ac78acd17cca22a89a3756f31d6a",
+      "bytes": 7032,
+      "sha256": "4b3e83d8d7ef1e3b70bbdd82b533f9399483f0570b46b2c541ee9a56038ee2d9",
+      "git_blob_sha": "d5735cfcb4258fb7c9c18b15a9a5ebc4173d79be",
       "mode": "100644"
     },
     {
@@ -6066,16 +6094,16 @@
     },
     {
       "path": "Sources/PCModelConverter.swift",
-      "bytes": 41813,
-      "sha256": "f7efd49f37aa37d93ecd391060ce2e809ab75ae65fa78afb7c2c19406b81bbdc",
-      "git_blob_sha": "2c08bd8b4ee17680581642231d602824ac263d34",
+      "bytes": 42875,
+      "sha256": "08bc03f25ff9554db2c7cfb4a327e68717b510871231a09ef9cb9e711df0a236",
+      "git_blob_sha": "254acb8220d9915d4191c3e131f7df9c4f8c7269",
       "mode": "100644"
     },
     {
       "path": "Sources/PCSongConverter.swift",
-      "bytes": 23304,
-      "sha256": "ec151c21494319490ffff4210b4195397e8f5044da534da86a97e77943edd45b",
-      "git_blob_sha": "449a587eb3ef1e378c284a75f5982e9e8d302010",
+      "bytes": 24133,
+      "sha256": "c5224349a3495bf7a151743bbf31f880fcbb691e0d38bf3ecf2548b9b9f9c320",
+      "git_blob_sha": "6e360a3ed72a7056ed99ad912776bc9f41062ac5",
       "mode": "100644"
     },
     {
@@ -6297,9 +6325,9 @@
     },
     {
       "path": "Tests/ModArchives/main.swift",
-      "bytes": 8791,
-      "sha256": "d2b1aed540ad6145ff75c4d4de591d39e5dc3f783e92fc0f54f99dccd86af6a5",
-      "git_blob_sha": "ae746f0c2c6087a68cfa3bedbc73e1215abadca2",
+      "bytes": 9249,
+      "sha256": "fde94a7927af7faea5854761f626ac12bd0b43d5555a7efae6b85a99a23b7623",
+      "git_blob_sha": "06189da84956c142b30fa4db3d9676afd5f89e87",
       "mode": "100644"
     },
     {
@@ -6332,9 +6360,9 @@
     },
     {
       "path": "Tests/ModInstall/main.swift",
-      "bytes": 6355,
-      "sha256": "a67845e15a4672b06d9ff8d979eefbb2fdadcfa750974b72cf7a66f34a2f2ebb",
-      "git_blob_sha": "a4aec5dfdf248e29b4ed8a18bba7b3537c23e4be",
+      "bytes": 7850,
+      "sha256": "62cfdbc3141f0e20c4f438a6c4ecdba2d3242d25672668df62994f2ef96e163b",
+      "git_blob_sha": "a46a3a9ed0da646ed039065e49115722c7300ef7",
       "mode": "100644"
     },
     {
@@ -6395,9 +6423,9 @@
     },
     {
       "path": "Tests/PCModelImport/main.swift",
-      "bytes": 14470,
-      "sha256": "6457af4c2396df3c2727fcf8736f974337659a5209d2d3fdaa607b8c453a445f",
-      "git_blob_sha": "ce01f91cfa38c54df5ef72c09b1f4caad8c912fc",
+      "bytes": 14782,
+      "sha256": "cd1c6883d71b82abe5303406fba7f3243bdbd1a93a03577f051a8007410f6e78",
+      "git_blob_sha": "8d176a3c9441884bf761fa77d83c35ce8fa7c9ae",
       "mode": "100644"
     },
     {
@@ -6409,9 +6437,9 @@
     },
     {
       "path": "Tests/PCSongImport/main.swift",
-      "bytes": 9093,
-      "sha256": "615e82a8cb272690be08c0b2a4d8694008381c7a47fd2f382150ffd279ccd6be",
-      "git_blob_sha": "e0fb349d3ce548a82aaf8f74b5414c9173dbe440",
+      "bytes": 9363,
+      "sha256": "2302a58ae1a309d13af737e0509d20557dab5bf23d4e659530fc7cc2121ef154",
+      "git_blob_sha": "584450bfa634d32add8a9e2ea58da2708ec22c66",
       "mode": "100644"
     },
     {
@@ -15936,44 +15964,44 @@
     },
     {
       "path": "Tools/release/README-iOS-update.txt",
-      "bytes": 1727,
-      "sha256": "01f0aa260320ba141bccd0d9cd5dcf7d1e1d14993742cd8ecacd05688d2f7728",
-      "git_blob_sha": "6c45dbfc7fac5d69ef55493981eb5d1b8604b968",
+      "bytes": 1738,
+      "sha256": "01711493850c9d29d7370a264beec1e2ebb144d8d689e9faa5dbe9453336d4c4",
+      "git_blob_sha": "75fda8346fd4ac280b0cf9bba6275ad1720b9c82",
       "mode": "100644"
     },
     {
       "path": "Tools/release/README-mac-update.txt",
-      "bytes": 1943,
-      "sha256": "3d040883193b7778203fd3f13ab93983c5baca1ee008ebd5751c4777d503474e",
-      "git_blob_sha": "e670d0d6fb60392cc1d76b03cfb99cf2eeb9ab43",
+      "bytes": 1941,
+      "sha256": "ba1917f39770b8dec802aca5a6f3b0c01f4f5b21abcfb6bdfa47965ef9267ef7",
+      "git_blob_sha": "d9ae036c51ff14faa6d8707079adfa40861f21e2",
       "mode": "100644"
     },
     {
       "path": "Tools/release/Update-PJDVM39-Mac.command",
-      "bytes": 660,
-      "sha256": "bccdb535eea83b1ed9028e5c1e7312d7d8c05f4d81d1662cd16b7dab9a956b15",
-      "git_blob_sha": "0255c6e75f67d35d295e77ad7280b2de5ab10fa0",
+      "bytes": 659,
+      "sha256": "1d13b5cf22ed5ee8266724bf71263be15add20d4248ed7ecbd5e5d7e4482d81f",
+      "git_blob_sha": "3b69cab83ab8372504d0aea3a2dfaf2f63479db8",
       "mode": "100755"
     },
     {
       "path": "Tools/release/pjdv_host_update.py",
-      "bytes": 10095,
-      "sha256": "642fa0231ddf39a4b64b019102ac845b04ddfa08475c8e8874f30f430a50d039",
-      "git_blob_sha": "4b8706c0b0844573b66849cc5d7651c41ce13b5c",
+      "bytes": 10480,
+      "sha256": "e70992210804372820a49444d0569e35147114c09ed878a85f2508d74a622b49",
+      "git_blob_sha": "3b232ffd5ed9fd7b82f6b15c583afe07a874f383",
       "mode": "100644"
     },
     {
       "path": "Tools/release/pjdv_ios_update.py",
-      "bytes": 3873,
-      "sha256": "afa2929c5beb709209f390b21328231aa1875ad72a54db99a248b99c96da7897",
-      "git_blob_sha": "a80750f230857e088dac1d89eb2bd3956ef4f1ef",
+      "bytes": 3881,
+      "sha256": "655d5f6bc8a8722edb48e7e8f4088e69cbfaca33c06e9455265fb525bfcdc66c",
+      "git_blob_sha": "4477cebac36131f772ce124e4df3301785c2712c",
       "mode": "100644"
     },
     {
       "path": "Tools/release/pjdv_macos_update.py",
-      "bytes": 4475,
-      "sha256": "6b3ca6ff52706a40c98eefb96ad99f6eafee785f1b6816678d6563b581b943cb",
-      "git_blob_sha": "dcbf05e84117160873958277fa064836e8d6b5e6",
+      "bytes": 4487,
+      "sha256": "a723a0d547b989bf47ed9d32c14baf818ce1cd3f711d716edc6355826dc04dfb",
+      "git_blob_sha": "600fe7bf37d37858562d1e005a8d9b4ac1b2e51a",
       "mode": "100644"
     },
     {
@@ -16107,5 +16135,12 @@
     "new_songs": 34,
     "checked_hardware": "M3 Max Mac",
     "distribution": "source and offline host-only differential updates from build 1"
+  },
+  "release_0_2_1_QA": {
+    "report": "Reports/RELEASE-0.2.1.md",
+    "checked_hardware": "M3 Max Mac",
+    "simulator": "iPhone 18 Pro",
+    "tested_feature": "Mod installation and error log, Racing Miku 2024 in Ai Kotoba",
+    "distribution": "source and offline host-only differential updates from 0.2.0 build 1"
   }
 }

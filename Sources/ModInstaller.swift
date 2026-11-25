@@ -35,6 +35,44 @@ struct ModInstallUpdate {
     let file:String
     let completed:UInt64
     let total:UInt64
+    let destination:String?
+
+    init(phase:String, file:String, completed:UInt64, total:UInt64, destination:String? = nil) {
+        self.phase=phase;self.file=file;self.completed=completed;self.total=total;self.destination=destination
+    }
+
+    // Only the managed store and its children are displayable. The app container,
+    // security-scoped source and temporary filesystem parents never enter the log.
+    static func storePath(_ directory:URL, _ relative:String) -> String {
+        let parent=directory.deletingLastPathComponent().lastPathComponent
+        let root=parent.lowercased()=="mods" ? parent+"/"+directory.lastPathComponent : directory.lastPathComponent
+        return root+"/"+relative
+    }
+}
+
+// Most small packages fit in the initial burst. Larger imports retain the current
+// file plus one pending update, irrespective of archive entry count or chunk size.
+final class ModInstallReporter {
+    private let report:((ModInstallUpdate)->Void)?
+    private var sample:ModInstallUpdate?
+    private var lastPhase="", lastMember="", shown=0, lastTime = -Double.infinity
+
+    init(_ report:((ModInstallUpdate)->Void)?) { self.report=report }
+
+    func update(_ event:ModInstallUpdate) {
+        guard let report else {return}
+        if lastPhase != event.phase {
+            flush();lastPhase=event.phase;lastMember="";shown=0;lastTime = -.infinity
+        }
+        let now=ProcessInfo.processInfo.systemUptime,member=event.file.isEmpty ? (event.destination ?? "") : event.file
+        if now-lastTime >= 0.25 || (shown<8 && member != lastMember) {
+            report(event);sample=nil;lastTime=now;lastMember=member;shown+=1
+        } else {sample=event}
+    }
+
+    func flush() {
+        if let sample {report?(sample);self.sample=nil}
+    }
 }
 struct InstalledMod {
     let root:URL
@@ -63,6 +101,8 @@ enum ModInstaller {
     static func install(_ source:URL, under root:URL, progress:Progress,
                         report:@escaping(ModInstallUpdate)->Void) throws -> InstalledMod {
         let fm=FileManager.default
+        report(.init(phase:"正在检查 MOD 结构…",file:"",completed:0,total:0))
+        if progress.isCancelled {throw ModPackageError.cancelled}
         // A player can pick the entire Files container. Never stage inside the
         // selected directory; compare directory identity across case/volume aliases.
         let sourceType = try fm.attributesOfItem(atPath:source.path)[.type] as? FileAttributeType
@@ -91,6 +131,7 @@ enum ModInstaller {
         let attr=try fm.attributesOfItem(atPath:source.path)
         if attr[.type] as? FileAttributeType == .typeDirectory && (inspected.containsCode || inspected.kind == .unrecognized) {
             // Refuse a directory with a required Windows plug-in before copying its assets.
+            report(.init(phase:"正在检查 MOD 平台兼容性…",file:"",completed:0,total:0))
             if let requirement = try ModPlatformAnalyzer.windowsRequirement(in:source,progress:progress) { throw requirement }
             try inspected.requireRecognized()
         }
@@ -107,6 +148,11 @@ enum ModInstaller {
         var committed=false
         defer {if !committed {try? fm.removeItem(at:stage)}}
         progress.totalUnitCount=Int64(max(1,inspected.expandedBytes))
+        let isFolder=attr[.type] as? FileAttributeType == .typeDirectory
+        let phase=isFolder ? "复制／校验 MOD" : "解压／校验 MOD"
+        let stagePath=ModInstallUpdate.storePath(root,stage.lastPathComponent)
+        let activity=ModInstallReporter(report)
+        defer {activity.flush()}
         var done:UInt64=0,last=Date.distantPast
         func check() throws {if progress.isCancelled {throw ModPackageError.cancelled}}
         func update(_ file:String,_ bytes:Int) throws {
@@ -114,11 +160,12 @@ enum ModInstaller {
             guard done<=inspected.expandedBytes else {throw ModInstallError.integrity}
             progress.completedUnitCount=Int64(done)
             if Date().timeIntervalSince(last)>0.2 {
-                last=Date();report(ModInstallUpdate(phase:"解压／校验 MOD",file:file,completed:done,total:inspected.expandedBytes))
+                last=Date()
+                activity.update(.init(phase:phase,file:file,completed:done,total:inspected.expandedBytes,destination:stagePath+"/"+file))
                 try checkSpace(root,0)
             }
         }
-        if attr[.type] as? FileAttributeType == .typeDirectory {
+        if isFolder {
             guard let enumerator=fm.enumerator(at:source,includingPropertiesForKeys:nil) else {throw ModPackageError.unknownStructure}
             let prefix=source.standardizedFileURL.path+"/"
             for case let item as URL in enumerator {
@@ -131,6 +178,8 @@ enum ModInstaller {
                     let target=parts.reduce(stage){$0.appendingPathComponent($1)}
                     if type == .typeDirectory {try fm.createDirectory(at:target,withIntermediateDirectories:true);return}
                     guard type == .typeRegular else {throw ModPackageError.specialFile}
+                    let member=parts.joined(separator:"/")
+                    activity.update(.init(phase:phase,file:member,completed:done,total:inspected.expandedBytes,destination:stagePath+"/"+member))
                     try fm.createDirectory(at:target.deletingLastPathComponent(),withIntermediateDirectories:true)
                     let cloned=try ModStorage.cloneRegularFile(item,to:target)
                     guard cloned || fm.createFile(atPath:target.path,contents:nil) else {throw ModInstallError.storage}
@@ -140,7 +189,7 @@ enum ModInstaller {
                     while true {
                         let count=try autoreleasepool {()->Int in
                             try check();let b=try input.read(upToCount:chunk) ?? Data()
-                            if !b.isEmpty {try output?.write(contentsOf:b);try update(relative,b.count)}
+                            if !b.isEmpty {try output?.write(contentsOf:b);try update(member,b.count)}
                             return b.count
                         }
                         if count==0 {break}
@@ -165,6 +214,10 @@ enum ModInstaller {
             // Validate every local header before creating a payload file.
             var payloads=[UInt64]()
             for e in entries {
+                let parts=try components(e.path)
+                if !e.directory && !ignored(parts) {
+                    activity.update(.init(phase:"正在检查 MOD 结构…",file:parts.joined(separator:"/"),completed:0,total:0))
+                }
                 let h=try read(e.localOffset,30)
                 guard number(h,0,4)==0x04034b50,number(h,6,2)==e.flags,number(h,8,2)==e.method else {throw ModPackageError.invalidZIP}
                 let nl=Int(number(h,26,2)),el=number(h,28,2)
@@ -182,6 +235,8 @@ enum ModInstaller {
                     let parts=try components(e.path);if ignored(parts) {return}
                     let target=parts.reduce(stage){$0.appendingPathComponent($1)}
                     if e.directory {try fm.createDirectory(at:target,withIntermediateDirectories:true);return}
+                    let member=parts.joined(separator:"/")
+                    activity.update(.init(phase:phase,file:member,completed:done,total:inspected.expandedBytes,destination:stagePath+"/"+member))
                     try fm.createDirectory(at:target.deletingLastPathComponent(),withIntermediateDirectories:true)
                     guard fm.createFile(atPath:target.path,contents:nil) else {throw ModInstallError.storage}
                     let output=try FileHandle(forWritingTo:target);defer{try? output.close()}
@@ -189,7 +244,7 @@ enum ModInstaller {
                     func consume(_ p:UnsafeRawPointer,_ n:Int) throws {
                         guard UInt64(n)<=e.expanded-count else {throw ModInstallError.integrity}
                         try output.write(contentsOf:Data(bytes:p,count:n))
-                        crc=crc32(crc,p.assumingMemoryBound(to:Bytef.self),uInt(n));count+=UInt64(n);try update(e.path,n)
+                        crc=crc32(crc,p.assumingMemoryBound(to:Bytef.self),uInt(n));count+=UInt64(n);try update(member,n)
                     }
                     var offset=payloads[i],left=e.compressed
                     if e.method==0 {
@@ -236,6 +291,7 @@ enum ModInstaller {
                   (attr[.modificationDate] as? Date)==(after[.modificationDate] as? Date) else {throw ModPackageError.changedSource}
         }
         try check();guard done==inspected.expandedBytes else {throw ModInstallError.integrity}
+        activity.flush()
         let result = try publish(stage, to: final, named: source, inspected: inspected,
                                  checkedArchive: attr[.type] as? FileAttributeType == .typeRegular,
                                  progress: progress, report: report)
@@ -251,13 +307,17 @@ enum ModInstaller {
         let id=UUID().uuidString
         let stage=root.appendingPathComponent(".staging-"+id,isDirectory:true)
         let destination=root.appendingPathComponent(id,isDirectory:true)
+        let stagePath=ModInstallUpdate.storePath(root,stage.lastPathComponent)
+        let activity=ModInstallReporter(report)
+        defer {activity.flush()}
         try fm.createDirectory(at:stage,withIntermediateDirectories:false)
         defer { try? fm.removeItem(at:stage) }
         let inspected=try ModRARReader.read(source,to:stage,progress:progress,reserve:{ needed in
             try checkSpace(root,needed)
         },report:{ path, completed, total in
-            report(ModInstallUpdate(phase:"解压／校验 MOD",file:path,completed:completed,total:total))
+            activity.update(.init(phase:"解压／校验 MOD",file:path,completed:completed,total:total,destination:stagePath+"/"+path))
         })
+        activity.flush()
         return try publish(stage,to:destination,named:source,inspected:inspected,checkedArchive:true,
                            progress:progress,report:report)
     }
@@ -267,16 +327,19 @@ enum ModInstaller {
                                 checkedArchive:Bool, progress:Progress,
                                 report:(ModInstallUpdate)->Void) throws -> InstalledMod {
         let done=inspected.expandedBytes
+        report(.init(phase:"正在校验 MOD…",file:"",completed:0,total:0,
+                     destination:ModInstallUpdate.storePath(final.deletingLastPathComponent(),stage.lastPathComponent)))
         let verified=try ModPackageInspector.inspect(stage,progress:progress,allowUnrecognized:true)
         guard verified.fileCount==inspected.fileCount,verified.expandedBytes==inspected.expandedBytes else {throw ModInstallError.integrity}
         let titles = Set(inspected.declaredTitleIDs + verified.declaredTitleIDs)
         guard titles.allSatisfy({ $0 == Mega39Content.title(Mega39Content.applicationID) }) else { throw ModPackageError.wrongGame }
-        report(ModInstallUpdate(phase:"正在检查 MOD 平台兼容性…",file:"",completed:done,total:done))
+        report(ModInstallUpdate(phase:"正在检查 MOD 平台兼容性…",file:"",completed:0,total:0))
         if let requirement = try ModPlatformAnalyzer.windowsRequirement(in:stage,progress:progress) { throw requirement }
         try verified.requireRecognized()
         if progress.isCancelled {throw ModPackageError.cancelled}
         try FileManager.default.moveItem(at:stage,to:final)
-        report(ModInstallUpdate(phase:"MOD 已导入",file:"",completed:done,total:done))
+        report(.init(phase:"MOD 文件已就绪",file:"",completed:done,total:done,
+                     destination:ModInstallUpdate.storePath(final.deletingLastPathComponent(),final.lastPathComponent)))
         let report=ModInspection(kind:verified.kind,fileCount:verified.fileCount,expandedBytes:verified.expandedBytes,declaredTitleIDs:titles.sorted(),containsCode:verified.containsCode,containsDatabases:verified.containsDatabases,unusualCompression:false,contentIntegrityChecked:checkedArchive)
         return InstalledMod(root:final,name:checkedArchive ? source.deletingPathExtension().lastPathComponent : source.lastPathComponent,inspection:report)
     }
